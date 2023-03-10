@@ -195,7 +195,8 @@ def plot_fd_img(img, bound_x=None, bound_y=None, cs=None, mask=None,
                 save_str='', save_fig=False, tar2_x=0.0, tar2_y=0.0,
                 tar2_rad=0.0, cmap='inferno', title='', crop_img=True,
                 cbar_fmt='%.1f', phantom_id='', plot_stl=False, stl_z=0.0,
-                transparent=False, dpi=300, save_close=True):
+                transparent=False, dpi=300, save_close=True,
+                partial_ant_idx=None):
     """Displays a reconstruction, making a publication-ready figure
 
     Parameters
@@ -273,9 +274,9 @@ def plot_fd_img(img, bound_x=None, bound_y=None, cs=None, mask=None,
     # Rotate and flip img to match proper x/y axes labels
     # img_to_plt = (img_to_plt).T
 
-    temp_val = (ant_rad - 14.8) / 0.97 + 10.6
-    ant_xs, ant_ys = ((temp_val - 10) * np.cos(draw_angs),
-                      (temp_val - 10) * np.sin(draw_angs))
+    new_ant_rad = (ant_rad - 14.8) / 0.97 + 10.6
+    ant_xs, ant_ys = ((new_ant_rad - 10) * np.cos(draw_angs),
+                      (new_ant_rad - 10) * np.sin(draw_angs))
 
 
     # Define the x/y coordinates of the approximate breast outline
@@ -312,8 +313,30 @@ def plot_fd_img(img, bound_x=None, bound_y=None, cs=None, mask=None,
     plt.xlim([-roi_rad, roi_rad])
     plt.ylim([-roi_rad, roi_rad])
 
-    plt.plot(ant_xs, ant_ys, 'k--', linewidth=2.5)
+    # plt.plot(ant_xs, ant_ys, 'k--', linewidth=2.5)
     plt.plot(breast_xs, breast_ys, 'w--', linewidth=2, label='Centered')
+
+    if partial_ant_idx is not None:
+
+        # Start from the initial angle of the scan
+        ant_draw_angs = np.linspace(0, np.deg2rad(355), 72) + np.deg2rad(
+            -136.0)
+        # Make the marks inside the ROI
+        new_ant_rad = roi_rad - 0.5
+        ant_xs, ant_ys = (new_ant_rad * np.cos(ant_draw_angs),
+                          new_ant_rad * np.sin(ant_draw_angs))
+        # Assume counter-clockwise rotation
+        ant_xs = np.flip(ant_xs)
+        ant_ys = np.flip(ant_ys)
+
+        # Plot: if the antenna is on - green, off - red
+        for (x, y, i) in zip(ant_xs, ant_ys, range(72)):
+            if partial_ant_idx[i]:
+                plt.text(x, y, str(i), color='g', fontsize=7,
+                         fontweight='bold', family='monospace')
+            else:
+                plt.text(x, y, str(i), color='r', fontsize=7,
+                         fontweight='bold', family='monospace')
 
     if plot_stl:
 
@@ -363,14 +386,14 @@ def plot_fd_img(img, bound_x=None, bound_y=None, cs=None, mask=None,
             xs = rho * np.cos(phi) * 100
             ys = rho * np.sin(phi) * 100
             plt.plot(xs, ys, 'r-', label='Cubic spline')
-            plt.legend(loc='upper left')
+            # plt.legend(loc='upper left')
 
         if mask is not None:
             plt.plot(pix_xs[mask], pix_ys[mask], 'r.',
                      label=r'$\rho_i$ $\leqslant$ $\rho_f(\phi_i)$')
             # plt.plot(pix_xs[~mask], pix_ys[~mask], 'y.',
             #          label=r'$\rho_i > \rho_f(\phi_i)$')
-            plt.legend(loc='upper left')
+            # plt.legend(loc='upper left')
 
         plt.savefig(save_str, transparent=transparent, dpi=dpi,
                     bbox_inches='tight')

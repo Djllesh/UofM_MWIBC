@@ -570,7 +570,8 @@ def get_tof_attn(speed_map, ref_coeffs, ini_x_idx, ini_y_idx, fin_x_idx,
 
 
 def find_boundary_rt(binary_mask, ant_rad, roi_rad, n_ant_pos=72,
-                     ini_ant_ang=-136.0, worker_pool=None):
+                     ini_ant_ang=-136.0, precision_scaling_factor=1,
+                     worker_pool=None):
     """Finds the intersection points of a given shape analogous to the
      circular or elliptical approximations
 
@@ -589,6 +590,8 @@ def find_boundary_rt(binary_mask, ant_rad, roi_rad, n_ant_pos=72,
         Radius of region of interest, determines the domain size
     ini_ant_and : float
         Angle of initial antenna rotation during the scan
+    precision_scaling_factor : int
+        Scaling factor for the image domain (for more accurate rt)
     worker_pool : multiprocessing.pool.Pool
         Pool of workers for parallel computation
 
@@ -603,7 +606,11 @@ def find_boundary_rt(binary_mask, ant_rad, roi_rad, n_ant_pos=72,
     # binary mask is a square array that correspond to the spacial
     # extent of the domain thus the size of either side is the exact
     # size of the domain in pixels
-    m_size = np.size(binary_mask, axis=0)
+
+    # divide by scaling factor to obtain image size at the end
+    m_size = np.size(binary_mask, axis=0) // precision_scaling_factor
+    # for finer grid
+    m_size_pixels = np.size(binary_mask, axis=0)
 
     # initializing arrays for storing intersection coordinates
     # front intersection - closer to antenna
@@ -618,40 +625,30 @@ def find_boundary_rt(binary_mask, ant_rad, roi_rad, n_ant_pos=72,
     ant_xs, ant_ys = get_ant_scan_xys(ant_rad=ant_rad,
                                       n_ant_pos=n_ant_pos,
                                       ini_ant_ang=ini_ant_ang)
-    pix_xs = np.linspace(-roi_rad, roi_rad, m_size)
+    pix_xs = np.linspace(-roi_rad, roi_rad, m_size_pixels)
     pix_ys = np.flip(pix_xs)
     d = pix_xs[1] - pix_xs[0]
 
     # initialize planes
-    x_planes = np.linspace(-roi_rad, -roi_rad + d * m_size, m_size + 1)
+    x_planes = np.linspace(-roi_rad, -roi_rad + d * m_size_pixels,
+                           m_size_pixels + 1)
     y_planes = x_planes
 
     if worker_pool is not None:
 
-        iterable_idx = range(np.size(binary_mask) * n_ant_pos)
+        iterable_idx = range(n_ant_pos * m_size**2)
 
         parallel_func = partial(parallel_intersections_per_ant_pos_rt,
                                 binary_mask, ant_xs, ant_ys, pix_xs, pix_ys,
-                                x_planes, y_planes, d)
+                                x_planes, y_planes, precision_scaling_factor,
+                                d)
 
         intersections = np.array(worker_pool.map(parallel_func, iterable_idx))
-
-        int_f_xs[:, :, :] = np.reshape(intersections[:, 0],
-                                       [np.size(ant_xs),
-                                        np.size(binary_mask, axis=0),
-                                        np.size(binary_mask, axis=1)])
-        int_f_ys[:, :, :] = np.reshape(intersections[:, 1],
-                                       [np.size(ant_xs),
-                                        np.size(binary_mask, axis=0),
-                                        np.size(binary_mask, axis=1)])
-        int_b_xs[:, :, :] = np.reshape(intersections[:, 2],
-                                       [np.size(ant_xs),
-                                        np.size(binary_mask, axis=0),
-                                        np.size(binary_mask, axis=1)])
-        int_b_ys[:, :, :] = np.reshape(intersections[:, 3],
-                                       [np.size(ant_xs),
-                                        np.size(binary_mask, axis=0),
-                                        np.size(binary_mask, axis=1)])
+        intersection_shape = [n_ant_pos, m_size, m_size]
+        int_f_xs[:, :, :] = np.reshape(intersections[:, 0], intersection_shape)
+        int_f_ys[:, :, :] = np.reshape(intersections[:, 1], intersection_shape)
+        int_b_xs[:, :, :] = np.reshape(intersections[:, 2], intersection_shape)
+        int_b_ys[:, :, :] = np.reshape(intersections[:, 3], intersection_shape)
 
     else:
 
@@ -660,13 +657,15 @@ def find_boundary_rt(binary_mask, ant_rad, roi_rad, n_ant_pos=72,
             int_b_xs[ant_pos, :, :], int_b_ys[ant_pos, :, :] = \
                 intersections_per_antenna_pos_rt(binary_mask, ant_xs[ant_pos],
                                                  ant_ys[ant_pos], pix_xs,
-                                                 pix_ys, x_planes, y_planes, d)
+                                                 pix_ys, x_planes, y_planes, d,
+                                                 precision_scaling_factor)
 
     return int_f_xs, int_f_ys, int_b_xs, int_b_ys
 
 
 def intersections_per_antenna_pos_rt(binary_mask, ant_pos_x, ant_pos_y,
-                                     pix_xs, pix_ys, x_planes, y_planes, d):
+                                     pix_xs, pix_ys, x_planes, y_planes, d,
+                                     precision_scaling_factor):
     """Returns a set of front and back intersections arrays that
     correspond to an antenna position and to a binary mask
 
@@ -689,6 +688,8 @@ def intersections_per_antenna_pos_rt(binary_mask, ant_pos_x, ant_pos_y,
         An array of spacial positions of orthogonal planes (horizontal)
     d : float
         Distance between planes and the size of the pixel
+    precision_scaling_factor : int
+        Scaling factor for the image domain (for more accurate rt)
 
     Returns:
     int_f_xs, int_f_ys, int_b_xs, int_b_ys : array_like
@@ -697,14 +698,18 @@ def intersections_per_antenna_pos_rt(binary_mask, ant_pos_x, ant_pos_y,
         or elliptic approximations)
     """
 
-    int_f_xs = np.zeros([np.size(binary_mask, axis=0),
-                         np.size(binary_mask, axis=0)], dtype=float)
+    m_size = np.size(binary_mask, axis=0) // precision_scaling_factor
+
+    int_f_xs = np.zeros([m_size, m_size], dtype=float)
     int_f_ys = np.zeros_like(int_f_xs)
     int_b_xs = np.zeros_like(int_f_xs)
     int_b_ys = np.zeros_like(int_f_xs)
 
-    for x_idx in range(np.size(binary_mask, axis=0)):
-        for y_idx in range(np.size(binary_mask, axis=0)):
+    for x_idx_no_scale in range(m_size):
+        for y_idx_no_scale in range(m_size):
+
+            x_idx = x_idx_no_scale * precision_scaling_factor
+            y_idx = y_idx_no_scale * precision_scaling_factor
 
             alpha_x = np.array([])
             alpha_y = np.array([])
@@ -820,10 +825,13 @@ def intersections_per_antenna_pos_rt(binary_mask, ant_pos_x, ant_pos_y,
             intersected_x_idxs = intersected_x_idxs[crop_y]
             intersected_y_idxs = intersected_y_idxs[crop_y]
 
-            intersected_y_idxs = 149 - intersected_y_idxs
+            intersected_y_idxs = m_size * precision_scaling_factor - 1\
+                                 - intersected_y_idxs
 
-            int_f_xs[y_idx, x_idx], int_f_ys[y_idx, x_idx], \
-            int_b_xs[y_idx, x_idx], int_b_ys[y_idx, x_idx] = \
+            int_f_xs[y_idx_no_scale, x_idx_no_scale], \
+            int_f_ys[y_idx_no_scale, x_idx_no_scale], \
+            int_b_xs[y_idx_no_scale, x_idx_no_scale], \
+            int_b_ys[y_idx_no_scale, x_idx_no_scale] = \
                 intersections_per_ray(binary_mask, intersected_x_idxs,
                                       intersected_y_idxs, pix_xs, pix_ys,
                                       pix_xs[x_idx], pix_ys[y_idx])
@@ -864,7 +872,8 @@ def intersections_per_ray(binary_mask, intersected_x_idxs, intersected_y_idxs,
     int_b_x = np.nan
     int_b_y = np.nan
 
-    if intersected_x_idxs.size == 0:
+    if intersected_x_idxs.size == 0:  # if no intersection
+        # all intersection coords are pixel coords
         int_f_x = pix_x
         int_f_y = pix_y
         int_b_x = pix_x
@@ -873,20 +882,28 @@ def intersections_per_ray(binary_mask, intersected_x_idxs, intersected_y_idxs,
         return int_f_x, int_f_y, int_b_x, int_b_y
 
     if binary_mask[intersected_y_idxs[-1], intersected_x_idxs[-1]]:
+        # if the ray ends in the phantom
+        # back intersections - pix coords
         int_b_x = pix_x
         int_b_y = pix_y
 
+    # sequence of indices that correspond to pixels that are inside the
+    # phantom
     binary_ray = binary_mask[intersected_y_idxs, intersected_x_idxs]
     inside_idxs = np.argwhere(binary_ray).flatten()
 
     if inside_idxs.size != 0:
 
+        # front intersection is the algebraic average of two points -
+        # one before the intersection and one after
         int_f_x = (pix_xs[intersected_x_idxs[inside_idxs[0]] - 1] +
                    pix_xs[intersected_x_idxs[inside_idxs[0]] + 1]) / 2
         int_f_y = (pix_ys[intersected_y_idxs[inside_idxs[0]] - 1] +
                    pix_ys[intersected_y_idxs[inside_idxs[0]] + 1]) / 2
 
         if np.isnan(int_b_x):
+            # same for back intersections
+            # (if they aren't already assigned)
             int_b_x = (pix_xs[intersected_x_idxs[inside_idxs[-1]] - 1] +
                        pix_xs[intersected_x_idxs[inside_idxs[-1]] + 1]) / 2
 
@@ -905,7 +922,7 @@ def intersections_per_ray(binary_mask, intersected_x_idxs, intersected_y_idxs,
 
 def parallel_intersections_per_ant_pos_rt(binary_mask, ant_xs, ant_ys,
                                           pix_xs, pix_ys, x_planes, y_planes,
-                                          d, idx):
+                                          precision_scaling_factor, d, idx):
     """Returns a set of front and back intersections arrays that
     correspond to an antenna position and to a binary mask (flattened)
 
@@ -928,6 +945,8 @@ def parallel_intersections_per_ant_pos_rt(binary_mask, ant_xs, ant_ys,
         An array of spacial positions of orthogonal planes (horizontal)
     d : float
         Distance between planes and the size of the pixel
+    precision_scaling_factor : int
+        Scaling factor for the image domain (for more accurate rt)
     idx : int
         The current pixel-index for which intersections will be computed
 
@@ -939,10 +958,13 @@ def parallel_intersections_per_ant_pos_rt(binary_mask, ant_xs, ant_ys,
     """
 
     new_shape = [np.size(ant_xs),
-                 np.size(binary_mask, axis=0),
-                 np.size(binary_mask, axis=1)]
+                 np.size(binary_mask, axis=0) // precision_scaling_factor,
+                 np.size(binary_mask, axis=1) // precision_scaling_factor]
 
-    ant_idx, y_idx, x_idx = np.unravel_index(idx, new_shape)
+    ant_idx, y_idx_no_scale, x_idx_no_scale = np.unravel_index(idx, new_shape)
+
+    x_idx = x_idx_no_scale * precision_scaling_factor
+    y_idx = y_idx_no_scale * precision_scaling_factor
 
     ant_pos_x = ant_xs[ant_idx]
     ant_pos_y = ant_ys[ant_idx]
@@ -1056,7 +1078,7 @@ def parallel_intersections_per_ant_pos_rt(binary_mask, ant_xs, ant_ys,
     intersected_x_idxs = intersected_x_idxs[crop_y]
     intersected_y_idxs = intersected_y_idxs[crop_y]
 
-    intersected_y_idxs = 149 - intersected_y_idxs
+    intersected_y_idxs = np.size(binary_mask, axis=0) - 1 - intersected_y_idxs
 
     return np.array(intersections_per_ray(binary_mask, intersected_x_idxs,
                                           intersected_y_idxs, pix_xs, pix_ys,

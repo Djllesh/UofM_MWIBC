@@ -16,8 +16,6 @@ __STL_FILE_PATH = os.path.join(get_proj_path(), 'data/phantoms-stl/')
 
 ###############################################################################
 
-# TODO: Find better way of storing the x,y coords of the stl files
-
 
 def get_stl_vertices(shell_id):
     """Get the x,y,z coords of each vertex for each triangle in the stl

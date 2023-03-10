@@ -8,8 +8,8 @@ import numpy as np
 import multiprocessing as mp
 from functools import partial
 from umbms.beamform.intersections_analytical import (find_xy_ant_bound_circle,
-                                                find_xy_ant_bound_ellipse,
-                                                _parallel_find_bound_circle_pix)
+                                                     find_xy_ant_bound_ellipse,
+                                                     _parallel_find_bound_circle_pix)
 
 from threading import active_count, get_ident
 
@@ -18,6 +18,7 @@ from threading import active_count, get_ident
 __GHz = 1e9  # Conversion factor from Hz to GHz
 
 __VACUUM_SPEED = 3e8  # Speed of light in a vacuum
+
 
 ###############################################################################
 
@@ -63,6 +64,7 @@ def get_xy_arrs(m_size, roi_rad):
     x_dists = np.tile(x_dists, (m_size, 1))
     y_dists = np.linspace(-roi_rad, roi_rad, m_size)
     y_dists = np.tile(np.flip(y_dists), (m_size, 1)).T
+
     return x_dists, y_dists
 
 
@@ -383,7 +385,8 @@ def get_ant_xy_idxs(ant_rad, roi_rad, n_ant_pos, m_size, ini_ant_ang=-136.0):
     return ant_x_idxs, ant_y_idxs
 
 
-def get_pix_dists_angs(m_size, n_ant_pos, ant_rad, roi_rad, ini_ant_ang=-136.0):
+def get_pix_dists_angs(m_size, n_ant_pos, ant_rad, roi_rad,
+                       ini_ant_ang=-136.0):
     """Returns the distance and angle between each pixel and antenna
 
     Returns arrays in which each pixel is assigned its distance from the
@@ -526,6 +529,7 @@ def crop_fd(fd_data, ini_min_f=1e9, ini_max_f=8e9, tar_min_f=2e9,
 
     return fd_crop, retained_fs
 
+
 def get_fd_phase_factor(pix_ts):
     """Get phase factor required for multiple scattering computation
 
@@ -548,13 +552,14 @@ def get_fd_phase_factor(pix_ts):
 
     return phase_fac
 
+
 ###############################################################################
 
 def get_pix_ts(ant_rad, m_size, roi_rad, air_speed, n_ant_pos=72,
                ini_ant_ang=-136.0, breast_speed=0.0, adi_rad=0.0,
                ox=0.0, oy=0.0, mid_breast_max=0.0, mid_breast_min=0.0,
                int_f_xs=None, int_f_ys=None, int_b_xs=None, int_b_ys=None,
-               worker_pool=None):
+               worker_pool=None, partial_ant_idx=None):
     """Get one-way pixel response times
 
     Parameters
@@ -594,6 +599,9 @@ def get_pix_ts(ant_rad, m_size, roi_rad, air_speed, n_ant_pos=72,
         y_coords of back intersection
     worker_pool : multiprocessing.pool.Pool
         Pool of workers for parallel computation
+    partial_ant_idx : array_like 1 x n_ant_pos or None
+        Binary mask of indices of antenna positions that are being used
+        (if reconstructing specific antenna positions)
     Returns
     -------
     pix_ts : array_like, n_ant_pos x m_size x m_size
@@ -616,32 +624,37 @@ def get_pix_ts(ant_rad, m_size, roi_rad, air_speed, n_ant_pos=72,
     # Create arrays of pixel x/y positions
     pix_xs, pix_ys = get_xy_arrs(m_size=m_size, roi_rad=roi_rad)
 
-    if int_f_xs is None:
-        if adi_rad != 0:
-            if worker_pool is not None:
+    if int_f_xs is None:  # if no intersections provided
+        if adi_rad != 0:  # if the shape is not a circle
+            if worker_pool is not None:  # if not using parallel computation
                 int_f_xs, int_f_ys, int_b_xs, int_b_ys = \
                     get_circle_intersections_parallel(n_ant_pos, m_size,
-                                                ant_xs, ant_ys, pix_xs, pix_ys,
-                                                adi_rad, ox, oy, worker_pool)
+                                                      ant_xs, ant_ys, pix_xs,
+                                                      pix_ys,
+                                                      adi_rad, ox, oy,
+                                                      worker_pool)
             else:
                 int_f_xs, int_f_ys, int_b_xs, int_b_ys \
                     = find_xy_ant_bound_circle(ant_xs, ant_ys, n_ant_pos,
                                                pix_xs[0, :], pix_ys[:, 0],
                                                adi_rad=adi_rad, ox=ox, oy=oy)
         else:
+            # TODO: parallel version of ellipse intersections
             int_f_xs, int_f_ys, int_b_xs, int_b_ys \
                 = find_xy_ant_bound_ellipse(ant_xs, ant_ys, n_ant_pos,
                                             pix_xs[0, :], pix_ys[:, 0],
                                             mid_breast_max, mid_breast_min)
 
     return calculate_time_delays(n_ant_pos, m_size, ant_xs, ant_ys,
-                        pix_xs, pix_ys, int_f_xs, int_f_ys, int_b_xs, int_b_ys,
-                        air_speed, breast_speed),\
-                        int_f_xs, int_f_ys, int_b_xs, int_b_ys
+                                 pix_xs, pix_ys, int_f_xs, int_f_ys, int_b_xs,
+                                 int_b_ys, air_speed, breast_speed,
+                                 partial_ant_idx),\
+           int_f_xs, int_f_ys, int_b_xs, int_b_ys
+
 
 def calculate_time_delays(n_ant_pos, m_size, ant_xs, ant_ys, pix_xs, pix_ys,
                           int_f_xs, int_f_ys, int_b_xs, int_b_ys, air_speed,
-                          breast_speed):
+                          breast_speed, partial_ant_idx):
     """Calculates time delays for given set of intersections
     for all antenna positions
 
@@ -651,10 +664,10 @@ def calculate_time_delays(n_ant_pos, m_size, ant_xs, ant_ys, pix_xs, pix_ys,
         Number of antenna positions used in the scan
     m_size : int
         Size of image-space along one dimension
-    ant_xs : array_like 1 x n_ant_pos x
+    ant_xs : array_like 1 x n_ant_pos
         The x-positions in meters of each antenna position used in the
         scan
-    ant_ys : array_like 1 x n_ant_pos x
+    ant_ys : array_like 1 x n_ant_pos
         The y-positions in meters of each antenna position used in the
         scan
     pix_xs : array_like m_size x m_size
@@ -675,6 +688,10 @@ def calculate_time_delays(n_ant_pos, m_size, ant_xs, ant_ys, pix_xs, pix_ys,
         The estimated propagation speed of the signal in air
     breast_speed : float
         The estimated propagation speed of the signal in phantom
+    partial_ant_idx : array_like 1 x n_ant_pos or None
+        Binary mask of indices of antenna positions that are being used
+        (if reconstructing specific antenna positions)
+
     Returns:
     -------------
     pix_ts : array_like n_ant_pos x m_size x m_size
@@ -682,16 +699,26 @@ def calculate_time_delays(n_ant_pos, m_size, ant_xs, ant_ys, pix_xs, pix_ys,
         M is the number of antenna positions.
     """
 
-    # Init array for storing pixel time-delays
-    pix_ts = np.zeros([n_ant_pos, m_size, m_size])
+    if partial_ant_idx is None:
+        # Init array for storing pixel time-delays
+        pix_ts = np.zeros([n_ant_pos, m_size, m_size])
+        ant_pos_idxs = np.arange(n_ant_pos)
+
+    else:
+        # Init array for storing pixel time-delays (first axis size is
+        # dependent on the quantity of antennas that are being used in
+        # the reconstruction)
+        pix_ts = np.zeros([np.count_nonzero(partial_ant_idx), m_size, m_size])
+        ant_pos_idxs = np.arange(n_ant_pos)[partial_ant_idx]
 
     # success_count = 0
 
-    for a_pos in range(n_ant_pos):  # For each antenna position
-
+    # for a_pos in range(n_ant_pos):  # For each antenna position
+    for (a_pos, ts_ant_pos) in \
+            zip(ant_pos_idxs, range(np.size(pix_ts, axis=0))):
         # Find x/y position differences of each pixel from antenna
-        x_diffs = pix_xs - ant_xs[a_pos]
-        y_diffs = pix_ys - ant_ys[a_pos]
+        # x_diffs = pix_xs - ant_xs[a_pos]
+        # y_diffs = pix_ys - ant_ys[a_pos]
 
         pix_to_back_xs = pix_xs - int_b_xs[a_pos]
         pix_to_back_ys = pix_ys - int_b_ys[a_pos]
@@ -709,11 +736,11 @@ def calculate_time_delays(n_ant_pos, m_size, ant_xs, ant_ys, pix_xs, pix_ys,
         #           np.allclose(y_diffs, all_y_dists, atol=1e-15, rtol=0)
 
         air_td_back = np.sqrt(pix_to_back_xs ** 2 + pix_to_back_ys ** 2) \
-                                                                    / air_speed
-        breast_td = np.sqrt(back_to_front_xs ** 2 + back_to_front_ys ** 2)\
-                                                                 / breast_speed
-        air_td_front = np.sqrt(front_to_ant_xs ** 2 + front_to_ant_ys ** 2)\
-                                                                    / air_speed
+                      / air_speed
+        breast_td = np.sqrt(back_to_front_xs ** 2 + back_to_front_ys ** 2) \
+                    / breast_speed
+        air_td_front = np.sqrt(front_to_ant_xs ** 2 + front_to_ant_ys ** 2) \
+                       / air_speed
 
         all_td = air_td_front + breast_td + air_td_back
 
@@ -725,7 +752,7 @@ def calculate_time_delays(n_ant_pos, m_size, ant_xs, ant_ys, pix_xs, pix_ys,
 
         # Calculate one-way time-delay of propagation from antenna to
         # each pixel
-        pix_ts[a_pos, :, :] = all_td
+        pix_ts[ts_ant_pos, :, :] = all_td
 
     # if success_count == n_ant_pos:
     #     print("Thread ID: %d" % os.getpid())
@@ -789,7 +816,6 @@ def get_pix_ts_old(ant_rad, m_size, roi_rad, speed, n_ant_pos=72,
 def get_circle_intersections_parallel(n_ant_pos, m_size, ant_xs, ant_ys,
                                       pix_xs, pix_ys, adi_rad, ox, oy,
                                       worker_pool=None):
-
     """Finds breast boundary intersection coordinates
     with propagation trajectory from antenna position
     to corresponding pixel (for parallel calculation)

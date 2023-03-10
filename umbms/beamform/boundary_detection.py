@@ -228,20 +228,27 @@ def polar_fit_cs(rho, phi):
     return CubicSpline(phi, rho)
 
 
-def get_binary_mask(cs, m_size, roi_rad):
+def get_binary_mask(cs, m_size, roi_rad, precision_scaling_factor=1):
     """Returns a binary mask that corresponds to breast phantom boundary
 
     Parameters:
     ----------
     cs : PPoly
         Cubic spline interpolation of a boundary
+    m_size : int
+        Size of the square image domain in pixels
+    roi_rad : float
+        Radius of ROI in meters
+    precision_scaling_factor : int
+        Scaling factor for the image domain (for more accurate rt)
 
     Returns:
     ----------
     mask : array_like
         Binary mask
     """
-    pix_xs, pix_ys = get_xy_arrs(m_size=m_size, roi_rad=roi_rad)
+    pix_xs, pix_ys = get_xy_arrs(m_size=m_size * precision_scaling_factor,
+                                 roi_rad=roi_rad)
     rho = np.sqrt(pix_xs ** 2 + pix_ys ** 2)
     phi = np.arctan2(pix_ys, pix_xs)
     negative = phi < 0
