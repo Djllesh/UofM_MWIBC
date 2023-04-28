@@ -68,7 +68,7 @@ def get_xy_arrs(m_size, roi_rad):
     return x_dists, y_dists
 
 
-def apply_ant_t_delay(scan_rad, new_ant=False):
+def apply_ant_t_delay(scan_rad, *, new_ant=False):
     """Accounts for antenna time delay by extending the scan rad
 
     Gets the "true" antenna radius used during a scan. Assumes ant_rad
@@ -298,7 +298,7 @@ def get_time_step(ini_f, fin_f, n_freqs):
     return dt
 
 
-def get_ant_scan_xys(ant_rad, n_ant_pos, ini_ant_ang=-136.0):
+def get_ant_scan_xys(ant_rad, n_ant_pos, *, ini_ant_ang=-136.0):
     """Returns the x,y positions of each antenna position in the scan
 
     Returns two vectors, containing the x- and y-positions in meters of
@@ -338,7 +338,8 @@ def get_ant_scan_xys(ant_rad, n_ant_pos, ini_ant_ang=-136.0):
     return ant_xs, ant_ys
 
 
-def get_ant_xy_idxs(ant_rad, roi_rad, n_ant_pos, m_size, ini_ant_ang=-136.0):
+def get_ant_xy_idxs(ant_rad, roi_rad, n_ant_pos, m_size,
+                    *, ini_ant_ang=-136.0):
     """Returns the x,y-pixel indices of each antenna position
 
     Returns two vectors, containing the x- and y-coordinates
@@ -386,7 +387,7 @@ def get_ant_xy_idxs(ant_rad, roi_rad, n_ant_pos, m_size, ini_ant_ang=-136.0):
 
 
 def get_pix_dists_angs(m_size, n_ant_pos, ant_rad, roi_rad,
-                       ini_ant_ang=-136.0):
+                       *, ini_ant_ang=-136.0):
     """Returns the distance and angle between each pixel and antenna
 
     Returns arrays in which each pixel is assigned its distance from the
@@ -488,7 +489,7 @@ def normalize_arr(arr):
     return normalized_arr
 
 
-def crop_fd(fd_data, ini_min_f=1e9, ini_max_f=8e9, tar_min_f=2e9,
+def crop_fd(fd_data, *, ini_min_f=1e9, ini_max_f=8e9, tar_min_f=2e9,
             tar_max_f=8e9):
     """
 
@@ -555,7 +556,7 @@ def get_fd_phase_factor(pix_ts):
 
 ###############################################################################
 
-def get_pix_ts(ant_rad, m_size, roi_rad, air_speed, n_ant_pos=72,
+def get_pix_ts(ant_rad, m_size, roi_rad, air_speed, *, n_ant_pos=72,
                ini_ant_ang=-136.0, breast_speed=0.0, adi_rad=0.0,
                ox=0.0, oy=0.0, mid_breast_max=0.0, mid_breast_min=0.0,
                int_f_xs=None, int_f_ys=None, int_b_xs=None, int_b_ys=None,
@@ -626,7 +627,7 @@ def get_pix_ts(ant_rad, m_size, roi_rad, air_speed, n_ant_pos=72,
 
     if int_f_xs is None:  # if no intersections provided
         if adi_rad != 0:  # if the shape is not a circle
-            if worker_pool is not None:  # if not using parallel computation
+            if worker_pool is not None:  # if using parallel computation
                 int_f_xs, int_f_ys, int_b_xs, int_b_ys = \
                     get_circle_intersections_parallel(n_ant_pos, m_size,
                                                       ant_xs, ant_ys, pix_xs,
@@ -637,7 +638,7 @@ def get_pix_ts(ant_rad, m_size, roi_rad, air_speed, n_ant_pos=72,
                 int_f_xs, int_f_ys, int_b_xs, int_b_ys \
                     = find_xy_ant_bound_circle(ant_xs, ant_ys, n_ant_pos,
                                                pix_xs[0, :], pix_ys[:, 0],
-                                               adi_rad=adi_rad, ox=ox, oy=oy)
+                                               adi_rad, ox=ox, oy=oy)
         else:
             # TODO: parallel version of ellipse intersections
             int_f_xs, int_f_ys, int_b_xs, int_b_ys \
@@ -765,7 +766,7 @@ def calculate_time_delays(n_ant_pos, m_size, ant_xs, ant_ys, pix_xs, pix_ys,
     return pix_ts
 
 
-def get_pix_ts_old(ant_rad, m_size, roi_rad, speed, n_ant_pos=72,
+def get_pix_ts_old(ant_rad, m_size, roi_rad, speed, *, n_ant_pos=72,
                    ini_ant_ang=-136.0):
     """Get one-way pixel response times
     Parameters
@@ -815,7 +816,7 @@ def get_pix_ts_old(ant_rad, m_size, roi_rad, speed, n_ant_pos=72,
 
 def get_circle_intersections_parallel(n_ant_pos, m_size, ant_xs, ant_ys,
                                       pix_xs, pix_ys, adi_rad, ox, oy,
-                                      worker_pool=None):
+                                      worker_pool):
     """Finds breast boundary intersection coordinates
     with propagation trajectory from antenna position
     to corresponding pixel (for parallel calculation)
@@ -871,3 +872,37 @@ def get_circle_intersections_parallel(n_ant_pos, m_size, ant_xs, ant_ys,
     int_b_ys = np.reshape(intersections[:, 3], [n_ant_pos, m_size, m_size])
 
     return int_f_xs, int_f_ys, int_b_xs, int_b_ys
+
+
+def apply_syst_cor(xs, ys, x_err, y_err, phi_err):
+    """Apply systematic error correction
+    Parameters
+    ----------
+    xs : array_like
+        Observed x positions of target, in [cm]
+    ys : array_like
+        Observed y positions of target, in [cm]
+    x_err : float
+        Systematic x error in observed target position, in [cm]
+    y_err : float
+        Systematic y error in observed target position, in [cm]
+    phi_err
+        Systematic phi error in observed target position, in [deg]
+    Returns
+    -------
+    cor_xs2 : array_like
+        Corrected observed x positions of target, after applying
+        correction for systematic errors, in [cm]
+    cor_ys2 : array_like
+        Corrected observed x positions of target, after applying
+        correction for systematic errors, in [cm]
+    """
+    cor_xs = xs - x_err
+    cor_ys = ys - y_err
+    cor_xs2 = (cor_xs * np.cos(np.deg2rad(phi_err))
+               - cor_ys * np.sin(np.deg2rad(phi_err)))
+    cor_ys2 = (cor_xs * np.sin(np.deg2rad(phi_err))
+               + cor_ys * np.cos(np.deg2rad(phi_err)))
+
+    return cor_xs2, cor_ys2
+

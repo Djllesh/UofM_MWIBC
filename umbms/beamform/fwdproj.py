@@ -12,7 +12,7 @@ from umbms.beamform.extras import get_pix_ts, get_fd_phase_factor
 ###############################################################################
 
 
-def fd_fwd_proj(model, phase_fac, dv, freqs, worker_pool=None):
+def fd_fwd_proj(model, phase_fac, dv, freqs, worker_pool):
     """Forward project in the frequency domain
 
     Parameters
@@ -57,7 +57,7 @@ def fd_fwd_proj(model, phase_fac, dv, freqs, worker_pool=None):
 
 def fd_fwd_proj_vel_freq(model, int_f_xs, int_f_ys, int_b_xs, int_b_ys,
                          velocities, ant_rad, m_size, roi_rad, air_speed, dv,
-                         freqs, adi_rad=0, mid_breast_max=0.0,
+                         freqs, *, adi_rad=0, mid_breast_max=0.0,
                          mid_breast_min=0.0, worker_pool=None):
     """Forward project in the frequency domain
 

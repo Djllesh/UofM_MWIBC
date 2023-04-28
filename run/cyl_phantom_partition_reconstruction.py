@@ -38,7 +38,7 @@ from umbms.beamform.boundary_detection import (find_boundary, polar_fit_cs,
 
 from umbms.beamform.propspeed import (estimate_speed, get_breast_speed,
                                       get_speed_from_perm,
-                                      get_breast_speed_freq, get_rt_pix_ts)
+                                      get_breast_speed_freq)
 from umbms.beamform.raytrace import find_boundary_rt
 from umbms.beamform.optimfuncs import td_velocity_deriv
 from umbms.beamform.sigproc import iczt
@@ -46,10 +46,10 @@ from umbms.beamform.sigproc import iczt
 ###############################################################################
 
 __CPU_COUNT = mp.cpu_count()
-__PRECISION_SCALING_FACTOR = 3
+__PRECISION_SCALING_FACTOR = 1
 
 assert isinstance(__PRECISION_SCALING_FACTOR, int), \
-        f"Scaling factor is not int, got: {__PRECISION_SCALING_FACTOR}"
+    f"Scaling factor is not int, got: {__PRECISION_SCALING_FACTOR}"
 
 __DATA_DIR = os.path.join(get_proj_path(), 'data/umbmid/cyl_phantom/')
 __OUT_DIR = os.path.join(get_proj_path(), 'output/cyl_phantom/')
@@ -165,6 +165,21 @@ if __name__ == "__main__":
 
     fd_data, metadata = load_data()
 
+    rhos = []
+    for tum_x, tum_y in zip([md['tum_x'] / 100 for md in metadata],
+                            [md['tum_y'] / 100 for md in metadata]):
+        if not np.isnan(tum_x):
+            rho = np.sqrt(tum_x ** 2 + tum_y ** 2)
+            rhos.append(rho)
+
+    rhos = np.unique(rhos)
+
+    das_regular = [[] for i in range(6)]
+    das_part_binary = [[] for i in range(6)]
+    das_freq_dep_zero_cond = [[] for i in range(6)]
+    das_freq_dep = [[] for i in range(6)]
+    das_rt = [[] for i in range(6)]
+
     n_expts = np.size(fd_data, axis=0)  # The number of individual scans
 
     # Get the unique ID of each experiment / scan
@@ -185,7 +200,9 @@ if __name__ == "__main__":
     freqs = np.array(df["Freqs"].values, dtype=float)
     permittivities = np.array(df["Permittivity"].values)
     conductivities = np.array(df["Conductivity"].values)
-    # conductivities = np.zeros_like(conductivities)
+    zero_conductivities = np.zeros_like(conductivities)
+    velocities_zero_cond = get_breast_speed_freq(freqs, permittivities,
+                                                 zero_conductivities)
     velocities = get_breast_speed_freq(freqs, permittivities, conductivities)
 
     # Determine fibroglandular percentage
@@ -200,9 +217,15 @@ if __name__ == "__main__":
     recon_times = np.array([], dtype=float)
     full_times = np.array([], dtype=float)
 
-    for ii in range(20, n_expts):
-    # for ii in [18]:
+    # The output dir, where the reconstructions will be stored
+    out_dir = os.path.join(__OUT_DIR, 'recons/Immediate reference'
+                                      '/Gen 2/Intensity comparison/')
+    verify_path(out_dir)
 
+    for ii in range(n_expts):
+        # for ii in [18]:
+
+        # Antenna position IDs for recon at specific positions
         # ID 4: [22, 47)
         # ID 8: [17, 38)
         # ID 10: [10, 44)
@@ -226,11 +249,6 @@ if __name__ == "__main__":
 
         # partial_ant_idx = np.ones([__N_ANT_POS], dtype=bool)
 
-        # The output dir, where the reconstructions will be stored
-        out_dir = os.path.join(__OUT_DIR, 'recons/Immediate reference'
-                                          '/Gen 2/')
-        verify_path(out_dir)
-
         logger.info('Scan [%3d / %3d]...' % (ii + 1, n_expts))
 
         # Get the frequency domain data and metadata of this experiment
@@ -239,6 +257,16 @@ if __name__ == "__main__":
 
         if ~np.isnan(tar_md['emp_ref_id']) and \
                 ~np.isnan(tar_md['adi_ref_id2']):
+
+            # If the scan does include a tumour
+            if ~np.isnan(tar_md['tum_diam']):
+
+                # Set a str for plotting
+                plt_str = "%.1f cm rod in\n" \
+                          "ID: %d" % (tar_md['tum_diam'], ii)
+            else:
+                plt_str = "Empty cylinder\n" \
+                          "ID: %d" % ii
 
             full_time_start = perf_counter()
             expt_adi_out_dir = os.path.join(out_dir, 'id-%d/'
@@ -251,6 +279,8 @@ if __name__ == "__main__":
             tum_y = tar_md['tum_y'] / 100
             tum_rad = 0.5 * (tar_md['tum_diam'] / 100)
             adi_rad = __PHANTOM_RAD
+            rho = np.sqrt(tum_x ** 2 + tum_y ** 2)
+            rho_idx = np.searchsorted(rhos, rho)
 
             # Correct for how the scan radius is measured (from a
             # point on the antenna stand, not at the SMA connection
@@ -291,15 +321,15 @@ if __name__ == "__main__":
                                    precision_scaling_factor=
                                    __PRECISION_SCALING_FACTOR)
 
-            start = perf_counter()
-            int_f_xs, int_f_ys, int_b_xs, int_b_ys = \
-                find_boundary_rt(mask, ant_rad, roi_rad,
-                                 precision_scaling_factor=
-                                 __PRECISION_SCALING_FACTOR,
-                                 worker_pool=worker_pool)
-            end = perf_counter()
-            intersection_times = np.append(intersection_times, (end - start))
-            logger.info('Parallel pix_ts (raytrace): %f s' % (end - start))
+            # start = perf_counter()
+            # int_f_xs, int_f_ys, int_b_xs, int_b_ys = \
+            #     find_boundary_rt(mask, ant_rad, roi_rad,
+            #                      precision_scaling_factor=
+            #                      __PRECISION_SCALING_FACTOR,
+            #                      worker_pool=worker_pool)
+            # end = perf_counter()
+            # intersection_times = np.append(intersection_times, (end - start))
+            # logger.info('Parallel pix_ts (raytrace): %f s' % (end - start))
 
             # angles = np.linspace(0, 2 * np.pi, 1000)
             # x_circ = adi_rad * np.cos(angles) + x_cm
@@ -321,7 +351,167 @@ if __name__ == "__main__":
 
             # breast_speed = get_breast_speed(fibr_perc)
             # # # breast_speed = get_speed_from_perm(perm)
+
+            ############################################################
+            # 5 DIFFERENT RECONSTRUCTIONS
+
+            # 1. Homogeneous DAS (regular)
+
+            logger.info('Rho = %.3f, rho_idx = %d' % (rho, rho_idx))
+
+            speed = estimate_speed(adi_rad=adi_rad, ant_rad=__ANT_RAD)
+            pix_ts = get_pix_ts_old(ant_rad=ant_rad, m_size=__M_SIZE,
+                                    roi_rad=roi_rad, speed=speed)
+            phase_fac = get_fd_phase_factor(pix_ts=pix_ts)
+            das_regular_recon = fd_das(fd_data=adi_cal_cropped,
+                                       phase_fac=phase_fac,
+                                       freqs=scan_fs[tar_fs],
+                                       worker_pool=worker_pool)
+            das_regular_intensity = np.max(np.abs(das_regular_recon))
+            das_regular[rho_idx].append(das_regular_intensity)
+
+            logger.info('Regular DAS. Intensity = %.3f.'
+                        ' Size of the intensity sub-array = %d'
+                        % (das_regular_intensity,
+                           len(das_regular[rho_idx])))
+
+            plot_fd_img(img=np.abs(das_regular_recon), tum_x=tum_x,
+                        tum_y=tum_y, tum_rad=tum_rad, adi_rad=adi_rad, ox=x_cm,
+                        oy=y_cm, ant_rad=ant_rad, roi_rad=roi_rad,
+                        img_rad=roi_rad, title=plt_str, save_fig=True,
+                        save_str=os.path.join(out_dir,
+                                              'id_%d_das_regular.png'
+                                              % ii), save_close=True)
+
+            # 2. Binary DAS (domain partitioning)
             breast_speed = np.average(velocities)
+            pix_ts, int_f_xs, int_f_ys, int_b_xs, int_b_ys = \
+                get_pix_ts(ant_rad=ant_rad, m_size=__M_SIZE,
+                           roi_rad=roi_rad, air_speed=__VAC_SPEED,
+                           breast_speed=breast_speed, adi_rad=adi_rad,
+                           ox=x_cm, oy=y_cm, worker_pool=worker_pool)
+            phase_fac = get_fd_phase_factor(pix_ts=pix_ts)
+            das_binary_recon = fd_das(fd_data=adi_cal_cropped,
+                                      phase_fac=phase_fac,
+                                      freqs=scan_fs[tar_fs],
+                                      worker_pool=worker_pool)
+            das_binary_intensity = np.max(np.abs(das_binary_recon))
+            das_part_binary[rho_idx].append(das_binary_intensity)
+
+            logger.info('Binary DAS (domain partitioning). Intensity = %.3f.'
+                        ' Size of the intensity sub-array = %d'
+                        % (das_binary_intensity,
+                           len(das_part_binary[rho_idx])))
+
+            plot_fd_img(img=np.abs(das_binary_recon), tum_x=tum_x,
+                        tum_y=tum_y, tum_rad=tum_rad, adi_rad=adi_rad, ox=x_cm,
+                        oy=y_cm, ant_rad=ant_rad, roi_rad=roi_rad,
+                        img_rad=roi_rad, title=plt_str, save_fig=True,
+                        save_str=os.path.join(out_dir,
+                                              'id_%d_das_binary.png'
+                                              % ii), save_close=True)
+
+            # 3. Frequency-dependent DAS (zero cond)
+            das_freq_dep_zero_cond_recon = fd_das_vel_freq(
+                fd_data=adi_cal_cropped,
+                int_f_xs=int_f_xs,
+                int_f_ys=int_f_ys,
+                int_b_xs=int_b_xs,
+                int_b_ys=int_b_ys,
+                velocities=
+                velocities_zero_cond,
+                ant_rad=ant_rad,
+                freqs=scan_fs[tar_fs],
+                adi_rad=adi_rad,
+                m_size=__M_SIZE,
+                roi_rad=roi_rad,
+                air_speed=__VAC_SPEED,
+                worker_pool=worker_pool)
+            das_freq_dep_zero_cond_intensity = \
+                np.max(np.abs(das_freq_dep_zero_cond_recon))
+            das_freq_dep_zero_cond[rho_idx]. \
+                append(das_freq_dep_zero_cond_intensity)
+
+            logger.info('Frequency-dependent DAS (zero cond).'
+                        ' Intensity = %.3f.'
+                        ' Size of the intensity sub-array = %d'
+                        % (das_freq_dep_zero_cond_intensity,
+                           len(das_freq_dep_zero_cond[rho_idx])))
+
+            plot_fd_img(img=np.abs(das_freq_dep_zero_cond_recon), tum_x=tum_x,
+                        tum_y=tum_y, tum_rad=tum_rad, adi_rad=adi_rad, ox=x_cm,
+                        oy=y_cm, ant_rad=ant_rad, roi_rad=roi_rad,
+                        img_rad=roi_rad, title=plt_str, save_fig=True,
+                        save_str=os.path.join(out_dir,
+                                              'id_%d_das'
+                                              '_freq_dep_zero_cond.png'
+                                              % ii), save_close=True)
+
+            # 4. Frequency-dependent DAS
+            das_freq_dep_recon = fd_das_vel_freq(fd_data=adi_cal_cropped,
+                                                 int_f_xs=int_f_xs,
+                                                 int_f_ys=int_f_ys,
+                                                 int_b_xs=int_b_xs,
+                                                 int_b_ys=int_b_ys,
+                                                 velocities=velocities,
+                                                 ant_rad=ant_rad,
+                                                 freqs=scan_fs[tar_fs],
+                                                 adi_rad=adi_rad,
+                                                 m_size=__M_SIZE,
+                                                 roi_rad=roi_rad,
+                                                 air_speed=__VAC_SPEED,
+                                                 worker_pool=worker_pool)
+            das_freq_dep_intensity = np.max(np.abs(das_freq_dep_recon))
+            das_freq_dep[rho_idx].append(das_freq_dep_intensity)
+
+            logger.info('Frequency-dependent DAS.'
+                        ' Intensity = %.3f.'
+                        ' Size of the intensity sub-array = %d'
+                        % (das_freq_dep_intensity,
+                           len(das_freq_dep[rho_idx])))
+
+            plot_fd_img(img=np.abs(das_freq_dep_recon), tum_x=tum_x,
+                        tum_y=tum_y, tum_rad=tum_rad, adi_rad=adi_rad, ox=x_cm,
+                        oy=y_cm, ant_rad=ant_rad, roi_rad=roi_rad,
+                        img_rad=roi_rad, title=plt_str, save_fig=True,
+                        save_str=os.path.join(out_dir,
+                                              'id_%d_das_freq_dep.png'
+                                              % ii), save_close=True)
+
+            # 5. Ray-tracing
+            int_f_xs, int_f_ys, int_b_xs, int_b_ys = \
+                find_boundary_rt(mask, ant_rad, roi_rad,
+                                 worker_pool=worker_pool)
+            das_rt_recon = fd_das_vel_freq(fd_data=adi_cal_cropped,
+                                           int_f_xs=int_f_xs,
+                                           int_f_ys=int_f_ys,
+                                           int_b_xs=int_b_xs,
+                                           int_b_ys=int_b_ys,
+                                           velocities=velocities,
+                                           ant_rad=ant_rad,
+                                           freqs=scan_fs[tar_fs],
+                                           adi_rad=adi_rad,
+                                           m_size=__M_SIZE, roi_rad=roi_rad,
+                                           air_speed=__VAC_SPEED,
+                                           worker_pool=worker_pool)
+            das_rt_intensity = np.max(np.abs(das_rt_recon))
+            das_rt[rho_idx].append(das_rt_intensity)
+
+            logger.info('Frequency-dependent DAS, ray-tracing'
+                        ' Intensity = %.3f.'
+                        ' Size of the intensity sub-array = %d'
+                        % (das_rt_intensity,
+                           len(das_rt[rho_idx])))
+
+            plot_fd_img(img=np.abs(das_rt_recon), cs=cs, tum_x=tum_x,
+                        tum_y=tum_y, tum_rad=tum_rad, adi_rad=adi_rad, ox=x_cm,
+                        oy=y_cm, ant_rad=ant_rad, roi_rad=roi_rad,
+                        img_rad=roi_rad, title=plt_str, save_fig=True,
+                        save_str=os.path.join(out_dir,
+                                              'id_%d_das_rt.png'
+                                              % ii), save_close=True)
+
+            ############################################################
 
             # Get the one-way propagation times for each pixel,
             # for each antenna position and intersection points
@@ -337,16 +527,6 @@ if __name__ == "__main__":
 
             # Get the phase factor for efficient computation
             # phase_fac = get_fd_phase_factor(pix_ts=pix_ts)
-
-            # If the scan does include a tumour
-            if ~np.isnan(tar_md['tum_diam']):
-
-                # Set a str for plotting
-                plt_str = "%.1f cm rod in\n" \
-                          "ID: %d" % (tar_md['tum_diam'], ii)
-            else:
-                plt_str = "Empty cylinder\n" \
-                          "ID: %d" % ii
 
             # td = iczt(adi_cal_cropped, ini_t=0.5e-9,
             #           fin_t=5.5e-9, n_time_pts=700, ini_f=2e9, fin_f=9e9)
@@ -386,22 +566,22 @@ if __name__ == "__main__":
             #     plt.close()
             #     # plt.show()
 
-            rec_start = perf_counter()
-            das_adi_recon = fd_das_vel_freq(fd_data=adi_cal_cropped,
-                                            int_f_xs=int_f_xs,
-                                            int_f_ys=int_f_ys,
-                                            int_b_xs=int_b_xs,
-                                            int_b_ys=int_b_ys,
-                                            velocities=velocities,
-                                            ant_rad=ant_rad,
-                                            freqs=scan_fs[tar_fs],
-                                            adi_rad=adi_rad,
-                                            m_size=__M_SIZE, roi_rad=roi_rad,
-                                            air_speed=__VAC_SPEED,
-                                            worker_pool=worker_pool)
-            rec_end = perf_counter()
-            recon_times = np.append(recon_times, (rec_end - rec_start))
-            logger.info('Reconstruction: %f s' % (rec_end - rec_start))
+            # rec_start = perf_counter()
+            # das_adi_recon = fd_das_vel_freq(fd_data=adi_cal_cropped,
+            #                                 int_f_xs=int_f_xs,
+            #                                 int_f_ys=int_f_ys,
+            #                                 int_b_xs=int_b_xs,
+            #                                 int_b_ys=int_b_ys,
+            #                                 velocities=velocities,
+            #                                 ant_rad=ant_rad,
+            #                                 freqs=scan_fs[tar_fs],
+            #                                 adi_rad=adi_rad,
+            #                                 m_size=__M_SIZE, roi_rad=roi_rad,
+            #                                 air_speed=__VAC_SPEED,
+            #                                 worker_pool=worker_pool)
+            # rec_end = perf_counter()
+            # recon_times = np.append(recon_times, (rec_end - rec_start))
+            # logger.info('Reconstruction: %f s' % (rec_end - rec_start))
 
             # rec_start = perf_counter()
             # das_adi_recon = fd_das(fd_data=adi_cal_cropped,
@@ -411,8 +591,8 @@ if __name__ == "__main__":
             # rec_end = perf_counter()
             # logger.info('Reconstruction: %f s' % (rec_end - rec_start))
 
-            save_pickle(das_adi_recon,
-                        os.path.join(expt_adi_out_dir, 'das_adi.pickle'))
+            # save_pickle(das_adi_recon,
+            #             os.path.join(expt_adi_out_dir, 'das_adi.pickle'))
 
             # bound_x, bound_y = \
             # find_boundary(np.abs(das_adi_recon), roi_rad, n_slices=120)
@@ -442,26 +622,34 @@ if __name__ == "__main__":
             #                                title=plt_str)
 
             # Plot the DAS reconstruction
-            plot_fd_img(img=np.abs(das_adi_recon), cs=cs, tum_x=tum_x,
-                        tum_y=tum_y, tum_rad=tum_rad, adi_rad=adi_rad, ox=x_cm,
-                        oy=y_cm, ant_rad=ant_rad, roi_rad=roi_rad,
-                        img_rad=roi_rad, title=plt_str, save_fig=True,
-                        save_str=os.path.join(out_dir,
-                                              'id_%d_das_ray_trace.png'
-                                              % ii), save_close=True)
+            # plot_fd_img(img=np.abs(das_adi_recon), cs=cs, tum_x=tum_x,
+            #             tum_y=tum_y, tum_rad=tum_rad, adi_rad=adi_rad, ox=x_cm,
+            #             oy=y_cm, ant_rad=ant_rad, roi_rad=roi_rad,
+            #             img_rad=roi_rad, title=plt_str, save_fig=True,
+            #             save_str=os.path.join(out_dir,
+            #                                   'id_%d_das_circle.png'
+            #                                   % ii), save_close=True)
 
-            full_time_end = perf_counter()
-            logger.info('Full time for the scan: %f s' %
-                        (full_time_end-full_time_start))
-            full_times = np.append(full_times, (full_time_end-full_time_start))
+            # full_time_end = perf_counter()
+            # logger.info('Full time for the scan: %f s' %
+            #             (full_time_end-full_time_start))
+            # full_times = np.append(full_times, (full_time_end-full_time_start))
+
+    intensity_dict = {
+        'rhos': rhos,
+        'das_regular': das_regular,
+        'das_part_binary': das_part_binary,
+        'das_freq_dep_zero_cond': das_freq_dep_zero_cond,
+        'das_freq_dep': das_freq_dep,
+        'das_rt': das_rt,
+    }
 
     worker_pool.close()
     worker_pool.join()
-
-    print('Average time for intersection calculation (ray-tracing): %f s'
-          % np.average(intersection_times))
-    print('Average time for frequency dependent DAS reconstruction: %f s'
-          % np.average(recon_times))
-    print('Average time per scan: %f s'
-          % np.average(full_times))
-
+    save_pickle(intensity_dict, os.path.join(out_dir, 'intensity_dict.pickle'))
+    # print('Average time for intersection calculation (ray-tracing): %f s'
+    #       % np.average(intersection_times))
+    # print('Average time for frequency dependent DAS reconstruction: %f s'
+    #       % np.average(recon_times))
+    # print('Average time per scan: %f s'
+    #       % np.average(full_times))

@@ -188,7 +188,7 @@ def plot_img(img, tum_x=0.0, tum_y=0.0, tum_rad=0.0, adi_rad=0.0, ant_rad=0.0,
 ###############################################################################
 
 
-def plot_fd_img(img, bound_x=None, bound_y=None, cs=None, mask=None,
+def plot_fd_img(img, *, bound_x=None, bound_y=None, cs=None, mask=None,
                 tum_x=0.0, tum_y=0.0, tum_rad=0.0,
                 adi_rad=0.0, ox=0.0, oy=0.0, mid_breast_max=0.0,
                 mid_breast_min=0.0, ant_rad=0.0, roi_rad=0.0, img_rad=0.0,

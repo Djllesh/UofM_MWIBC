@@ -13,7 +13,7 @@ from umbms.beamform.extras import get_pix_ts, get_fd_phase_factor
 ###############################################################################
 
 
-def get_ref_derivs(phase_fac, fd, fwd, freqs, worker_pool=None):
+def get_ref_derivs(phase_fac, fd, fwd, freqs, worker_pool):
     """Get the gradient of the loss func wrt the reflectivities
 
     Parameters
@@ -62,7 +62,7 @@ def get_ref_derivs(phase_fac, fd, fwd, freqs, worker_pool=None):
 def get_ref_derivs_vel_freq(int_f_xs, int_f_ys, int_b_xs, int_b_ys, velocities,
                             ant_rad, m_size, roi_rad, air_speed, adi_rad,
                             mid_breast_max, mid_breast_min,
-                            fd, fwd, freqs, worker_pool=None):
+                            fd, fwd, freqs, worker_pool):
     """Get the gradient of the loss func wrt the reflectivities
 
     Parameters
@@ -133,10 +133,8 @@ def get_ref_derivs_vel_freq(int_f_xs, int_f_ys, int_b_xs, int_b_ys, velocities,
     return ref_derivs
 
 
-def get_ref_derivs_speed(phase_fac, fd, fwd, freqs, dv,
-                         int_f_xs=None, int_f_ys=None,
-                         int_b_xs=None, int_b_ys=None,
-                         speed=0.0, worker_pool=None):
+def get_ref_derivs_speed(phase_fac, fd, fwd, freqs, dv, int_f_xs, int_f_ys,
+                         int_b_xs, int_b_ys, speed, worker_pool):
     """Get the gradient of the loss func wrt the reflectivities and speed
 
     Parameters

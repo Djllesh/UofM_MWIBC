@@ -58,7 +58,7 @@ def get_scr(img, roi_rad, adi_rad, tum_rad, tum_x, tum_y):
 
     # Create a model of the reconstruction, segmented by the various
     # tissue types
-    indexing_breast = get_breast(np.size(img, 0), ant_rad=roi_rad,
+    indexing_breast = get_breast(m_size=np.size(img, 0), ant_rad=roi_rad,
                                  adi_rad=adi_rad, adi_x=0, adi_y=0,
                                  fib_rad=0, fib_x=0, fib_y=0,
                                  tum_rad=tum_rad + _tum_rad_increase,
@@ -181,7 +181,7 @@ def get_scr_healthy(img, roi_rad, adi_rad, healthy_rad=0.015):
 
     # Create a model of the reconstruction, segmented by the various
     # tissue types
-    indexing_breast = get_breast(np.size(img, 0), ant_rad=roi_rad,
+    indexing_breast = get_breast(m_size=np.size(img, 0), ant_rad=roi_rad,
                                  adi_rad=adi_rad, adi_x=0, adi_y=0,
                                  fib_rad=0, fib_x=0, fib_y=0,
                                  tum_rad=healthy_rad + _tum_rad_increase,

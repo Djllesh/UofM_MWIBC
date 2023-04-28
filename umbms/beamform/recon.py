@@ -325,7 +325,7 @@ def orr_recon(ini_img, freqs, m_size, fd, pos, tum_rad,
 ###############################################################################
 
 
-def fd_das(fd_data, phase_fac, freqs, worker_pool=None, partial_ant_idx=None):
+def fd_das(fd_data, phase_fac, freqs, worker_pool, partial_ant_idx=None):
     """Compute frequency-domain DAS reconstruction
 
     Parameters
@@ -409,7 +409,7 @@ def _parallel_fd_das_func(fd_data, new_phase_fac, freqs, ff):
     return this_projection
 
 
-def _parallel_fd_das_func_part_ant(fd_data, new_phase_fac,partial_ant_idx,
+def _parallel_fd_das_func_part_ant(fd_data, new_phase_fac, partial_ant_idx,
                                    freqs, ff):
     """Compute projection for given frequency ff and for given antenna
     indices
@@ -444,10 +444,10 @@ def _parallel_fd_das_func_part_ant(fd_data, new_phase_fac,partial_ant_idx,
     return this_projection
 
 
-def fd_das_vel_freq(fd_data, int_f_xs, int_f_ys, int_b_xs, int_b_ys,
+def fd_das_vel_freq(fd_data, *, int_f_xs, int_f_ys, int_b_xs, int_b_ys,
                     velocities, ant_rad, m_size, roi_rad, air_speed, freqs,
-                    adi_rad=0, mid_breast_max=0.0, mid_breast_min=0.0,
-                    worker_pool=None, partial_ant_idx=None):
+                    worker_pool, adi_rad=0, mid_breast_max=0.0,
+                    mid_breast_min=0.0, partial_ant_idx=None):
     """Compute frequency dependent DAS reconstruction
 
     Parameters
@@ -691,14 +691,15 @@ def fd_dmas(fd_data, pix_ts, freqs):
     img : array_like, KxK
         Reconstructed image, K pixels by K pixels
     """
+    n_ant_pos = np.zise(fd_data, axis=1)
 
     # Init array for storing the individual back-projections, from
     # each antenna position
-    back_projections = np.zeros([72, np.size(pix_ts, axis=1),
+    back_projections = np.empty([n_ant_pos, np.size(pix_ts, axis=1),
                                  np.size(pix_ts, axis=2)], dtype=complex)
 
     # For each antenna position
-    for aa in range(72):
+    for aa in range(n_ant_pos):
         # Get the value to back-project
         back_proj_val = (fd_data[:, aa, None, None]
                          * np.exp(-2j * np.pi * freqs[:, None, None]
@@ -710,14 +711,14 @@ def fd_dmas(fd_data, pix_ts, freqs):
         back_projections[aa, :, :] = back_proj_val
 
     # Init image to return
-    img = np.zeros([np.size(pix_ts, axis=1), np.size(pix_ts, axis=1)],
+    img = np.empty([np.size(pix_ts, axis=1), np.size(pix_ts, axis=1)],
                    dtype=complex)
 
     # Loop over each antenna position
-    for a_pos_frw in range(72):
+    for a_pos_frw in range(n_ant_pos):
 
         # For each other antenna position
-        for a_pos_mult in range(a_pos_frw + 1, 72):
+        for a_pos_mult in range(a_pos_frw + 1, n_ant_pos):
             img += (back_projections[a_pos_frw, :, :] *
                     back_projections[a_pos_mult, :, :])
 
