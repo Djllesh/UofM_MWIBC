@@ -6,6 +6,8 @@ December 14, 2018
 
 import numpy as np
 from umbms.beamform.breastmodels import get_breast
+from umbms.beamform.extras import get_xy_arrs
+from umbms.beamform.acc_size import do_size_analysis, get_img_CoM
 
 ###############################################################################
 
@@ -82,6 +84,98 @@ def get_scr(img, roi_rad, adi_rad, tum_rad, tum_x, tum_y):
     # Compute the estimated uncertainty in the SCR
     scr_uncty = np.sqrt((20 * tum_uncty / (np.log(10) * sig_val))**2 +
                         (20 * clut_uncty / (np.log(10) * max_clut_val))**2)
+
+    return scr, scr_uncty
+
+
+def get_contrast_for_cyl(img, roi_rad, adi_rad, thickness, x_cm, y_cm,
+                          method):
+    """Returns the contrast of an image for a cylindrical fantom case
+
+    Returns the signal-to-clutter/signal-to-mean/mean-to-mean ratio
+    (SCR/SMR/MMR) of a reconstructed image.
+
+    Parameters
+    ----------
+    img : array_like
+        The reconstructed image
+    roi_rad : float
+        The radius [m] of the central region of interest
+    adi_rad : float
+        The radius used to approximate the breast region as a circle,
+        in meters
+    tum_rad : float
+        The radius used to define the tumor region, in meters
+    tum_x : float
+        The known x-position of the tumor, in meters
+    tum_y : float
+        The known y-position of the tumor, in meters
+
+    Returns
+    -------
+    scr : float
+        The SCR of the reconstructed image
+    scr_uncty : float
+        The uncertainty in the SCR value
+    """
+
+    # Rotate and flip image to facilitate use with indexing breast
+    img_for_iqm = np.abs(img)**2
+
+    # Get the pixel x,y-positions
+    pix_xs, pix_ys = get_xy_arrs(m_size=np.size(img, 0), roi_rad=roi_rad)
+
+    # Compute the pixel distances from the center of each tissue
+    # component (excluding skin)
+    pix_dist_from_adi = np.sqrt((pix_xs - x_cm)**2 + (pix_ys - y_cm)**2)
+
+    rho_width, phi_width, rot_img = do_size_analysis(img_here=img_for_iqm,
+                                                     dx=np.abs(pix_xs[0, 1]
+                                                               - pix_xs[0, 0]),
+                                                     roi_rad=roi_rad,
+                                                     rotate_img=True)
+
+    rot_com_x, rot_com_y = get_img_CoM(img=rot_img, img_rad=roi_rad)
+
+    rho_width /= 100
+    phi_width /= 100
+    rot_com_x /= 100
+    rot_com_y /= 100
+
+    pix_dist_from_tum = ((pix_xs - rot_com_x)**2 / ((phi_width + 0.0025)/2)**2
+                         +
+                         (pix_ys - rot_com_y)**2 / ((rho_width + 0.0025)/2)**2)
+
+    indexing_breast = np.ones([np.size(rot_img, 0), np.size(rot_img, 0)])
+    indexing_breast[pix_dist_from_adi < adi_rad + thickness] = 1
+    indexing_breast[pix_dist_from_adi < adi_rad] = 2
+    indexing_breast[pix_dist_from_tum <= 1] = 4
+
+    # Determine the max values in the tumor region and the clutter
+    # region
+    if method == 'scr' or method == 'smr':
+        sig_val = np.max(rot_img[indexing_breast == 4])
+        if 'c' in method:
+            clut_val = np.max(rot_img[np.logical_and(indexing_breast != 4,
+                                                      indexing_breast != 1)])
+        else:
+            clut_val = np.mean(rot_img[np.logical_and(indexing_breast != 4,
+                                                      indexing_breast != 1)])
+    else:
+        sig_val = np.mean(rot_img[indexing_breast == 4])
+        clut_val = np.mean(rot_img[np.logical_and(indexing_breast != 4,
+                                                      indexing_breast != 1)])
+
+    # Compute the SCR value
+    scr = 20 * np.log10(sig_val / clut_val)
+
+    # Estimate the uncertainties in the tumor and clutter responses
+    _, tum_uncty = _get_top_percent_tum(rot_img, indexing_breast)
+    _, clut_uncty = _get_top_percent_clut(rot_img, indexing_breast)
+
+    # Compute the estimated uncertainty in the SCR
+    scr_uncty = np.sqrt((20 * tum_uncty / (np.log(10) * sig_val))**2 +
+                        (20 * clut_uncty / (np.log(10) * clut_val))**2)
 
     return scr, scr_uncty
 

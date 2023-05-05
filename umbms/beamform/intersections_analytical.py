@@ -236,7 +236,7 @@ def find_xy_ant_bound_ellipse(ant_xs, ant_ys, n_ant_pos, pix_xs, pix_ys,
                 k = (ant_pos_y - px_y) / (ant_pos_x - px_x)
                 x_roots = np.roots([a ** 2 * k ** 2 + b ** 2,
                                     a ** 2 * (
-                                                2 * k * px_y - 2 * k ** 2 * px_x),
+                                            2 * k * px_y - 2 * k ** 2 * px_x),
                                     a ** 2 * (k ** 2 * px_x ** 2 - 2 * k *
                                               px_x * px_y + px_y ** 2 - b ** 2)])
                 y_roots = k * (x_roots - px_x) + px_y
@@ -285,10 +285,9 @@ def find_xy_ant_bound_ellipse(ant_xs, ant_ys, n_ant_pos, pix_xs, pix_ys,
                                      * ant_pos_y * px_y - a ** 2 * b ** 2)
                                     / (a ** 2 * ant_pos_y) < 0
                                     and ant_pos_y <= 0) or ((b ** 2 * ant_pos_x
-                                                             * px_x + a ** 2 * ant_pos_y * px_y - a ** 2
-                                                             * b ** 2) / (
-                                                                        a ** 2 * ant_pos_y) > 0
-                                                            and ant_pos_y > 0)
+                                    * px_x + a ** 2 * ant_pos_y * px_y - a ** 2
+                                    * b ** 2) / (a ** 2 * ant_pos_y) > 0 and
+                                                            ant_pos_y > 0)
 
                         if is_front:
                             # store pixel coords as intersection

@@ -189,7 +189,9 @@ def plot_img(img, tum_x=0.0, tum_y=0.0, tum_rad=0.0, adi_rad=0.0, ant_rad=0.0,
 
 
 def plot_fd_img(img, *, bound_x=None, bound_y=None, cs=None, mask=None,
-                tum_x=0.0, tum_y=0.0, tum_rad=0.0,
+                tum_x=0.0, tum_y=0.0, loc_err=False,
+                tum_x_uncor=0.0, tum_y_uncor=0.0,
+                tum_x_cor=0.0, tum_y_cor=0.0, tum_rad=0.0,
                 adi_rad=0.0, ox=0.0, oy=0.0, mid_breast_max=0.0,
                 mid_breast_min=0.0, ant_rad=0.0, roi_rad=0.0, img_rad=0.0,
                 save_str='', save_fig=False, tar2_x=0.0, tar2_y=0.0,
@@ -291,6 +293,15 @@ def plot_fd_img(img, *, bound_x=None, bound_y=None, cs=None, mask=None,
     tum_xs, tum_ys = (tum_rad * 100 * np.cos(draw_angs) + tum_x * 100,
                       tum_rad * 100 * np.sin(draw_angs) + tum_y * 100)
 
+    if loc_err:
+        tum_xs_unc, tum_ys_unc = \
+            (tum_rad * 100 * np.cos(draw_angs) + tum_x_uncor * 100,
+             tum_rad * 100 * np.sin(draw_angs) + tum_y_uncor * 100)
+
+        tum_xs_cor, tum_ys_cor = \
+            (tum_rad * 100 * np.cos(draw_angs) + tum_x_cor * 100,
+             tum_rad * 100 * np.sin(draw_angs) + tum_y_cor * 100)
+
     img_extent = [-img_rad, img_rad, -img_rad, img_rad]
 
     # Set the font to times new roman
@@ -314,7 +325,8 @@ def plot_fd_img(img, *, bound_x=None, bound_y=None, cs=None, mask=None,
     plt.ylim([-roi_rad, roi_rad])
 
     # plt.plot(ant_xs, ant_ys, 'k--', linewidth=2.5)
-    plt.plot(breast_xs, breast_ys, 'w--', linewidth=2, label='Centered')
+    plt.plot(breast_xs, breast_ys, 'w--', linewidth=2,
+             label='Approximate outline')
 
     if partial_ant_idx is not None:
 
@@ -363,7 +375,13 @@ def plot_fd_img(img, *, bound_x=None, bound_y=None, cs=None, mask=None,
                     s=0.05, label='Ground truth')
 
     # Plot the approximate tumor boundary
-    plt.plot(tum_xs, tum_ys, 'g', linewidth=1.5)
+    plt.plot(tum_xs, tum_ys, 'g', label='Observed position', linewidth=1.5)
+
+    if loc_err:
+        plt.plot(tum_xs_unc, tum_ys_unc, 'r--',
+                 label='Uncorrected reconstructed position', linewidth=1.3)
+        plt.plot(tum_xs_cor, tum_ys_cor, 'b--',
+                 label='Corrected reconstructed position', linewidth=1.3)
 
     tar2_xs, tar2_ys = (tar2_rad * 100 * np.cos(draw_angs) + tar2_x * 100,
                         tar2_rad * 100 * np.sin(draw_angs) + tar2_y * 100)
@@ -395,6 +413,7 @@ def plot_fd_img(img, *, bound_x=None, bound_y=None, cs=None, mask=None,
             #          label=r'$\rho_i > \rho_f(\phi_i)$')
             # plt.legend(loc='upper left')
 
+        plt.legend(loc='upper left')
         plt.savefig(save_str, transparent=transparent, dpi=dpi,
                     bbox_inches='tight')
 

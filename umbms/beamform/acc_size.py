@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 
-matplotlib.use('Qt5Agg')
+# matplotlib.use('Qt5Agg')
 
 from scipy.ndimage import rotate
 
@@ -63,16 +63,16 @@ def get_img_max_xy(img, img_rad):
 
     """
 
-    img_for_this = np.fliplr(np.abs(img))  # Rotate, take abs
+    img_for_this = np.abs(img)  # Take abs
 
     pix_to_dist = 2 * img_rad / np.size(img, axis=0)  # Ratio for pos
 
     max_loc = np.argmax(img_for_this)  # Max x/y locs
-    max_x_idx, max_y_idx = np.unravel_index(max_loc, np.shape(img))
+    max_y_idx, max_x_idx = np.unravel_index(max_loc, np.shape(img))
 
     # Convert to positions
     max_x_pos = (max_x_idx - np.size(img, 0) // 2) * pix_to_dist
-    max_y_pos = (max_y_idx - np.size(img, 0) // 2) * pix_to_dist
+    max_y_pos = (np.size(img, 0) // 2 - max_y_idx) * pix_to_dist
 
     max_x_pos *= 100
     max_y_pos *= 100
@@ -91,7 +91,7 @@ def get_img_CoM(img, img_rad):
     max_x /= 100
     max_y /= 100
 
-    roi = np.sqrt((max_x - xs)**2 + (max_y - ys)**2) < 0.03
+    roi = np.sqrt((max_x - xs)**2 + (max_y - ys)**2) < 0.012
 
     img_for_this[~roi] = 0
 
@@ -106,22 +106,26 @@ def get_img_CoM(img, img_rad):
     return x_cent_mass, y_cent_mass
 
 
-def do_size_analysis(img_here, save_dir, save_str,
-                     make_plts=True):
+def do_size_analysis(img_here, dx, roi_rad, make_plts=False,
+                     save_dir='', save_str='', rotate_img=False):
 
     # Get center of mass position
     com_x, com_y = get_img_CoM(img=img_here,
-                               img_rad=__ROI_RAD)
+                               img_rad=roi_rad)
 
     com_ang = np.arctan2(com_y, com_x)
+    if com_ang > 0:
+        angle = 0.5 * np.pi - com_ang
+    else:
+        angle = np.abs(com_ang) + 0.5 * np.pi
 
     # Rotate the image so rho-hat --> x-hat and
     # phi-hat --> y-hat
-    rot_img = rotate(img_here, angle=np.rad2deg(com_ang))
+    rot_img = rotate(img_here, angle=np.rad2deg(angle), reshape=False)
 
     # Get pixel positions for rotated image
-    xs_rot = (np.size(rot_img, axis=0) / 2
-              - np.arange(np.size(rot_img, axis=0)))  # * dx
+    xs_rot = np.flip((np.size(rot_img, axis=0) / 2
+              - np.arange(np.size(rot_img, axis=0))) * dx)
     xs_rot *= 100  # Convert from [m] to [cm]
 
     # Get the CoM position in the rotated image
@@ -130,15 +134,16 @@ def do_size_analysis(img_here, save_dir, save_str,
                     img_rad=np.max(np.abs(xs_rot)) / 100)
 
     # Get the coordinates of the center of mass pixels
-    rot_com_y_coord = (np.size(xs_rot)
-                       - np.argmin(np.abs(xs_rot - rot_com_x))) - 1
-    rot_com_x_coord = np.argmin(np.abs(xs_rot - rot_com_y)) - 1
+    rot_com_x_coord = np.argmin(np.abs(xs_rot - rot_com_x))
+    rot_com_y_coord = np.argmin(np.abs(np.flip(xs_rot) - rot_com_y))
 
-    rot_img /= rot_img[rot_com_y_coord, rot_com_x_coord]
+    rot_img /= np.max(rot_img)
+
+    # rot_img /= rot_img[rot_com_y_coord, rot_com_x_coord]
 
 
     # Get xs/ys for plotting, centered on CoM pixel
-    plt_xs = xs_rot - xs_rot[rot_com_y_coord]
+    plt_xs = xs_rot - rot_com_x
     plt_ys = xs_rot - rot_com_y
 
 
@@ -171,10 +176,18 @@ def do_size_analysis(img_here, save_dir, save_str,
                     transparent=False, dpi=150)
         plt.close()
 
-    rho_roi = rho_slice >= 0.05
-    phi_roi = phi_slice >= 0.05
+    rho_roi = rho_slice >= 0.5
+    phi_roi = phi_slice >= 0.5
+
+    while np.all(~phi_roi):
+        rot_com_y_coord += 1
+        phi_slice = rot_img[rot_com_y_coord, :]
+        phi_roi = phi_slice >= 0.5
 
     rho_slice_width = np.max(plt_xs[rho_roi]) - np.min(plt_xs[rho_roi])
     phi_slice_width = np.max(plt_ys[phi_roi]) - np.min(plt_ys[phi_roi])
+
+    if rotate_img:
+        return rho_slice_width, phi_slice_width, rot_img
 
     return rho_slice_width, phi_slice_width

@@ -8,7 +8,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
-matplotlib.use('Qt5Agg')
+# matplotlib.use('Qt5Agg')
 from matplotlib.cm import get_cmap
 
 from scipy.stats import spearmanr
@@ -272,7 +272,8 @@ def find_systematic_errs(max_xs, max_ys, xs, ys):
     return x_err, y_err, phi_err
 
 
-def do_pos_err_analysis(imgs, tar_xs, tar_ys, o_dir_str, save_str, logger,
+def do_pos_err_analysis(imgs, tar_xs, tar_ys, logger, roi_rad, o_dir_str='',
+                        save_str='',
                         use_img_maxes=True,
                         make_plts=True
                         ):
@@ -305,10 +306,10 @@ def do_pos_err_analysis(imgs, tar_xs, tar_ys, o_dir_str, save_str, logger,
 
     img_max_ys
     """
-
-    # Make the output directory for this run
-    out_dir = os.path.join(__OUT_DIR, '%s' % o_dir_str)
-    verify_path(out_dir)
+    if make_plts:
+        # Make the output directory for this run
+        out_dir = os.path.join(__OUT_DIR, '%s' % o_dir_str)
+        verify_path(out_dir)
 
     # Init arrays for storing the target positions *in the image space*
     img_xs = np.zeros([np.size(imgs, axis=0), ])
@@ -319,10 +320,10 @@ def do_pos_err_analysis(imgs, tar_xs, tar_ys, o_dir_str, save_str, logger,
 
         if use_img_maxes:  # If using image maxes...
             img_xs[ii], img_ys[ii] = get_img_max_xy(img=imgs[ii],
-                                                    img_rad=__ROI_RAD)
+                                                    img_rad=roi_rad)
         else:  # If using image center of masses...
             img_xs[ii], img_ys[ii] = get_img_CoM(img=imgs[ii],
-                                                 img_rad=__ROI_RAD)
+                                                 img_rad=roi_rad)
 
     # TEMPORARY BELOW --------------------------------------------------
     if 'DAS' in save_str:
@@ -343,30 +344,30 @@ def do_pos_err_analysis(imgs, tar_xs, tar_ys, o_dir_str, save_str, logger,
                       xs=tar_xs, ys=tar_ys,
                       compare_xs=img_xs,
                       compare_ys=img_ys,
-                      roi_rad=__ROI_RAD,
+                      roi_rad=roi_rad,
                       save_str='%s_UNCORRECTED' % save_str,
                       out_dir=out_dir)
 
-    img_x_err, img_y_err, img_phi_err = find_systematic_errs(max_xs=img_xs,
-                                                             max_ys=img_ys,
-                                                             xs=tar_xs,
-                                                             ys=tar_ys)
-
-    logger.info('\t%s...' % save_str.upper())
-    logger.info('\t\tx-err:\t\t%.3f mm' % (10 * img_x_err))
-    logger.info('\t\ty-err:\t\t%.3f mm' % (10 * img_y_err))
-    logger.info('\t\tphi-err:\t\t%.3f deg' % (img_phi_err))
+    # img_x_err, img_y_err, img_phi_err = find_systematic_errs(max_xs=img_xs,
+    #                                                          max_ys=img_ys,
+    #                                                          xs=tar_xs,
+    #                                                          ys=tar_ys)
+    #
+    # logger.info('\t%s...' % save_str.upper())
+    # logger.info('\t\tx-err:\t\t%.3f mm' % (10 * img_x_err))
+    # logger.info('\t\ty-err:\t\t%.3f mm' % (10 * img_y_err))
+    # logger.info('\t\tphi-err:\t\t%.3f deg' % (img_phi_err))
 
     img_c_xs, img_c_ys = apply_syst_cor(xs=img_xs, ys=img_ys,
-                                        x_err=-img_x_err, y_err=-img_y_err,
-                                        phi_err=-img_phi_err)
+                                        x_err=-0.028, y_err=-0.027,
+                                        phi_err=-3.)
 
     if make_plts:
         plot_pos_errs(imgs=imgs,
                       xs=tar_xs, ys=tar_ys,
                       compare_xs=img_c_xs,
                       compare_ys=img_c_ys,
-                      roi_rad=__ROI_RAD,
+                      roi_rad=roi_rad,
                       save_str='%s_CORRECTED' % save_str,
                       out_dir=out_dir)
 

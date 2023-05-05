@@ -338,18 +338,18 @@ def intersections_per_ray(binary_mask, intersected_x_idxs, intersected_y_idxs,
 
         # front intersection is the algebraic average of two points -
         # one before the intersection and one after
-        int_f_x = (pix_xs[intersected_x_idxs[inside_idxs[0]] - 1] +
-                   pix_xs[intersected_x_idxs[inside_idxs[0]] + 1]) / 2
-        int_f_y = (pix_ys[intersected_y_idxs[inside_idxs[0]] - 1] +
-                   pix_ys[intersected_y_idxs[inside_idxs[0]] + 1]) / 2
+        int_f_x = (pix_xs[intersected_x_idxs[inside_idxs[0]]] +
+                   pix_xs[intersected_x_idxs[inside_idxs[0]] - 1]) / 2
+        int_f_y = (pix_ys[intersected_y_idxs[inside_idxs[0]]] +
+                   pix_ys[intersected_y_idxs[inside_idxs[0]] - 1]) / 2
 
         if np.isnan(int_b_x):
             # same for back intersections
             # (if they aren't already assigned)
-            int_b_x = (pix_xs[intersected_x_idxs[inside_idxs[-1]] - 1] +
+            int_b_x = (pix_xs[intersected_x_idxs[inside_idxs[-1]]] +
                        pix_xs[intersected_x_idxs[inside_idxs[-1]] + 1]) / 2
 
-            int_b_y = (pix_ys[intersected_y_idxs[inside_idxs[-1]] - 1] +
+            int_b_y = (pix_ys[intersected_y_idxs[inside_idxs[-1]]] +
                        pix_ys[intersected_y_idxs[inside_idxs[-1]] + 1]) / 2
 
     else:
