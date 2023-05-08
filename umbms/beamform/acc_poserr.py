@@ -56,10 +56,9 @@ def init_plt():
     """Init plot window
     """
 
-    plt.figure(figsize=(12, 8))
+    fig = plt.figure(figsize=(12, 8))
     plt.rc('font', family='Times New Roman')
     plt.tick_params(labelsize=16)
-
 
 
 def plot_pos_errs(imgs, xs, ys, compare_xs, compare_ys,
@@ -160,6 +159,32 @@ def plot_pos_errs(imgs, xs, ys, compare_xs, compare_ys,
     plt.savefig(os.path.join(out_dir, '%s_phi_diffs.png' % save_str),
                 dpi=300, transparent=True)
     plt.savefig(os.path.join(out_dir, 'NT_%s_phi_diffs.png' % save_str),
+                dpi=300, transparent=False)
+
+
+def plot_obs_vs_recon(xs, ys, compare_xs, compare_ys, save_str, o_dir_str,
+                      x_lim_lhs, x_lim_rhs, y_lim_bot, y_lim_top):
+
+    out_dir = os.path.join(__OUT_DIR, '%s' % o_dir_str)
+    verify_path(out_dir)
+
+    init_plt()  # Plot observed vs recon target positions
+    plt.scatter(compare_xs, compare_ys, color='k', marker='o',
+                label='Reconstructed Positions', s=15)
+    plt.scatter(xs, ys, color='b', marker='x',
+                label='Observed Positions')
+    for ii in range(len(compare_xs)):
+        plt.plot([compare_xs[ii], xs[ii]], [compare_ys[ii], ys[ii]],
+                 'k-')
+    plt.xlabel('x-position (cm)', fontsize=20)
+    plt.ylabel('y-position (cm)', fontsize=20)
+    plt.legend(fontsize='18')
+    plt.xlim([x_lim_lhs, x_lim_rhs])
+    plt.ylim([y_lim_bot, y_lim_top])
+    # plt.axis('square')
+    plt.grid()
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir, 'NT_%s_recon_vs_obs_pos.png' % save_str),
                 dpi=300, transparent=False)
 
 
@@ -358,9 +383,7 @@ def do_pos_err_analysis(imgs, tar_xs, tar_ys, logger, roi_rad, o_dir_str='',
     # logger.info('\t\ty-err:\t\t%.3f mm' % (10 * img_y_err))
     # logger.info('\t\tphi-err:\t\t%.3f deg' % (img_phi_err))
 
-    img_c_xs, img_c_ys = apply_syst_cor(xs=img_xs, ys=img_ys,
-                                        x_err=-0.028, y_err=-0.027,
-                                        phi_err=-3.)
+    img_c_xs, img_c_ys = img_xs, img_ys
 
     if make_plts:
         plot_pos_errs(imgs=imgs,

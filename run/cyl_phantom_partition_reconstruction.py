@@ -362,14 +362,15 @@ if __name__ == "__main__":
             #
             # logger.info('Rho = %.3f, rho_idx = %d' % (rho, rho_idx))
             #
-            # speed = estimate_speed(adi_rad=adi_rad, ant_rad=__ANT_RAD)
-            # pix_ts = get_pix_ts_old(ant_rad=ant_rad, m_size=__M_SIZE,
-            #                         roi_rad=roi_rad, speed=speed)
-            # phase_fac = get_fd_phase_factor(pix_ts=pix_ts)
-            # das_regular_recon = fd_das(fd_data=adi_cal_cropped,
-            #                            phase_fac=phase_fac,
-            #                            freqs=scan_fs[tar_fs],
-            #                            worker_pool=worker_pool)
+            speed = estimate_speed(adi_rad=adi_rad, ant_rad=__ANT_RAD)
+
+            pix_ts = get_pix_ts_old(ant_rad=ant_rad, m_size=__M_SIZE,
+                                    roi_rad=roi_rad, speed=speed)
+            phase_fac = get_fd_phase_factor(pix_ts=pix_ts)
+            das_regular_recon = fd_das(fd_data=adi_cal_cropped,
+                                       phase_fac=phase_fac,
+                                       freqs=scan_fs[tar_fs],
+                                       worker_pool=worker_pool)
             #
             # save_pickle(das_regular_recon,
             #             path=os.path.join(out_dir,

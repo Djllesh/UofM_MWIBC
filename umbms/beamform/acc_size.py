@@ -184,10 +184,37 @@ def do_size_analysis(img_here, dx, roi_rad, make_plts=False,
         phi_slice = rot_img[rot_com_y_coord, :]
         phi_roi = phi_slice >= 0.5
 
+    min_idx_rho = rot_com_y_coord
+    while rho_roi[min_idx_rho]:
+        min_idx_rho -= 1
+
+    min_idx_rho += 1
+
+    max_idx_rho = rot_com_y_coord
+    while rho_roi[max_idx_rho]:
+        max_idx_rho += 1
+
+    max_idx_rho -= 1
+
+    min_idx_phi = rot_com_x_coord
+    while phi_roi[min_idx_phi]:
+        min_idx_phi -= 1
+
+    min_idx_phi += 1
+
+    max_idx_phi = rot_com_x_coord
+    while phi_roi[max_idx_phi]:
+        max_idx_phi += 1
+
+    max_idx_phi -= 1
+
     rho_slice_width = np.max(plt_xs[rho_roi]) - np.min(plt_xs[rho_roi])
     phi_slice_width = np.max(plt_ys[phi_roi]) - np.min(plt_ys[phi_roi])
 
-    if rotate_img:
-        return rho_slice_width, phi_slice_width, rot_img
+    slice_rho = plt_xs[max_idx_rho] - plt_xs[min_idx_rho]
+    slice_phi = plt_xs[max_idx_phi] - plt_xs[min_idx_phi]
 
-    return rho_slice_width, phi_slice_width
+    if rotate_img:
+        return slice_rho, slice_phi, rot_img
+
+    return slice_rho, slice_phi

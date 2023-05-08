@@ -43,7 +43,8 @@ from umbms.beamform.raytrace import find_boundary_rt
 from umbms.beamform.optimfuncs import td_velocity_deriv
 from umbms.beamform.sigproc import iczt
 from umbms.beamform.iqms import get_contrast_for_cyl
-from umbms.beamform.acc_poserr import do_pos_err_analysis, plt_rand_pos_errs
+from umbms.beamform.acc_poserr import (do_pos_err_analysis, apply_syst_cor,
+                                       plt_rand_pos_errs, plot_obs_vs_recon)
 from umbms.beamform.acc_size import do_size_analysis, init_plt
 
 ###############################################################################
@@ -200,6 +201,12 @@ if __name__ == "__main__":
             t_coords[i, :] = [md['tum_x'], md['tum_y']]
             i += 1
 
+    xs_antenna, ys_antenna = apply_syst_cor(xs=t_coords[:, 0],
+                                            ys=t_coords[:, 1], x_err=-0.028,
+                                            y_err=-0.027, phi_err=3.)
+    t_coords[:, 0] = xs_antenna
+    t_coords[:, 1] = ys_antenna
+
     tar_md = metadata[1]
 
     scan_rad = tar_md['ant_rad'] / 100
@@ -229,36 +236,572 @@ if __name__ == "__main__":
 
     # 1. Homogeneous DAS (regular)
 
-    imgs = make_imgs_arr(os.path.join(recon_dir, 'freq_dep-das/'))
+    imgs_reg = make_imgs_arr(os.path.join(recon_dir, 'regular-das/'))
 
-    c_xs_CoM, c_ys_CoM, xs_CoM, ys_CoM = do_pos_err_analysis(imgs=imgs,
-                                         tar_xs=t_coords[:, 0],
-                                         tar_ys=t_coords[:, 1],
-                                         roi_rad=roi_rad,
-                                         use_img_maxes=False,
-                                         make_plts=False, logger=logger)
+    scr_values_reg = np.zeros([np.size(imgs_reg, axis=0), ])
 
-    scr_values = np.zeros([np.size(imgs, axis=0), ])
-
-    for jj in range(np.size(imgs, 0)):
+    for jj in range(np.size(imgs_reg, 0)):
 
         cs, x_cm, y_cm = load_pickle(os.path.join(recon_dir,
                                                   'spln_pars/id%d_pars.pickle'
                                                   % (jj + 1)))
 
-        scr, _ = get_contrast_for_cyl(imgs[jj], roi_rad=roi_rad,
+        scr, _ = get_contrast_for_cyl(imgs_reg[jj], roi_rad=roi_rad,
                                       adi_rad=adi_rad, thickness=0.002,
-                                      x_cm=x_cm, y_cm=y_cm, method='mmr')
+                                      x_cm=x_cm, y_cm=y_cm, method='scr')
 
-        scr_values[jj] = scr
+        scr_values_reg[jj] = scr
+
+    c_xs_CoM_r, c_ys_CoM_r, xs_CoM_r, ys_CoM_r = do_pos_err_analysis(
+                                                 imgs=imgs_reg,
+                                                 tar_xs=t_coords[:, 0],
+                                                 tar_ys=t_coords[:, 1],
+                                                 roi_rad=roi_rad,
+                                                 use_img_maxes=False,
+                                                 make_plts=False,
+                                                 logger=logger)
+
+    x_lim_lhs_regular = np.min([c_xs_CoM_r, xs_CoM_r, t_coords[:, 0]])
+    x_lim_rhs_regular = np.max([c_xs_CoM_r, xs_CoM_r, t_coords[:, 0]])
+    y_lim_bot_regular = np.min([c_ys_CoM_r, ys_CoM_r, t_coords[:, 1]])
+    y_lim_top_regular = np.max([c_ys_CoM_r, ys_CoM_r, t_coords[:, 1]])
+
+    plt_rand_pos_errs(c_xs=c_xs_CoM_r, c_ys=c_ys_CoM_r,
+                      xs=t_coords[:, 0], ys=t_coords[:, 1], logger=logger,
+                      o_dir_str='regular_das/', save_str='', make_plts=False)
+
+    rho_sizes = np.zeros([np.size(imgs_reg, axis=0), ])
+    phi_sizes = np.zeros([np.size(imgs_reg, axis=0), ])
+
+    for jj in range(np.size(imgs_reg, axis=0)):
+
+        rho_size, phi_size = \
+            do_size_analysis(img_here=np.abs(imgs_reg[jj, :, :]) ** 2, dx=dx,
+                             roi_rad=roi_rad, make_plts=False)
+        rho_sizes[jj] = rho_size
+        phi_sizes[jj] = phi_size
+
+    logger.info('Regular DAS: \n\t\t\tMean rho-extent: %.4f\n\t\t\tMean '
+                'phi-extent: %.4f\n\t\t\tMean SCR: %.4f'
+                % (np.mean(rho_sizes), np.mean(phi_sizes),
+                   np.mean(scr_values_reg)))
+
+    tar_rhos = np.sqrt(t_coords[:, 0] ** 2 + t_coords[:, 1] ** 2)
+    colors = [
+        [0, 0, 0],
+        [100 / 255, 100 / 255, 100 / 255],
+        [205 / 255, 205 / 255, 205 / 255],
+    ]
 
     init_plt()
-    tar_rhos = np.sqrt(c_xs_CoM ** 2 + c_ys_CoM ** 2)
-    plt.scatter(tar_rhos, scr_values, color=[0, 0, 0])
+    plt.scatter(np.sqrt(t_coords[:, 0] ** 2 + t_coords[:, 1] ** 2),
+                rho_sizes,
+                color=colors[0])
+
+    plt.title(r'$\mathdefault{\hat{\rho}}$-extent', fontsize=24)
+    plt.xlabel(r'Target $\mathdefault{\rho}$ Position (cm)',
+               fontsize=22)
+    plt.ylabel('Target Response Extent (cm)', fontsize=22)
+    plt.grid()
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir, 'size/paper/'
+                                      'reg_das_rho_extent_vs_rho.png'),
+                dpi=150,
+                transparent=False)
+    plt.close()
+
+    init_plt()
+    plt.scatter(np.sqrt(t_coords[:, 0] ** 2 + t_coords[:, 1] ** 2),
+                phi_sizes,
+                color=colors[0])
+    plt.title(r'$\mathdefault{\hat{\varphi}}$-extent', fontsize=24)
+    plt.xlabel(r'Target $\mathdefault{\rho}$ Position (cm)',
+               fontsize=22)
+    plt.ylabel('Target Response Extent (cm)', fontsize=22)
+    plt.grid()
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir, 'size/paper/'
+                                      'reg_das_phi_extent_vs_rho.png'),
+                dpi=150,
+                transparent=False)
+    plt.close()
+
+    imgs_b = make_imgs_arr(os.path.join(recon_dir, 'binary-das/'))
+
+    scr_values_b = np.zeros([np.size(imgs_b, axis=0), ])
+
+    for jj in range(np.size(imgs_b, 0)):
+
+        cs, x_cm, y_cm = load_pickle(os.path.join(recon_dir,
+                                                  'spln_pars/id%d_pars.pickle'
+                                                  % (jj + 1)))
+
+        scr, _ = get_contrast_for_cyl(imgs_b[jj], roi_rad=roi_rad,
+                                      adi_rad=adi_rad, thickness=0.002,
+                                      x_cm=x_cm, y_cm=y_cm, method='scr')
+
+        scr_values_b[jj] = scr
+
+    c_xs_CoM_b, c_ys_CoM_b, xs_CoM_b, ys_CoM_b = do_pos_err_analysis(
+                                                 imgs=imgs_b,
+                                                 tar_xs=t_coords[:, 0],
+                                                 tar_ys=t_coords[:, 1],
+                                                 roi_rad=roi_rad,
+                                                 use_img_maxes=False,
+                                                 make_plts=False,
+                                                 logger=logger)
+
+    x_lim_lhs_binary = np.min([c_xs_CoM_b, xs_CoM_b, t_coords[:, 0]])
+    x_lim_rhs_binary = np.max([c_xs_CoM_b, xs_CoM_b, t_coords[:, 0]])
+    y_lim_bot_binary = np.min([c_ys_CoM_b, ys_CoM_b, t_coords[:, 1]])
+    y_lim_top_binary = np.max([c_ys_CoM_b, ys_CoM_b, t_coords[:, 1]])
+
+    plt_rand_pos_errs(c_xs=c_xs_CoM_b, c_ys=c_ys_CoM_b,
+                      xs=t_coords[:, 0], ys=t_coords[:, 1], logger=logger,
+                      o_dir_str='binary_das/', save_str='', make_plts=False)
+
+    rho_sizes = np.zeros([np.size(imgs_b, axis=0), ])
+    phi_sizes = np.zeros([np.size(imgs_b, axis=0), ])
+
+    for jj in range(np.size(imgs_b, axis=0)):
+
+        rho_size, phi_size = \
+            do_size_analysis(img_here=np.abs(imgs_b[jj, :, :]) ** 2, dx=dx,
+                             roi_rad=roi_rad, make_plts=False)
+        rho_sizes[jj] = rho_size
+        phi_sizes[jj] = phi_size
+
+    logger.info('Binary DAS: \n\t\t\tMean rho-extent: %.4f\n\t\t\tMean '
+                'phi-extent: %.4f\n\t\t\tMean SCR: %.4f' %
+                (np.mean(rho_sizes), np.mean(phi_sizes),
+                 np.mean(scr_values_b)))
+
+    tar_rhos = np.sqrt(t_coords[:, 0] ** 2 + t_coords[:, 1] ** 2)
+    colors = [
+        [0, 0, 0],
+        [100 / 255, 100 / 255, 100 / 255],
+        [205 / 255, 205 / 255, 205 / 255],
+    ]
+
+    init_plt()
+    plt.scatter(np.sqrt(t_coords[:, 0] ** 2 + t_coords[:, 1] ** 2),
+                rho_sizes,
+                color=colors[0])
+
+    plt.title(r'$\mathdefault{\hat{\rho}}$-extent', fontsize=24)
+    plt.xlabel(r'Target $\mathdefault{\rho}$ Position (cm)',
+               fontsize=22)
+    plt.ylabel('Target Response Extent (cm)', fontsize=22)
+    plt.grid()
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir, 'size/paper/'
+                                      'binary_das_rho_extent_vs_rho.png'),
+                dpi=150,
+                transparent=False)
+    plt.close()
+
+    init_plt()
+    plt.scatter(np.sqrt(t_coords[:, 0] ** 2 + t_coords[:, 1] ** 2),
+                phi_sizes,
+                color=colors[0])
+    plt.title(r'$\mathdefault{\hat{\varphi}}$-extent', fontsize=24)
+    plt.xlabel(r'Target $\mathdefault{\rho}$ Position (cm)',
+               fontsize=22)
+    plt.ylabel('Target Response Extent (cm)', fontsize=22)
+    plt.grid()
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir, 'size/paper/'
+                                      'binary_das_phi_extent_vs_rho.png'),
+                dpi=150,
+                transparent=False)
+    plt.close()
+
+    imgs_fdnc = make_imgs_arr(os.path.join(recon_dir,
+                                           'freq_dep_non_cond-das/'))
+
+    scr_values_fdnc = np.zeros([np.size(imgs_fdnc, axis=0), ])
+
+    for jj in range(np.size(imgs_fdnc, 0)):
+
+        cs, x_cm, y_cm = load_pickle(os.path.join(recon_dir,
+                                                  'spln_pars/id%d_pars.pickle'
+                                                  % (jj + 1)))
+
+        scr, _ = get_contrast_for_cyl(imgs_fdnc[jj], roi_rad=roi_rad,
+                                      adi_rad=adi_rad, thickness=0.002,
+                                      x_cm=x_cm, y_cm=y_cm, method='scr')
+
+        scr_values_fdnc[jj] = scr
+
+    c_xs_CoM_fdnc, c_ys_CoM_fdnc, xs_CoM_fdnc, ys_CoM_fdnc = \
+        do_pos_err_analysis(
+                            imgs=imgs_fdnc,
+                            tar_xs=t_coords[:, 0],
+                            tar_ys=t_coords[:, 1],
+                            roi_rad=roi_rad,
+                            use_img_maxes=False,
+                            make_plts=False,
+                            logger=logger)
+
+    x_lim_lhs_fdnc = np.min([c_xs_CoM_fdnc, ys_CoM_fdnc, t_coords[:, 0]])
+    x_lim_rhs_fdnc = np.max([c_xs_CoM_fdnc, ys_CoM_fdnc, t_coords[:, 0]])
+    y_lim_bot_fdnc = np.min([c_ys_CoM_fdnc, ys_CoM_fdnc, t_coords[:, 1]])
+    y_lim_top_fdnc = np.max([c_ys_CoM_fdnc, ys_CoM_fdnc, t_coords[:, 1]])
+
+    plt_rand_pos_errs(c_xs=c_xs_CoM_fdnc, c_ys=c_ys_CoM_fdnc,
+                      xs=t_coords[:, 0], ys=t_coords[:, 1], logger=logger,
+                      o_dir_str='freq_dep_non_cond_das/', save_str='',
+                      make_plts=False)
+
+    rho_sizes = np.zeros([np.size(imgs_fdnc, axis=0), ])
+    phi_sizes = np.zeros([np.size(imgs_fdnc, axis=0), ])
+
+    for jj in range(np.size(imgs_fdnc, axis=0)):
+        rho_size, phi_size = \
+            do_size_analysis(img_here=np.abs(imgs_fdnc[jj, :, :]) ** 2, dx=dx,
+                             roi_rad=roi_rad, make_plts=False)
+        rho_sizes[jj] = rho_size
+        phi_sizes[jj] = phi_size
+
+    logger.info('FDNC DAS: \n\t\t\tMean rho-extent: %.4f\n\t\t\tMean '
+                'phi-extent: %.4f\n\t\t\tMean SCR: %.4f'
+                % (np.mean(rho_sizes), np.mean(phi_sizes),
+                   np.mean(scr_values_fdnc)))
+
+    tar_rhos = np.sqrt(t_coords[:, 0] ** 2 + t_coords[:, 1] ** 2)
+    colors = [
+        [0, 0, 0],
+        [100 / 255, 100 / 255, 100 / 255],
+        [205 / 255, 205 / 255, 205 / 255],
+    ]
+
+    init_plt()
+    plt.scatter(np.sqrt(t_coords[:, 0] ** 2 + t_coords[:, 1] ** 2),
+                rho_sizes,
+                color=colors[0])
+
+    plt.title(r'$\mathdefault{\hat{\rho}}$-extent', fontsize=24)
+    plt.xlabel(r'Target $\mathdefault{\rho}$ Position (cm)',
+               fontsize=22)
+    plt.ylabel('Target Response Extent (cm)', fontsize=22)
+    plt.grid()
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir, 'size/paper/'
+                                      'fdnc_das_rho_extent_vs_rho.png'),
+                dpi=150,
+                transparent=False)
+    plt.close()
+
+    init_plt()
+    plt.scatter(np.sqrt(t_coords[:, 0] ** 2 + t_coords[:, 1] ** 2),
+                phi_sizes,
+                color=colors[0])
+    plt.title(r'$\mathdefault{\hat{\varphi}}$-extent', fontsize=24)
+    plt.xlabel(r'Target $\mathdefault{\rho}$ Position (cm)',
+               fontsize=22)
+    plt.ylabel('Target Response Extent (cm)', fontsize=22)
+    plt.grid()
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir, 'size/paper/'
+                                      'fdnc_das_phi_extent_vs_rho.png'),
+                dpi=150,
+                transparent=False)
+    plt.close()
+
+    imgs_fd = make_imgs_arr(os.path.join(recon_dir, 'freq_dep-das/'))
+
+    scr_values_fd = np.zeros([np.size(imgs_fd, axis=0), ])
+
+    for jj in range(np.size(imgs_fd, 0)):
+
+        cs, x_cm, y_cm = load_pickle(os.path.join(recon_dir,
+                                                  'spln_pars/id%d_pars.pickle'
+                                                  % (jj + 1)))
+
+        scr, _ = get_contrast_for_cyl(imgs_fd[jj], roi_rad=roi_rad,
+                                      adi_rad=adi_rad, thickness=0.002,
+                                      x_cm=x_cm, y_cm=y_cm, method='scr')
+
+        scr_values_fd[jj] = scr
+
+    c_xs_CoM_fd, c_ys_CoM_fd, xs_CoM_fd, ys_CoM_fd = do_pos_err_analysis(
+                                                     imgs=imgs_fd,
+                                                     tar_xs=t_coords[:, 0],
+                                                     tar_ys=t_coords[:, 1],
+                                                     roi_rad=roi_rad,
+                                                     use_img_maxes=False,
+                                                     make_plts=False,
+                                                     logger=logger)
+
+    x_lim_lhs_fd = np.min([c_xs_CoM_fd, xs_CoM_fd, t_coords[:, 0]])
+    x_lim_rhs_fd = np.max([c_xs_CoM_fd, xs_CoM_fd, t_coords[:, 0]])
+    y_lim_bot_fd = np.min([c_ys_CoM_fd, ys_CoM_fd, t_coords[:, 1]])
+    y_lim_top_fd = np.max([c_ys_CoM_fd, ys_CoM_fd, t_coords[:, 1]])
+
+    plt_rand_pos_errs(c_xs=c_xs_CoM_fd, c_ys=c_ys_CoM_fd,
+                      xs=t_coords[:, 0], ys=t_coords[:, 1], logger=logger,
+                      o_dir_str='freq_dep_das/', save_str='', make_plts=False)
+
+    rho_sizes = np.zeros([np.size(imgs_fd, axis=0), ])
+    phi_sizes = np.zeros([np.size(imgs_fd, axis=0), ])
+
+    for jj in range(np.size(imgs_fd, axis=0)):
+        rho_size, phi_size = \
+            do_size_analysis(img_here=np.abs(imgs_fd[jj, :, :]) ** 2, dx=dx,
+                             roi_rad=roi_rad, make_plts=False)
+        rho_sizes[jj] = rho_size
+        phi_sizes[jj] = phi_size
+
+    logger.info('FD DAS: \n\t\t\tMean rho-extent: %.4f\n\t\t\tMean '
+                'phi-extent: %.4f\n\t\t\tMean SCR: %.4f'
+                % (np.mean(rho_sizes), np.mean(phi_sizes),
+                   np.mean(scr_values_fd)))
+
+    tar_rhos = np.sqrt(t_coords[:, 0] ** 2 + t_coords[:, 1] ** 2)
+    colors = [
+        [0, 0, 0],
+        [100 / 255, 100 / 255, 100 / 255],
+        [205 / 255, 205 / 255, 205 / 255],
+    ]
+
+    init_plt()
+    plt.scatter(np.sqrt(t_coords[:, 0] ** 2 + t_coords[:, 1] ** 2),
+                rho_sizes,
+                color=colors[0])
+
+    plt.title(r'$\mathdefault{\hat{\rho}}$-extent', fontsize=24)
+    plt.xlabel(r'Target $\mathdefault{\rho}$ Position (cm)',
+               fontsize=22)
+    plt.ylabel('Target Response Extent (cm)', fontsize=22)
+    plt.grid()
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir, 'size/paper/'
+                                      'fd_das_rho_extent_vs_rho.png'),
+                dpi=150,
+                transparent=False)
+    plt.close()
+
+    init_plt()
+    plt.scatter(np.sqrt(t_coords[:, 0] ** 2 + t_coords[:, 1] ** 2),
+                phi_sizes,
+                color=colors[0])
+    plt.title(r'$\mathdefault{\hat{\varphi}}$-extent', fontsize=24)
+    plt.xlabel(r'Target $\mathdefault{\rho}$ Position (cm)',
+               fontsize=22)
+    plt.ylabel('Target Response Extent (cm)', fontsize=22)
+    plt.grid()
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir, 'size/paper/'
+                                      'fd_das_phi_extent_vs_rho.png'),
+                dpi=150,
+                transparent=False)
+    plt.close()
+
+    imgs_rt = make_imgs_arr(os.path.join(recon_dir, 'rt-das/'))
+
+    scr_values_rt = np.zeros([np.size(imgs_rt, axis=0), ])
+
+    for jj in range(np.size(imgs_rt, 0)):
+
+        cs, x_cm, y_cm = load_pickle(os.path.join(recon_dir,
+                                                  'spln_pars/id%d_pars.pickle'
+                                                  % (jj + 1)))
+
+        scr, _ = get_contrast_for_cyl(imgs_rt[jj], roi_rad=roi_rad,
+                                      adi_rad=adi_rad, thickness=0.002,
+                                      x_cm=x_cm, y_cm=y_cm, method='scr')
+
+        scr_values_rt[jj] = scr
+
+    c_xs_CoM_rt, c_ys_CoM_rt, xs_CoM_rt, ys_CoM_rt = do_pos_err_analysis(
+                                                     imgs=imgs_rt,
+                                                     tar_xs=t_coords[:, 0],
+                                                     tar_ys=t_coords[:, 1],
+                                                     roi_rad=roi_rad,
+                                                     use_img_maxes=False,
+                                                     make_plts=False,
+                                                     logger=logger)
+
+    x_lim_lhs_rt = np.min([c_xs_CoM_rt, xs_CoM_rt, t_coords[:, 0]])
+    x_lim_rhs_rt = np.max([c_xs_CoM_rt, xs_CoM_rt, t_coords[:, 0]])
+    y_lim_bot_rt = np.min([c_ys_CoM_rt, ys_CoM_rt, t_coords[:, 1]])
+    y_lim_top_rt = np.max([c_ys_CoM_rt, ys_CoM_rt, t_coords[:, 1]])
+
+    plt_rand_pos_errs(c_xs=c_xs_CoM_rt, c_ys=c_ys_CoM_rt,
+                      xs=t_coords[:, 0], ys=t_coords[:, 1], logger=logger,
+                      o_dir_str='rt_das/', save_str='', make_plts=False)
+
+    rho_sizes = np.zeros([np.size(imgs_rt, axis=0), ])
+    phi_sizes = np.zeros([np.size(imgs_rt, axis=0), ])
+
+    for jj in range(np.size(imgs_rt, axis=0)):
+        rho_size, phi_size = \
+            do_size_analysis(img_here=np.abs(imgs_rt[jj, :, :]) ** 2, dx=dx,
+                             roi_rad=roi_rad, make_plts=False)
+        rho_sizes[jj] = rho_size
+        phi_sizes[jj] = phi_size
+
+    logger.info('RT DAS: \n\t\t\tMean rho-extent: %.4f\n\t\t\tMean '
+                'phi-extent: %.4f\n\t\t\tMean SCR: %.4f'
+                % (np.mean(rho_sizes), np.mean(phi_sizes),
+                   np.mean(scr_values_rt)))
+
+    tar_rhos = np.sqrt(t_coords[:, 0] ** 2 + t_coords[:, 1] ** 2)
+    colors = [
+        [0, 0, 0],
+        [100 / 255, 100 / 255, 100 / 255],
+        [205 / 255, 205 / 255, 205 / 255],
+    ]
+
+    init_plt()
+    plt.scatter(np.sqrt(t_coords[:, 0] ** 2 + t_coords[:, 1] ** 2),
+                rho_sizes,
+                color=colors[0])
+
+    plt.title(r'$\mathdefault{\hat{\rho}}$-extent', fontsize=24)
+    plt.xlabel(r'Target $\mathdefault{\rho}$ Position (cm)',
+               fontsize=22)
+    plt.ylabel('Target Response Extent (cm)', fontsize=22)
+    plt.grid()
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir, 'size/paper/'
+                                      'rt_das_rho_extent_vs_rho.png'),
+                dpi=150,
+                transparent=False)
+    plt.close()
+
+    init_plt()
+    plt.scatter(np.sqrt(t_coords[:, 0] ** 2 + t_coords[:, 1] ** 2),
+                phi_sizes,
+                color=colors[0])
+    plt.title(r'$\mathdefault{\hat{\varphi}}$-extent', fontsize=24)
+    plt.xlabel(r'Target $\mathdefault{\rho}$ Position (cm)',
+               fontsize=22)
+    plt.ylabel('Target Response Extent (cm)', fontsize=22)
+    plt.grid()
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir, 'size/paper/'
+                                      'rt_das_phi_extent_vs_rho.png'),
+                dpi=150,
+                transparent=False)
+    plt.close()
+
+    x_lim_lhs = np.min([x_lim_lhs_regular, x_lim_lhs_binary, x_lim_lhs_fdnc,
+                        x_lim_lhs_fd, x_lim_lhs_rt]) - 0.15
+    x_lim_rhs = np.max([x_lim_rhs_regular, x_lim_rhs_binary, x_lim_rhs_fdnc,
+                        x_lim_rhs_fd, x_lim_rhs_rt]) + 0.15
+    y_lim_bot = np.min([y_lim_bot_regular, y_lim_bot_binary, y_lim_bot_fdnc,
+                        y_lim_bot_fd, y_lim_bot_rt]) - 0.15
+    y_lim_top = np.max([y_lim_top_regular, y_lim_top_binary, y_lim_top_fdnc,
+                        y_lim_top_fd, y_lim_top_rt]) + 0.15
+
+    plot_obs_vs_recon(xs=t_coords[:, 0], ys=t_coords[:, 1],
+                      compare_xs=c_xs_CoM_r, compare_ys=c_ys_CoM_r,
+                      save_str='regular_das', o_dir_str='paper/',
+                      x_lim_lhs=x_lim_lhs, x_lim_rhs=x_lim_rhs,
+                      y_lim_bot=y_lim_bot, y_lim_top=y_lim_top)
+
+    plot_obs_vs_recon(xs=t_coords[:, 0], ys=t_coords[:, 1],
+                      compare_xs=c_xs_CoM_b, compare_ys=c_ys_CoM_b,
+                      save_str='binary_das', o_dir_str='paper/',
+                      x_lim_lhs=x_lim_lhs, x_lim_rhs=x_lim_rhs,
+                      y_lim_bot=y_lim_bot, y_lim_top=y_lim_top)
+
+    plot_obs_vs_recon(xs=t_coords[:, 0], ys=t_coords[:, 1],
+                      compare_xs=c_xs_CoM_fdnc, compare_ys=c_ys_CoM_fdnc,
+                      save_str='fdnc_das', o_dir_str='paper/',
+                      x_lim_lhs=x_lim_lhs, x_lim_rhs=x_lim_rhs,
+                      y_lim_bot=y_lim_bot, y_lim_top=y_lim_top)
+
+    plot_obs_vs_recon(xs=t_coords[:, 0], ys=t_coords[:, 1],
+                      compare_xs=c_xs_CoM_fd, compare_ys=c_ys_CoM_fd,
+                      save_str='fd_das', o_dir_str='paper/',
+                      x_lim_lhs=x_lim_lhs, x_lim_rhs=x_lim_rhs,
+                      y_lim_bot=y_lim_bot, y_lim_top=y_lim_top)
+
+    plot_obs_vs_recon(xs=t_coords[:, 0], ys=t_coords[:, 1],
+                      compare_xs=c_xs_CoM_rt, compare_ys=c_ys_CoM_rt,
+                      save_str='rt_das', o_dir_str='paper/',
+                      x_lim_lhs=x_lim_lhs, x_lim_rhs=x_lim_rhs,
+                      y_lim_bot=y_lim_bot, y_lim_top=y_lim_top)
+
+    init_plt()
+    tar_rhos = np.sqrt(t_coords[:, 0] ** 2 + t_coords[:, 1] ** 2)
+    pos_errs_reg = np.sqrt((c_xs_CoM_r-t_coords[:, 0])**2 +
+                           (c_ys_CoM_r-t_coords[:, 1])**2)
+
+    pos_errs_bin = np.sqrt((c_xs_CoM_b-t_coords[:, 0])**2 +
+                           (c_ys_CoM_b-t_coords[:, 1])**2)
+
+    pos_errs_fdnc = np.sqrt((c_xs_CoM_fdnc - t_coords[:, 0]) ** 2 +
+                            (c_ys_CoM_fdnc - t_coords[:, 1]) ** 2)
+
+    pos_errs_fd = np.sqrt((c_xs_CoM_fd - t_coords[:, 0]) ** 2 +
+                          (c_ys_CoM_fd - t_coords[:, 1]) ** 2)
+
+    pos_errs_rt = np.sqrt((c_xs_CoM_rt - t_coords[:, 0]) ** 2 +
+                          (c_ys_CoM_rt - t_coords[:, 1]) ** 2)
+
+    plt.scatter(tar_rhos, pos_errs_reg, color='darkred', marker='o',
+                label='Homogeneous DAS')
+    plt.scatter(tar_rhos, pos_errs_bin, color='lawngreen', marker='x',
+                label='Binary DAS')
+    plt.scatter(tar_rhos, pos_errs_fdnc, color='dodgerblue', marker='v',
+                label='Frequency dependent DAS, non-conductive')
+    plt.scatter(tar_rhos, pos_errs_fd, color='fuchsia', marker='P',
+                label='Frequency dependent DAS')
+    plt.scatter(tar_rhos, pos_errs_rt, color='black', marker='s',
+                label='Ray tracing')
+
     plt.xlabel(r'Target $\mathdefault{\rho}$ Position (cm)', fontsize=22)
-    plt.ylabel('Mean-to-mean ratio (dB)', fontsize=22)
-    plt.savefig(os.path.join(out_dir, 'contrast/freq_dep_das_mmr.png'),
+    plt.ylabel('Positional error (cm)', fontsize=22)
+    plt.grid()
+    plt.legend()
+    plt.savefig(os.path.join(out_dir,
+                             'pos-err/paper/full_rho_vs_err.png'),
                 dpi=150)
+    plt.close()
+
+    init_plt()
+    plt.scatter(tar_rhos, scr_values_reg, color='darkred', marker='o',
+                label='Homogeneous DAS')
+    plt.scatter(tar_rhos, scr_values_b, color='lawngreen', marker='x',
+                label='Binary DAS')
+    plt.scatter(tar_rhos, scr_values_fdnc, color='dodgerblue', marker='v',
+                label='Frequency dependent DAS, non-conductive')
+    plt.scatter(tar_rhos, scr_values_fd, color='fuchsia', marker='P',
+                label='Frequency dependent DAS')
+    plt.scatter(tar_rhos, scr_values_rt, color='black', marker='s',
+                label='Ray tracing')
+
+    plt.xlabel(r'Target $\mathdefault{\rho}$ Position (cm)', fontsize=22)
+    plt.ylabel('Signal-to-clutter ratio (dB)', fontsize=22)
+    plt.legend()
+    plt.grid()
+    plt.savefig(os.path.join(out_dir, 'contrast/full.png'),
+                dpi=150)
+
+    # scr_values = np.zeros([np.size(imgs, axis=0), ])
+    #
+    # for jj in range(np.size(imgs, 0)):
+    #
+    #     cs, x_cm, y_cm = load_pickle(os.path.join(recon_dir,
+    #                                               'spln_pars/id%d_pars.pickle'
+    #                                               % (jj + 1)))
+    #
+    #     scr, _ = get_contrast_for_cyl(imgs[jj], roi_rad=roi_rad,
+    #                                   adi_rad=adi_rad, thickness=0.002,
+    #                                   x_cm=x_cm, y_cm=y_cm, method='mmr')
+    #
+    #     scr_values[jj] = scr
+    #
+    # init_plt()
+    # tar_rhos = np.sqrt(c_xs_CoM ** 2 + c_ys_CoM ** 2)
+    # plt.scatter(tar_rhos, scr_values, color=[0, 0, 0])
+    # plt.xlabel(r'Target $\mathdefault{\rho}$ Position (cm)', fontsize=22)
+    # plt.ylabel('Mean-to-mean ratio (dB)', fontsize=22)
+    # plt.savefig(os.path.join(out_dir, 'contrast/freq_dep_das_mmr.png'),
+    #             dpi=150)
 
     # rho_sizes = np.zeros([np.size(imgs, axis=0), ])
     # phi_sizes = np.zeros([np.size(imgs, axis=0), ])
