@@ -7,6 +7,8 @@ import os
 import numpy as np
 import multiprocessing as mp
 from functools import partial
+
+import scipy.constants
 from umbms.beamform.intersections_analytical import (find_xy_ant_bound_circle,
                                                      find_xy_ant_bound_ellipse,
                                                      _parallel_find_bound_circle_pix)
@@ -17,7 +19,8 @@ from threading import active_count, get_ident
 
 __GHz = 1e9  # Conversion factor from Hz to GHz
 
-__VACUUM_SPEED = 3e8  # Speed of light in a vacuum
+# Speed of light in a vacuum
+__VACUUM_SPEED = scipy.constants.speed_of_light
 
 
 ###############################################################################

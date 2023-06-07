@@ -9,9 +9,13 @@ from scipy import ndimage
 from scipy import signal
 from scipy.signal import find_peaks
 from scipy.interpolate import CubicSpline
+from scipy.constants import speed_of_light
 from umbms.beamform.sigproc import iczt
 from umbms.beamform.extras import get_xy_arrs
 import matplotlib.pyplot as plt
+
+__VAC_SPEED = speed_of_light
+
 
 def rot(theta):
     """Returns a 2-D rotation matrix
@@ -258,7 +262,7 @@ def get_binary_mask(cs, m_size, roi_rad, precision_scaling_factor=1):
     return mask
 
 
-def make_speed_map(mask, v_in, v_out=3e8):
+def make_speed_map(mask, v_in, v_out=__VAC_SPEED):
     """Makes a binary speed map from a given shape mask
 
     Parameters:
@@ -283,6 +287,7 @@ def make_speed_map(mask, v_in, v_out=3e8):
 
     return speed_map
 
+
 def find_centre_of_mass(rho, phi):
     """Finds x,y coordinates of the centre of mass of a uniform 2d shape
 
@@ -306,6 +311,7 @@ def find_centre_of_mass(rho, phi):
     y_cm = np.sum(y) / np.size(y)
 
     return x_cm, y_cm
+
 
 def find_centre_of_mass_from_cs(cs, n_points=200):
     """Finds x,y coordinates of the centre of mass of a uniform 2d shape
@@ -387,7 +393,7 @@ def get_boundary_iczt(adi_emp_cropped, ant_rad, n_ant_pos=72,
 
     # polar angle data
     angles = np.linspace(0, np.deg2rad(355), n_ant_pos) \
-                                                    + np.deg2rad(ini_ant_ang)
+             + np.deg2rad(ini_ant_ang)
 
     # # angles for plotting
     # plt_angles = np.linspace(0, 355, n_ant_pos)
@@ -405,29 +411,29 @@ def get_boundary_iczt(adi_emp_cropped, ant_rad, n_ant_pos=72,
 
     time_aligned_signals = np.zeros_like(td, dtype=float)
     time_aligned_signals[:, 0] = np.abs(td[:, 0])
-    first_peak, _ = find_peaks(time_aligned_signals[:,0],
-                               height=np.max(time_aligned_signals[:,0])-1e-9)
+    first_peak, _ = find_peaks(time_aligned_signals[:, 0],
+                               height=np.max(
+                                   time_aligned_signals[:, 0]) - 1e-9)
 
     for ant_pos in range(1, np.size(td, axis=1), 1):
-        signal_peak, _ = find_peaks(np.abs(td[:,ant_pos]),
-                                        np.max(np.abs(td[:,ant_pos]))-1e-9)
+        signal_peak, _ = find_peaks(np.abs(td[:, ant_pos]),
+                                    np.max(np.abs(td[:, ant_pos])) - 1e-9)
         if signal_peak > first_peak:
             shift = signal_peak - first_peak
             time_aligned_signals[:np.size(time_aligned_signals, axis=0)
                                   - shift[0], ant_pos] = \
-                                        np.abs(td[shift[0]:, ant_pos])
+                np.abs(td[shift[0]:, ant_pos])
         else:
             shift = first_peak - signal_peak
             time_aligned_signals[shift[0]:, ant_pos] = \
                 np.abs(td[:np.size(time_aligned_signals, axis=0) - shift[0],
-                                                                    ant_pos])
-
+                       ant_pos])
 
     kernel = np.average(time_aligned_signals, axis=1)
     # kernel = avg_signal
     # average peak index for correlation data interpretation
     max_avg = np.max(kernel)
-    avg_peak, _ = find_peaks(kernel, height=max_avg-1e-9)
+    avg_peak, _ = find_peaks(kernel, height=max_avg - 1e-9)
     previous_peak_idx = 0
 
     for ant_pos in range(np.size(td, axis=1)):
@@ -441,7 +447,7 @@ def get_boundary_iczt(adi_emp_cropped, ant_rad, n_ant_pos=72,
         # antenna position array length
         lags = signal.correlation_lags(len(position), len(kernel), 'same')
         max_corr = np.max(corr)
-        corr_peaks, _ = find_peaks(corr, height=max_corr-1e-9)
+        corr_peaks, _ = find_peaks(corr, height=max_corr - 1e-9)
 
         # positive index - average signal is "shifted" to the right wrt
         # the actual signal
@@ -459,7 +465,8 @@ def get_boundary_iczt(adi_emp_cropped, ant_rad, n_ant_pos=72,
         peaks, _ = find_peaks(position)
         peak = peaks[np.argmin(np.abs(peaks - approx_peak_idx))]
 
-        if previous_peak_idx == 0 or np.abs(peak - previous_peak_idx) > peak_threshold:
+        if previous_peak_idx == 0 or np.abs(peak - previous_peak_idx) > \
+                peak_threshold:
             peak = approx_peak_idx
 
         # store the time responce obtained from threshold method
@@ -467,7 +474,7 @@ def get_boundary_iczt(adi_emp_cropped, ant_rad, n_ant_pos=72,
 
         # polar radius of a corresponding highest intensity response
         # (corrected radius - radius of a time response)
-        rad = ant_rad - ts[peak] * 1e-9 * 3e8 / 2
+        rad = ant_rad - ts[peak] * 1e-9 * __VAC_SPEED / 2
         previous_peak_idx = peak
         # appending polar radius to rho array
         rho = np.append(rho, rad)
@@ -561,6 +568,3 @@ def get_boundary_iczt(adi_emp_cropped, ant_rad, n_ant_pos=72,
     # uns_dev = np.average(np.abs(delta_r_dev))
 
     return cs, x_cm, y_cm
-
-
-

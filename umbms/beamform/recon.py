@@ -16,7 +16,7 @@ from umbms import null_logger
 from umbms.loadsave import save_pickle
 
 from umbms.beamform.extras import get_pix_ts, get_fd_phase_factor
-
+from umbms.hardware.antenna import apply_ant_pix_delay
 from umbms.beamform.fwdproj import fd_fwd_proj, fd_fwd_proj_vel_freq
 from umbms.beamform.optimfuncs import get_ref_derivs, get_ref_derivs_speed, \
     get_ref_derivs_vel_freq
@@ -581,6 +581,8 @@ def _parallel_fd_das_vel_freq_func(fd_data, int_f_xs, int_f_ys, int_b_xs,
                                     mid_breast_min=mid_breast_min,
                                     int_f_xs=int_f_xs, int_f_ys=int_f_ys,
                                     int_b_xs=int_b_xs, int_b_ys=int_b_ys)
+
+    pix_ts = apply_ant_pix_delay(pix_ts=pix_ts)
 
     phase_fac = get_fd_phase_factor(pix_ts)
 

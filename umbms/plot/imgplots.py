@@ -389,7 +389,7 @@ def plot_fd_img(img, *, bound_x=None, bound_y=None, cs=None, mask=None,
     # Plot secondary target
     plt.plot(tar2_xs, tar2_ys, 'g', linewidth=1.5)
 
-    plt.title(title, fontsize=20)  # Make the plot title
+    # plt.title(title, fontsize=20)  # Make the plot title
     plt.xlabel('x-axis (cm)', fontsize=16)  # Make the x-axis label
     plt.ylabel('y-axis (cm)', fontsize=16)  # Make the y-axis label
     plt.tight_layout()  # Remove excess whitespace in the figure
@@ -413,7 +413,7 @@ def plot_fd_img(img, *, bound_x=None, bound_y=None, cs=None, mask=None,
             #          label=r'$\rho_i > \rho_f(\phi_i)$')
             # plt.legend(loc='upper left')
 
-        plt.legend(loc='upper left')
+        # plt.legend(loc='upper left')
         plt.savefig(save_str, transparent=transparent, dpi=dpi,
                     bbox_inches='tight')
 

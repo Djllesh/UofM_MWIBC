@@ -8,6 +8,7 @@ import os
 import numpy as np
 import pandas
 import matplotlib.pyplot as plt
+import scipy.constants
 from scipy.signal import find_peaks
 from time import perf_counter
 import multiprocessing as mp
@@ -132,11 +133,12 @@ __MID_BREAST_RADS = {
     'A16': (0.073, 0.05),
 }
 
-__VAC_SPEED = 3e8  # Define propagation speed in vacuum
+__VAC_SPEED = scipy.constants.speed_of_light
+# Define propagation speed in vacuum
 
 
 def load_data():
-    """Loads both fd_data and metadata
+    """Loads both fd and metadata
 
     Returns:
     --------

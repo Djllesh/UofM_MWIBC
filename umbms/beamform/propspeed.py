@@ -5,6 +5,7 @@ November 8 2018
 """
 
 import numpy as np
+import scipy.constants
 
 from umbms.beamform.breastmodels import get_breast, get_roi
 from umbms.beamform.extras import (apply_ant_t_delay, get_ant_scan_xys,
@@ -14,7 +15,8 @@ from umbms.beamform.extras import (apply_ant_t_delay, get_ant_scan_xys,
 
 ###############################################################################
 
-__VAC_SPEED = 3e8  # Define propagation speed in vacuum
+# Define propagation speed in vacuum
+__VAC_SPEED = scipy.constants.speed_of_light
 __VAC_PERMITTIVITY = 8.85e-12
 __VAC_PERMEABILITY = 1.25e-6
 

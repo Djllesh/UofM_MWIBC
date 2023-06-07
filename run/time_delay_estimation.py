@@ -13,9 +13,11 @@ import numpy as np
 import pandas
 from time import perf_counter
 import multiprocessing as mp
+import scipy.constants
 
 from umbms import get_proj_path, verify_path, get_script_logger
 from umbms.loadsave import load_pickle, save_pickle
+from umbms.hardware.antenna import apply_ant_pix_delay, to_phase_center
 from umbms.beamform.recon import fd_das, fd_das_vel_freq
 from umbms.beamform.extras import get_pix_ts, get_pix_ts_old, \
     apply_ant_t_delay, get_fd_phase_factor
@@ -61,7 +63,8 @@ __N_ANT_POS = 72
 
 ########################################################################
 
-__VAC_SPEED = 3e8  # Define propagation speed in vacuum
+# Define propagation speed in vacuum
+__VAC_SPEED = scipy.constants.speed_of_light
 __PHANTOM_RAD = 0.0555
 
 
@@ -111,7 +114,8 @@ if __name__ == "__main__":
     velocities = get_breast_speed_freq(freqs, permittivities, conductivities)
 
     # The output dir, where the reconstructions will be stored
-    out_dir = os.path.join(__OUT_DIR, 'recons/time_delay_estimation/')
+    out_dir = os.path.join(__OUT_DIR, 'recons/Immediate reference/Antenna '
+                                      'time delay/')
     verify_path(out_dir)
 
     for expt in range(n_expts):  # for all scans
@@ -130,7 +134,7 @@ if __name__ == "__main__":
             if ~np.isnan(tar_md['tum_diam']):
 
                 # Set a str for plotting
-                plt_str = "%.1f cm tumor in\n" \
+                plt_str = "%.1f cm rod in\n" \
                           "ID: %d" % (tar_md['tum_diam'], expt)
             else:
                 plt_str = "Empty phantom\n" \
@@ -149,10 +153,14 @@ if __name__ == "__main__":
             # its radius is hard-coded in the scan parameters section
             # adi_rad = tar_md['adi_rad']
             adi_rad = __PHANTOM_RAD
+
             # Correct for how the scan radius is measured (from a
             # point on the antenna stand, not at the SMA connection
             # point)
-            scan_rad += 0.03618
+            # scan_rad += 0.03618
+
+            # Obtain the true rho of the phase center of the antenna
+            ant_rad = to_phase_center(meas_rho=scan_rad)
 
             # Define the radius of the region of interest
             roi_rad = adi_rad + 0.01
@@ -162,7 +170,7 @@ if __name__ == "__main__":
 
             # Correct for the antenna time delay
             # NOTE: Only the new antenna was used in UM-BMID Gen-3
-            ant_rad = apply_ant_t_delay(scan_rad=scan_rad, new_ant=True)
+            # ant_rad = apply_ant_t_delay(scan_rad=scan_rad, new_ant=True)
 
             # Get the adipose-only and empty reference data
             # for this scan
@@ -193,6 +201,9 @@ if __name__ == "__main__":
             time_delay_tp_start = perf_counter()
             pix_ts = get_pix_ts_old(ant_rad=ant_rad, m_size=__M_SIZE,
                                     roi_rad=roi_rad, speed=speed)
+
+            # Account for antenna time delay
+            pix_ts = apply_ant_pix_delay(pix_ts=pix_ts)
             time_delay_tp_end = perf_counter()
             logger.info('\t\tTime: %.3f s' %
                         (time_delay_tp_end - time_delay_tp_start))
@@ -245,6 +256,9 @@ if __name__ == "__main__":
                            roi_rad=roi_rad, air_speed=__VAC_SPEED,
                            breast_speed=breast_speed, adi_rad=adi_rad,
                            worker_pool=worker_pool)
+
+            # Account for antenna time delay
+            pix_ts = apply_ant_pix_delay(pix_ts=pix_ts)
             time_delay_tp_end = perf_counter()
             logger.info('\t\tTime: %.3f s' %
                         (time_delay_tp_end - time_delay_tp_start))
@@ -373,9 +387,16 @@ if __name__ == "__main__":
 
             rt_das_start = perf_counter()
 
+            # TEMPORARY:
+            # In order to account for straight-line antenna time-delay
+            # apply the old correction
+
+            scan_rad += 0.03618
+            ant_rad_bound = apply_ant_t_delay(scan_rad=scan_rad, new_ant=True)
+
             # Routine start: extract the boundary from the sinogram
             cs, x_cm, y_cm = \
-                get_boundary_iczt(adi_cal_cropped_emp, ant_rad)
+                get_boundary_iczt(adi_cal_cropped_emp, ant_rad_bound)
 
             # Apply the cubic spline onto the grid
             mask = get_binary_mask(cs, m_size=__M_SIZE, roi_rad=roi_rad)

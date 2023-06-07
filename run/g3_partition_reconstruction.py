@@ -9,6 +9,7 @@ import os
 
 import numpy as np
 import pandas
+import scipy.constants
 from matplotlib import pyplot as plt
 from umbms import get_proj_path, verify_path, get_script_logger
 from umbms.beamform.boundary_detection import (get_boundary_iczt,
@@ -77,11 +78,12 @@ __MID_BREAST_RADS = {
     'A16': (0.073, 0.05),
 }
 
-__VAC_SPEED = 3e8  # Define propagation speed in vacuum
+__VAC_SPEED = scipy.constants.speed_of_light
+# Define propagation speed in vacuum
 
 
 def load_data():
-    """Loads both fd_data and metadata
+    """Loads both fd and metadata
 
     Returns:
     --------

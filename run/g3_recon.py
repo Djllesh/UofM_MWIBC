@@ -7,6 +7,7 @@ August 30th, 2021
 import os
 import numpy as np
 import multiprocessing as mp
+import scipy.constants
 
 from umbms import get_proj_path, verify_path, get_script_logger
 
@@ -77,7 +78,8 @@ __MID_BREAST_RADS = {
     'A16': (0.073, 0.05),
 }
 
-__VAC_SPEED = 3e8  # Define propagation speed in vacuum
+# Define propagation speed in vacuum
+__VAC_SPEED = scipy.constants.speed_of_light
 
 
 def load_data():

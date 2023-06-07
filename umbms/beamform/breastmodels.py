@@ -5,6 +5,7 @@ November 8th, 2018
 """
 
 import numpy as np
+import scipy.constants
 from umbms.beamform.extras import get_xy_arrs
 
 ###############################################################################
@@ -12,7 +13,7 @@ from umbms.beamform.extras import get_xy_arrs
 # The vacuum permeability and permittivity
 vac_permeability = 1.256637e-6
 vac_permittivity = 8.85e-12
-vac_speed = 3e8  # The speed of light in vacuum
+vac_speed = scipy.constants.speed_of_light  # The speed of light in vacuum
 
 # The permittivities of the breast tissue analogs used in the lab at the
 # central frequency (glycerin for fat, 30% Triton X-100 solution for
