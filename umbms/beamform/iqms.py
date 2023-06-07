@@ -7,7 +7,7 @@ December 14, 2018
 import numpy as np
 from umbms.beamform.breastmodels import get_breast
 from umbms.beamform.extras import get_xy_arrs
-from umbms.beamform.acc_size import do_size_analysis, get_img_CoM
+from umbms.analysis.acc_size import do_size_analysis, get_img_CoM
 
 ###############################################################################
 

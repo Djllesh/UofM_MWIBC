@@ -7,9 +7,7 @@ October 11th, 2022
 import os
 import numpy as np
 import pandas
-import matplotlib.pyplot as plt
 import scipy.constants
-from scipy.signal import find_peaks
 from time import perf_counter
 import multiprocessing as mp
 
@@ -17,35 +15,15 @@ from umbms import get_proj_path, verify_path, get_script_logger
 
 from umbms.loadsave import load_pickle, save_pickle
 
-from umbms.plot.imgplots import plot_fd_img, \
-    plot_fd_img_with_intersections
-from umbms.plot import plt_sino, plt_fd_sino
+from umbms.beamform.recon import fd_das, fd_das_vel_freq
+from umbms.beamform.extras import (apply_ant_t_delay, get_fd_phase_factor,
+                                   get_pix_ts_old)
 
-from umbms.beamform.recon import fd_das, fd_dmas, orr_recon, \
-    fd_das_vel_freq
-from umbms.beamform.extras import (apply_ant_t_delay, get_pix_ts,
-                                   get_fd_phase_factor,
-                                   find_xy_ant_bound_circle,
-                                   find_xy_ant_bound_ellipse,
-                                   get_ant_scan_xys, get_xy_arrs,
-                                   get_pix_ts_old, get_pix_dists_angs,
-                                   get_circle_intersections_parallel)
+from umbms.boundary.boundary_detection import (get_binary_mask,
+                                               get_boundary_iczt)
 
-from umbms.beamform.boundary_detection import (find_boundary, polar_fit_cs,
-                                               find_centre_of_mass,
-                                               get_binary_mask,
-                                               get_boundary_iczt,
-                                               cart_to_polar, make_speed_map)
-
-from umbms.beamform.propspeed import (estimate_speed, get_breast_speed,
-                                      get_speed_from_perm,
-                                      get_breast_speed_freq)
-from umbms.beamform.raytrace import find_boundary_rt
-from umbms.beamform.optimfuncs import td_velocity_deriv
-from umbms.beamform.sigproc import iczt
-
-from umbms.beamform.acc_poserr import do_pos_err_analysis, plt_rand_pos_errs
-from umbms.beamform.acc_size import do_size_analysis
+from umbms.beamform.propspeed import (estimate_speed, get_breast_speed_freq)
+from umbms.boundary.raytrace import find_boundary_rt
 
 ###############################################################################
 

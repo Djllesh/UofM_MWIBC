@@ -12,18 +12,11 @@ import matplotlib
 from scipy.stats import spearmanr
 
 matplotlib.use('Qt5Agg')
-from matplotlib.cm import get_cmap
 
-from scipy.optimize import minimize
+from umbms import get_proj_path, verify_path
 
-from scipy.ndimage import rotate
-import seaborn as sns
-
-from umbms import get_proj_path, verify_path, get_script_logger
-
-from umbms.beamform.extras import (get_fd_phase_factor, get_xy_arrs,
-                                   apply_syst_cor)
-from umbms.beamform.acc_size import get_img_max_xy, get_img_CoM
+from umbms.beamform.extras import (get_xy_arrs)
+from umbms.analysis.acc_size import get_img_max_xy, get_img_CoM
 
 ###############################################################################
 

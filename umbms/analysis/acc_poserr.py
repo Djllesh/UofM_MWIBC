@@ -7,7 +7,6 @@ December 15th, 2022
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib
 # matplotlib.use('Qt5Agg')
 from matplotlib.cm import get_cmap
 
@@ -15,14 +14,12 @@ from scipy.stats import spearmanr
 
 from scipy.optimize import minimize
 
-from scipy.ndimage import rotate
 import seaborn as sns
 
-from umbms import get_proj_path, verify_path, get_script_logger
+from umbms import get_proj_path, verify_path
 
-from umbms.loadsave import (load_pickle, save_pickle, load_birrs_txt,
-                            clean_birrs_folder, count_n_scans)
-from umbms.beamform.acc_size import get_img_max_xy, get_img_CoM
+from umbms.loadsave import (save_pickle)
+from umbms.analysis.acc_size import get_img_max_xy, get_img_CoM
 
 
 ###############################################################################

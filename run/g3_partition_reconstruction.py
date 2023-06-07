@@ -12,7 +12,7 @@ import pandas
 import scipy.constants
 from matplotlib import pyplot as plt
 from umbms import get_proj_path, verify_path, get_script_logger
-from umbms.beamform.boundary_detection import (get_boundary_iczt,
+from umbms.boundary.boundary_detection import (get_boundary_iczt,
                                                find_boundary, cart_to_polar,
                                                polar_fit_cs, get_binary_mask)
 from umbms.beamform.extras import (apply_ant_t_delay, get_fd_phase_factor,

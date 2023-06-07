@@ -15,9 +15,9 @@ from umbms.loadsave import load_pickle
 from umbms.beamform.extras import get_xy_arrs
 
 from umbms.beamform.iqms import get_contrast_for_cyl
-from umbms.beamform.acc_poserr import (do_pos_err_analysis, apply_syst_cor,
+from umbms.analysis.acc_poserr import (do_pos_err_analysis, apply_syst_cor,
                                        plt_rand_pos_errs, plot_obs_vs_recon)
-from umbms.beamform.acc_size import do_size_analysis, init_plt
+from umbms.analysis.acc_size import do_size_analysis, init_plt
 
 ###############################################################################
 
