@@ -8,10 +8,8 @@ import numpy as np
 import scipy.constants
 
 from umbms.beamform.breastmodels import get_breast, get_roi
-from umbms.beamform.extras import (apply_ant_t_delay, get_ant_scan_xys,
-                                   get_pixdist_ratio, get_ant_xy_idxs,
-                                   get_xy_arrs)
-
+from umbms.beamform.utility import get_xy_arrs, get_pixdist_ratio, \
+    apply_ant_t_delay, get_ant_scan_xys, get_ant_xy_idxs
 
 ###############################################################################
 

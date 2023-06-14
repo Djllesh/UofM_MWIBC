@@ -4,7 +4,7 @@ University of Manitoba
 January 24th, 2023
 """
 
-from umbms.beamform.extras import get_ant_scan_xys
+from umbms.beamform.utility import get_ant_scan_xys
 import numpy as np
 from functools import partial
 

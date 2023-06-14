@@ -15,7 +15,8 @@ from umbms import null_logger
 
 from umbms.loadsave import save_pickle
 
-from umbms.beamform.extras import get_pix_ts, get_fd_phase_factor
+from umbms.beamform.time_delay import get_pix_ts
+from umbms.beamform.utility import get_fd_phase_factor
 from umbms.hardware.antenna import apply_ant_pix_delay
 from umbms.beamform.fwdproj import fd_fwd_proj, fd_fwd_proj_vel_freq
 from umbms.beamform.optimfuncs import get_ref_derivs, get_ref_derivs_speed, \

@@ -7,7 +7,9 @@ June 3rd, 2019
 import numpy as np
 import multiprocessing as mp
 from functools import partial
-from umbms.beamform.extras import get_pix_ts, get_fd_phase_factor
+from umbms.beamform.time_delay import get_pix_ts
+from umbms.beamform.utility import get_fd_phase_factor
+
 
 ###############################################################################
 

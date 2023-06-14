@@ -11,8 +11,9 @@ from umbms import get_proj_path, verify_path, get_script_logger
 
 from umbms.loadsave import load_pickle, save_pickle
 
-from umbms.beamform.iqms import get_scr, get_loc_err, get_scr_healthy
-from umbms.beamform.extras import apply_ant_t_delay
+from umbms.analysis.contrast import get_scr, get_scr_healthy
+from umbms.analysis.acc_poserr import get_loc_err_max_old
+from umbms.beamform.utility import apply_ant_t_delay
 
 ###############################################################################
 
@@ -178,24 +179,24 @@ if __name__ == "__main__":
                                              adi_rad=adi_rad,
                                              tum_rad=tum_rad,
                                              tum_x=tum_x, tum_y=tum_y)
-                das_le = get_loc_err(img=das_img, ant_rad=roi_rad,
-                                     tum_x=tum_x, tum_y=tum_y)
+                das_le = get_loc_err_max_old(img=das_img, ant_rad=roi_rad,
+                                             tum_x=tum_x, tum_y=tum_y)
 
                 # Get the SCR and localization error for the DMAS image
                 dmas_scr, dmas_d_scr = get_scr(img=dmas_img, roi_rad=roi_rad,
                                                adi_rad=adi_rad,
                                                tum_rad=tum_rad,
                                                tum_x=tum_x, tum_y=tum_y)
-                dmas_le = get_loc_err(img=dmas_img, ant_rad=roi_rad,
-                                      tum_x=tum_x, tum_y=tum_y)
+                dmas_le = get_loc_err_max_old(img=dmas_img, ant_rad=roi_rad,
+                                              tum_x=tum_x, tum_y=tum_y)
 
                 # Get the SCR and localization error for the ORR image
                 orr_scr, orr_d_scr = get_scr(img=orr_img, roi_rad=roi_rad,
                                              adi_rad=adi_rad,
                                              tum_rad=tum_rad,
                                              tum_x=tum_x, tum_y=tum_y)
-                orr_le = get_loc_err(img=orr_img, ant_rad=roi_rad,
-                                     tum_x=tum_x, tum_y=tum_y)
+                orr_le = get_loc_err_max_old(img=orr_img, ant_rad=roi_rad,
+                                             tum_x=tum_x, tum_y=tum_y)
 
                 # Store the results
                 das_scrs.append((das_scr, das_d_scr))

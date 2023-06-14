@@ -12,26 +12,30 @@ from umbms import get_proj_path, verify_path, get_script_logger
 
 from umbms.loadsave import load_pickle
 
-from umbms.beamform.extras import get_xy_arrs
+from umbms.beamform.utility import get_xy_arrs
 
-from umbms.beamform.iqms import get_contrast_for_cyl
+from umbms.analysis.contrast import get_contrast_for_cyl
 from umbms.analysis.acc_poserr import (do_pos_err_analysis, apply_syst_cor,
                                        plt_rand_pos_errs, plot_obs_vs_recon)
 from umbms.analysis.acc_size import do_size_analysis, init_plt
 
 ###############################################################################
 
+# Define the directory where the reconstructions are stored
 __DATA_DIR = os.path.join(get_proj_path(), 'data/umbmid/cyl_phantom/')
+# Define the directory where the results are going to be stored
 __OUT_DIR = os.path.join(get_proj_path(), 'output/')
 verify_path(__OUT_DIR)
 
+# Name of the frequency domain data and metadata
 __FD_NAME = 'cyl_phantom_immediate_reference_s11_rescan.pickle'
 __MD_NAME = 'metadata_cyl_phantom_immediate_reference_rescan.pickle'
 
 # The size of the reconstructed image along one dimension
 __M_SIZE = 150
 
-
+# Hard-coded radius of the cylindrical phantom
+# (to be replaced with the metadata field)
 __PHANTOM_RAD = 0.0555
 
 def load_data():

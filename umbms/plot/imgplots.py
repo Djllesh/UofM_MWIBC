@@ -11,7 +11,7 @@ matplotlib.use('Agg')
 
 
 import umbms.beamform.breastmodels as breastmodels
-from umbms.beamform.extras import get_xy_arrs
+from umbms.beamform.utility import get_xy_arrs
 from umbms.plot.stlplot import get_phantom_xy_for_z, get_shell_xy_for_z
 
 ###############################################################################

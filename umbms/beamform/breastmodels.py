@@ -6,7 +6,7 @@ November 8th, 2018
 
 import numpy as np
 import scipy.constants
-from umbms.beamform.extras import get_xy_arrs
+from umbms.beamform.utility import get_xy_arrs
 
 ###############################################################################
 

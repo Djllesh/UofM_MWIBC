@@ -15,7 +15,7 @@ umbms/**/*.log
 output/
 
 # ignore temporary scripts
-run/temp*
+run/temp/
 
 *.swp
 *.DS_Store

@@ -15,7 +15,7 @@ matplotlib.use('Qt5Agg')
 
 from umbms import get_proj_path, verify_path
 
-from umbms.beamform.extras import (get_xy_arrs)
+from umbms.beamform.utility import get_xy_arrs
 from umbms.analysis.acc_size import get_img_max_xy, get_img_CoM
 
 ###############################################################################

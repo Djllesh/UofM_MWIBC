@@ -6,7 +6,7 @@ December 14, 2018
 
 import numpy as np
 from umbms.beamform.breastmodels import get_breast
-from umbms.beamform.extras import get_xy_arrs
+from umbms.beamform.utility import get_xy_arrs
 from umbms.analysis.acc_size import do_size_analysis, get_img_CoM
 
 ###############################################################################
@@ -178,53 +178,6 @@ def get_contrast_for_cyl(img, roi_rad, adi_rad, thickness, x_cm, y_cm,
                         (20 * clut_uncty / (np.log(10) * clut_val))**2)
 
     return scr, scr_uncty
-
-
-def get_loc_err(img, ant_rad, tum_x, tum_y):
-    """Return the localization error of the tumor response in the image
-
-    Compute the localization error for the reconstructed image in meters
-
-    Parameters
-    ----------
-    img : array_like
-        The reconstructed image
-    ant_rad : float
-        The radius of the antenna trajectory during the scan, in meters
-    tum_x : float
-        The x-position of the tumor during the scan, in meters
-    tum_y : float
-        The y-position of the tumor during the scan, in meters
-
-    Returns
-    -------
-    loc_err : float
-        The localization error in meters
-    """
-
-    # Rotate image to properly compute the distances
-    img_for_iqm = np.fliplr(img)
-
-    # Find the conversion factor to convert pixel index to distance
-    pix_to_dist = 2 * ant_rad / np.size(img, 0)
-
-    # Set any NaN values to zero
-    img_for_iqm[np.isnan(img_for_iqm)] = 0
-
-    # Find the index of the maximum response in the reconstruction
-    max_loc = np.argmax(img_for_iqm)
-
-    # Find the x/y-indices of the max response in the reconstruction
-    max_x_pix, max_y_pix = np.unravel_index(max_loc, np.shape(img))
-
-    # Convert this to the x/y-positions
-    max_x_pos = (max_x_pix - np.size(img, 0) // 2) * pix_to_dist
-    max_y_pos = (max_y_pix - np.size(img, 0) // 2) * pix_to_dist
-
-    # Compute the localization error
-    loc_err = np.sqrt((max_x_pos - tum_x)**2 + (max_y_pos - tum_y)**2)
-
-    return loc_err
 
 
 def get_scr_healthy(img, roi_rad, adi_rad, healthy_rad=0.015):

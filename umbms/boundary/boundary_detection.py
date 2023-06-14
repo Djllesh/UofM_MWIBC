@@ -10,8 +10,8 @@ from scipy import signal
 from scipy.signal import find_peaks
 from scipy.interpolate import CubicSpline
 from scipy.constants import speed_of_light
-from umbms.beamform.sigproc import iczt
-from umbms.beamform.extras import get_xy_arrs
+from umbms.beamform.iczt import iczt
+from umbms.beamform.utility import get_xy_arrs
 import matplotlib.pyplot as plt
 
 __VAC_SPEED = speed_of_light

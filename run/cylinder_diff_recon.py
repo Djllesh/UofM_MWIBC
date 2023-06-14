@@ -17,10 +17,12 @@ from umbms.plot.imgplots import plot_fd_img, plot_fd_img_with_intersections
 from umbms.plot import plt_sino, plt_fd_sino
 
 from umbms.beamform.recon import fd_das, fd_dmas, orr_recon
-from umbms.beamform.extras import (apply_ant_t_delay, get_pix_ts, get_xy_arrs,
-                                   find_xy_ant_bound_circle, get_ant_scan_xys,
-                                   get_fd_phase_factor, get_pix_ts_old,
-                                   find_xy_ant_bound_ellipse)
+from umbms.beamform.time_delay import (get_pix_ts,
+                                       find_xy_ant_bound_circle,
+                                       get_pix_ts_old,
+                                       find_xy_ant_bound_ellipse)
+from umbms.beamform.utility import get_xy_arrs, apply_ant_t_delay, \
+    get_ant_scan_xys, get_fd_phase_factor
 
 from umbms.beamform.propspeed import estimate_speed, get_breast_speed, \
                                      get_speed_from_perm

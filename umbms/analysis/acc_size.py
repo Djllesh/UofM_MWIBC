@@ -13,7 +13,7 @@ import matplotlib
 
 from scipy.ndimage import rotate
 
-from umbms.beamform.extras import (get_fd_phase_factor, get_xy_arrs)
+from umbms.beamform.utility import get_xy_arrs, get_fd_phase_factor
 
 ###############################################################################
 

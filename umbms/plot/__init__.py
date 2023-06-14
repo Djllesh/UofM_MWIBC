@@ -10,7 +10,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-from umbms.beamform.sigproc import iczt
+from umbms.beamform.iczt import iczt
 
 ###############################################################################
 
