@@ -8,6 +8,7 @@
 - pandas
 - multiprocessing
 - numpy-stl
+- seaborn
 
 ### Repo info:
 
