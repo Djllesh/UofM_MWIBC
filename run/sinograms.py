@@ -15,7 +15,9 @@ from umbms.loadsave import load_pickle, save_pickle
 from umbms.plot.imgplots import plot_fd_img, plot_fd_img_with_intersections
 from umbms.plot import plt_sino, plt_fd_sino
 
-from umbms.beamform.recon import fd_das, fd_dmas, orr_recon
+from umbms.beamform.orr import orr_recon
+from umbms.beamform.dmas import fd_dmas
+from umbms.beamform.das import fd_das
 from umbms.beamform.time_delay import (get_pix_ts,
                                        find_xy_ant_bound_circle, get_pix_ts_old,
                                        find_xy_ant_bound_ellipse)

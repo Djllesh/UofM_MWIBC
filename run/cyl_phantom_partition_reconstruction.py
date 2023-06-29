@@ -15,7 +15,7 @@ from umbms import get_proj_path, verify_path, get_script_logger
 
 from umbms.loadsave import load_pickle, save_pickle
 
-from umbms.beamform.recon import fd_das, fd_das_vel_freq
+from umbms.beamform.das import fd_das, fd_das_freq_dep
 from umbms.beamform.time_delay import (get_pix_ts_old)
 from umbms.beamform.utility import apply_ant_t_delay, get_fd_phase_factor
 
@@ -485,7 +485,7 @@ if __name__ == "__main__":
             int_f_xs, int_f_ys, int_b_xs, int_b_ys = \
                 find_boundary_rt(mask, ant_rad, roi_rad,
                                  worker_pool=worker_pool)
-            das_rt_recon = fd_das_vel_freq(fd_data=adi_cal_cropped,
+            das_rt_recon = fd_das_freq_dep(fd_data=adi_cal_cropped,
                                            int_f_xs=int_f_xs,
                                            int_f_ys=int_f_ys,
                                            int_b_xs=int_b_xs,
