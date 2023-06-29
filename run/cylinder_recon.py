@@ -16,7 +16,7 @@ from umbms.loadsave import load_pickle, save_pickle
 
 from umbms.plot.imgplots import plot_fd_img
 
-from umbms.beamform.recon import fd_das
+from umbms.beamform.das import fd_das
 from umbms.beamform.time_delay import (get_pix_ts_old)
 from umbms.beamform.utility import apply_ant_t_delay, get_fd_phase_factor
 
