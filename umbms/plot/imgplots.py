@@ -7,8 +7,8 @@ import matplotlib
 import matplotlib.widgets
 import numpy as np
 import matplotlib.pyplot as plt
-matplotlib.use('Agg')
 
+matplotlib.use('Agg')
 
 import umbms.beamform.breastmodels as breastmodels
 from umbms.beamform.utility import get_xy_arrs
@@ -21,6 +21,7 @@ __M_to_CM = 100
 
 # Conversion factor from [GHz] to [Hz]
 __GHz_to_Hz = 1e9
+
 
 ###############################################################################
 
@@ -255,11 +256,10 @@ def plot_fd_img(img, *, bound_x=None, bound_y=None, cs=None, mask=None,
     img_to_plt = np.abs(img)
     img_to_plt = img * np.ones_like(img)
     img_to_rot = img_to_plt
-    ant_rad *= 100  # Convert from m to cm to facilitate plot
+    # ant_rad *= 100  # Convert from m to cm to facilitate plot
     img_rad *= 100
     # adi_rad *= 100
     roi_rad *= 100
-
 
     # If cropping the image at the antenna-trajectory boundary
     if crop_img:
@@ -276,10 +276,9 @@ def plot_fd_img(img, *, bound_x=None, bound_y=None, cs=None, mask=None,
     # Rotate and flip img to match proper x/y axes labels
     # img_to_plt = (img_to_plt).T
 
-    new_ant_rad = (ant_rad - 14.8) / 0.97 + 10.6
-    ant_xs, ant_ys = ((new_ant_rad - 10) * np.cos(draw_angs),
-                      (new_ant_rad - 10) * np.sin(draw_angs))
-
+    # new_ant_rad = (ant_rad - 14.8) / 0.97 + 10.6
+    # ant_xs, ant_ys = ((new_ant_rad - 10) * np.cos(draw_angs),
+    #                   (new_ant_rad - 10) * np.sin(draw_angs))
 
     # Define the x/y coordinates of the approximate breast outline
     if adi_rad == 0:
@@ -351,7 +350,6 @@ def plot_fd_img(img, *, bound_x=None, bound_y=None, cs=None, mask=None,
                          fontweight='bold', family='monospace')
 
     if plot_stl:
-
         # if len(phantom_id) >= 4:
         #
         #     adi_id = phantom_id.split('F')[0].swapcase()
@@ -366,8 +364,8 @@ def plot_fd_img(img, *, bound_x=None, bound_y=None, cs=None, mask=None,
         #                            slice_thickness=1.0)
 
         phantom_xs, phantom_ys = \
-                     get_shell_xy_for_z(phantom_id.split('F')[0].swapcase(),
-                                    stl_z * 10, slice_thickness=1.0)
+            get_shell_xy_for_z(phantom_id.split('F')[0].swapcase(),
+                               stl_z * 10, slice_thickness=1.0)
         phantom_xs /= 10
         phantom_ys /= 10
 
@@ -509,7 +507,6 @@ def plot_fd_img_with_intersections(img, cs, ant_pos_x, ant_pos_y, pix_xs,
     temp_val = (ant_rad - 14.8) / 0.97 + 10.6
     ant_xs, ant_ys = ((temp_val - 10) * np.cos(draw_angs),
                       (temp_val - 10) * np.sin(draw_angs))
-
 
     # Define the x/y coordinates of the approximate breast outline
     if adi_rad == 0:
@@ -654,3 +651,135 @@ def plot_fd_img_with_intersections(img, cs, ant_pos_x, ant_pos_y, pix_xs,
     bprev_y.on_clicked(callback.prev_y)
 
     plt.show()
+
+
+def plot_fd_img_differential(img, *, cs_left=None, cs_right=None,
+                             tum_x=0.0, tum_y=0.0, tum_rad=0.0,
+                             adi_rad=0.0, ox=0.0, oy=0.0, roi_rad=0.0,
+                             img_rad=0.0,
+                             save_str='', save_fig=False, cmap='inferno',
+                             title='',
+                             crop_img=True, cbar_fmt='%.1f', phantom_id='',
+                             transparent=False, dpi=300, save_close=True):
+    """Displays a reconstruction, making a publication-ready figure
+
+    Parameters
+    ----------
+    img : array_like
+        The 2D reconstruction that will be displayed
+    tum_x : float
+        The x-position of the tumor in the scan, in meters
+    tum_y : float
+        The y-position of the tumor in the scan, in meters
+    tum_rad : float
+        The radius of the tumor in the scan, in meters
+    img_rad : float
+        The radius of the image-space
+    save_str : str, optional
+        The complete path for saving the figure as a .png - only used if
+        save_fig is True
+    save_fig : bool
+        If True, will save the displayed image to the location specified
+        in save_str
+    cmap : str
+        Specifies the colormap that will be used when displaying the
+        image
+    title : str
+        The title for the plot
+    crop_img : bool
+        If True, will set the values in the image to NaN outside of the
+        inner antenna trajectory
+    cmap : str
+        Color map
+    transparent : bool
+        If True, will save the image with a transparent background
+        (i.e., whitespace will be transparent)
+    dpi : int
+        The DPI to be used if saving the image
+    save_close : bool
+        If True, closes the figure after saving
+    """
+    pix_xs, pix_ys = get_xy_arrs(np.size(img, axis=0), roi_rad)
+    pix_xs *= 100
+    pix_ys *= 100
+    img_to_plt = np.abs(img)
+    img_to_plt = img * np.ones_like(img)
+    img_rad *= 100
+    roi_rad *= 100
+
+    # If cropping the image at the antenna-trajectory boundary
+    if crop_img:
+        # Find the region inside the antenna trajectory
+        roi = breastmodels.get_roi(roi_rad, np.size(img_to_plt, axis=0),
+                                   img_rad)
+
+        # Set the pixels outside of the antenna trajectory to NaN
+        img_to_plt[np.logical_not(roi)] = np.NaN
+
+    # Define angles for plot the tissue geometry
+    draw_angs = np.linspace(0, 2 * np.pi, 1000)
+
+    breast_xs, breast_ys = (adi_rad * 100 * np.cos(draw_angs) + ox * 100,
+                            adi_rad * 100 * np.sin(draw_angs) + oy * 100)
+
+    # Define the x/y coordinates of the approximate tumor outline
+    tum_xs, tum_ys = (tum_rad * 100 * np.cos(draw_angs) + tum_x * 100,
+                      tum_rad * 100 * np.sin(draw_angs) + tum_y * 100)
+
+    img_extent = [-img_rad, img_rad, -img_rad, img_rad]
+
+    # Set the font to times new roman
+    plt.rc('font', family='Times New Roman')
+    plt.figure()  # Make the figure window
+
+    plt.imshow(img_to_plt, cmap=cmap, extent=img_extent, aspect='equal')
+
+    # Set the size of the axis tick labels
+    plt.tick_params(labelsize=14)
+
+    # Set the x/y-ticks at multiples of 5 cm
+    plt.gca().set_xticks([-6, -4, -2, 0, 2, 4, 6])
+    plt.gca().set_yticks([-6, -4, -2, 0, 2, 4, 6])
+
+    # Specify the colorbar tick format and size
+    plt.colorbar(format=cbar_fmt).ax.tick_params(labelsize=14)
+
+    # Set the x/y axes limits
+    plt.xlim([-roi_rad, roi_rad])
+    plt.ylim([-roi_rad, roi_rad])
+
+    # plt.plot(ant_xs, ant_ys, 'k--', linewidth=2.5)
+    plt.plot(breast_xs, breast_ys, 'w--', linewidth=2,
+             label='Approximate outline')
+
+    # Plot the approximate tumor boundary
+    plt.plot(tum_xs, tum_ys, 'g', label='Observed position', linewidth=1.5)
+
+    # plt.title(title, fontsize=20)  # Make the plot title
+    plt.xlabel('x-axis (cm)', fontsize=16)  # Make the x-axis label
+    plt.ylabel('y-axis (cm)', fontsize=16)  # Make the y-axis label
+    plt.tight_layout()  # Remove excess whitespace in the figure
+
+    # If saving the image, save it to the save_str path and close it
+    if save_fig:
+
+        if cs_left is not None:
+            phi = np.deg2rad(np.arange(0, 360, 0.1))
+            rho = cs_left(phi)
+            xs = rho * np.cos(phi) * 100
+            ys = rho * np.sin(phi) * 100
+            plt.plot(xs, ys, 'r-', label='Left breast boundary')
+
+        if cs_right is not None:
+            phi = np.deg2rad(np.arange(0, 360, 0.1))
+            rho = cs_right(phi)
+            xs = rho * np.cos(phi) * 100
+            ys = rho * np.sin(phi) * 100
+            plt.plot(xs, ys, 'b-', label='Right breast boundary ')
+
+        # plt.legend(loc='upper left')
+        plt.savefig(save_str, transparent=transparent, dpi=dpi,
+                    bbox_inches='tight')
+
+        if save_close:  # If wanting to close the fig after saving
+            plt.close()

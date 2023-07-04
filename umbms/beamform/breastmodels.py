@@ -51,7 +51,7 @@ def get_roi(roi_rad, m_size, ant_rad):
 
     # Get the region of interest as all the pixels inside the
     # circle-of-interest
-    roi = np.zeros([m_size, m_size], dtype=np.bool)
+    roi = np.zeros([m_size, m_size], dtype=bool)
     roi[pix_dist_from_center < roi_rad] = True
 
     return roi

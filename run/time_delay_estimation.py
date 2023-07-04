@@ -443,3 +443,5 @@ if __name__ == "__main__":
             rt_das_end = perf_counter()
             logger.info('\tThe whole reconstruction time: %.3f s' %
                         (rt_das_end - rt_das_start))
+
+    worker_pool.close()

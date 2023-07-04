@@ -344,7 +344,9 @@ def find_centre_of_mass_from_cs(cs, n_points=200):
 
 def get_boundary_iczt(adi_emp_cropped, ant_rad, n_ant_pos=72,
                       ini_ant_ang=-136.0, ini_t=0.5e-9, fin_t=5.5e-9,
-                      n_time_pts=700, ini_f=2e9, fin_f=9e9, peak_threshold=10):
+                      n_time_pts=700, ini_f=2e9, fin_f=9e9, peak_threshold=10,
+                      out_dir=''):
+
     """ Returns a CubicSpline interpolation
     function that approximates phantom boundary from a time-domain
     converted data
@@ -386,21 +388,19 @@ def get_boundary_iczt(adi_emp_cropped, ant_rad, n_ant_pos=72,
     td = iczt(adi_emp_cropped, ini_t=ini_t, fin_t=fin_t, n_time_pts=n_time_pts,
               ini_f=ini_f, fin_f=fin_f)
 
-    # td = td.T
-
     # time response data
-    ts = np.linspace(0.5, 5.5, 700)
+    ts = np.linspace(ini_t * 1e9, fin_t * 1e9, 700)
 
     # polar angle data
     angles = np.linspace(0, np.deg2rad(355), n_ant_pos) \
              + np.deg2rad(ini_ant_ang)
 
     # # angles for plotting
-    # plt_angles = np.linspace(0, 355, n_ant_pos)
-    # ts_plt = ts[:200]
+    plt_angles = np.linspace(0, 355, n_ant_pos)
+    ts_plt = ts[:700]
     # #
     # # initializing an array of time-responces
-    # tr_threshold = np.array([])
+    tr_threshold = np.array([])
     # tr_approx = np.array([])
 
     # creating an array of polar distances for storing
@@ -470,11 +470,13 @@ def get_boundary_iczt(adi_emp_cropped, ant_rad, n_ant_pos=72,
             peak = approx_peak_idx
 
         # store the time responce obtained from threshold method
-        # tr_threshold = np.append(tr_threshold, ts[peak])
+        tr_threshold = np.append(tr_threshold, ts[peak])
 
         # polar radius of a corresponding highest intensity response
         # (corrected radius - radius of a time response)
         rad = ant_rad - ts[peak] * 1e-9 * __VAC_SPEED / 2
+        # TODO: account for new antenna time delay
+
         previous_peak_idx = peak
         # appending polar radius to rho array
         rho = np.append(rho, rad)
@@ -500,7 +502,7 @@ def get_boundary_iczt(adi_emp_cropped, ant_rad, n_ant_pos=72,
         # ax3.set_title('Correlation of both signals')
         # #
         # fig.legend()
-        # plt.savefig(os.path.join(out_dir, 'id_100_correlation_slice_%d'
+        # plt.savefig(os.path.join(out_dir, 'slice_%d.png'
         #                                     %  ant_pos))
         # plt.close(fig)
         # plt.show()
@@ -512,31 +514,31 @@ def get_boundary_iczt(adi_emp_cropped, ant_rad, n_ant_pos=72,
     # calculate the center of mass fo this shape
     x_cm, y_cm = find_centre_of_mass(rho, angles)
 
-    # td_plt = td[:200, :]
-    # plt_extent = [0, 355, ts_plt[-1], ts_plt[0]]
-    # plt_aspect_ratio = 355 / ts_plt[-1]
-    #
-    # # Plot primary scatter forward projection only
-    # plt.figure()
-    # plt.rc('font', family='Times New Roman')
-    # plt.imshow(np.abs(td_plt), aspect=plt_aspect_ratio, cmap='inferno',
-    #            extent=plt_extent)
-    # plt.colorbar(format='%.2e').ax.tick_params(labelsize=16)
-    # plt.gca().set_yticks([round(ii, 2)
-    #                       for ii in ts[::200 // 8]])
-    # plt.gca().set_xticks([round(ii)
-    #                       for ii in np.linspace(0, 355, 355)[::75]])
-    # plt.title('Boundary check', fontsize=20)
-    # plt.xlabel('Polar Angle of Antenna Position ('
-    #            + r'$^\circ$' + ')',
-    #            fontsize=16)
-    # plt.ylabel('Time of Response (ns)', fontsize=16)
-    # plt.plot(plt_angles, tr_threshold, 'r-', linewidth=1, label='Threshold')
+    td_plt = td[:700, :]
+    plt_extent = [0, 355, ts_plt[-1], ts_plt[0]]
+    plt_aspect_ratio = 355 / ts_plt[-1]
+
+    # Plot primary scatter forward projection only
+    plt.figure()
+    plt.rc('font', family='Times New Roman')
+    plt.imshow(np.abs(td_plt), aspect=plt_aspect_ratio, cmap='inferno',
+               extent=plt_extent)
+    plt.colorbar(format='%.2e').ax.tick_params(labelsize=16)
+    plt.gca().set_yticks([round(ii, 2)
+                          for ii in ts[::200 // 8]])
+    plt.gca().set_xticks([round(ii)
+                          for ii in np.linspace(0, 355, 355)[::75]])
+    plt.title('Boundary check', fontsize=20)
+    plt.xlabel('Polar Angle of Antenna Position ('
+               + r'$^\circ$' + ')',
+               fontsize=16)
+    plt.ylabel('Time of Response (ns)', fontsize=16)
+    plt.plot(plt_angles, tr_threshold, 'r-', linewidth=1, label='Threshold')
     # plt.plot(plt_angles, tr_approx, 'r--', linewidth=1, label='Approximation')
     # plt.legend()
-    # plt.tight_layout()
-    # plt.savefig(os.path.join(out_dir, '%s' % save_str),
-    #             dpi=300)
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir, 'boundary_vs_sino_noncrop.png'),
+                dpi=300)
 
     # x = rho * np.cos(angles)
     # y = rho * np.sin(angles)
