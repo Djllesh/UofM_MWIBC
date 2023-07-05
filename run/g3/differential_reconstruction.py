@@ -10,6 +10,7 @@ import time
 
 import matplotlib
 import numpy as np
+from scipy.ndimage import shift
 
 # Use 'tkagg' to display plot windows, use 'agg' to *not* display
 # plot windows
@@ -30,6 +31,7 @@ from umbms.hardware.antenna import apply_ant_pix_delay, to_phase_center
 from umbms.plot.imgplots import plot_fd_img, plot_fd_img_differential
 
 from umbms.boundary.boundary_detection import get_boundary_iczt
+from umbms.boundary.differential_minimization import minimize_differential
 
 __CPU_COUNT = mp.cpu_count()
 ###############################################################################
@@ -231,7 +233,8 @@ def recon_imgs(s11, idx_pairs, id_pairs, do_das=True, do_dmas=False,
 
             if ii == 3:
                 cs_left, _, _ = boundary_data_left[0]
-                cs_right, _, _ = boundary_data_right[0]
+                cs_right, x_shift, y_shift = boundary_data_right[0]
+
 
                 plot_fd_img_differential(img=np.abs(das_imgs[ii, :, :]),
                                          tum_x=tum_x / 100,
@@ -242,18 +245,18 @@ def recon_imgs(s11, idx_pairs, id_pairs, do_das=True, do_dmas=False,
                                          img_rad=__ROI_RAD,
                                          save_str=os.path.join(das_o_dir,
                                                                'id_%d-%d_comp_'
-                                                               'noncrop'
-                                                               '.png'
-                                                               % (
-                                                                   id_pairs[
-                                                                       ii, 0],
+                                                               'shifted.png'
+                                                               % (id_pairs[
+                                                                      ii, 0],
                                                                    id_pairs[
                                                                        ii, 1])),
                                          transparent=False,
                                          save_close=True,
                                          save_fig=True,
                                          cs_left=cs_left,
-                                         cs_right=cs_right
+                                         cs_right=cs_right,
+                                         x_shift=x_shift,
+                                         y_shift=y_shift
                                          )
 
             plot_fd_img(img=np.abs(das_imgs[ii, :, :]),
@@ -435,28 +438,34 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
             if ii == 3 or ii == 4:
                 ant_rad = md[ii]['ant_rad'] / 100
                 cs_left, x_cm_left, y_cm_left = \
-                    get_boundary_iczt(adi_emp_cropped=left_s11,
+                    get_boundary_iczt(adi_emp_cropped=left_s11[__SCAN_FS >
+                                                               2e9, :],
                                       ant_rad=ant_rad +
                                               0.03618 + 0.0449,
                                       out_dir=os.path.join(__O_DIR,
                                                            'boundary_l/'),
-                                      ini_f=1e9, fin_f=9e9,
-                                      ini_t=0.5e-9, fin_t=5.5e-9,
-                                      n_time_pts=700)
+                                      ini_f=2e9, fin_f=9e9,
+                                      ini_t=1e-9, fin_t=2e-9,
+                                      n_time_pts=1000)
 
                 boundary_data_left.append((cs_left, x_cm_left, y_cm_left))
 
                 cs_right, x_cm_right, y_cm_right = \
-                    get_boundary_iczt(adi_emp_cropped=right_s11,
+                    get_boundary_iczt(adi_emp_cropped=right_s11[__SCAN_FS >
+                                                                2e9, :],
                                       ant_rad=ant_rad +
                                               0.03618 + 0.0449,
                                       out_dir=os.path.join(__O_DIR,
                                                            'boundary_r/'),
-                                      ini_f=1e9, fin_f=9e9,
-                                      ini_t=0.5e-9, fin_t=5.5e-9,
-                                      n_time_pts=700)
+                                      ini_f=2e9, fin_f=9e9,
+                                      ini_t=1e-9, fin_t=2e-9,
+                                      n_time_pts=1000)
 
-                boundary_data_right.append((cs_right, x_cm_right, y_cm_right))
+                shift = minimize_differential(cs_left=cs_left,
+                                             cs_right=cs_right)
+
+
+                boundary_data_right.append((cs_right, shift[0], shift[1]))
 
             # Perform left/right breast subtraction
             s11_pair_diffs[ii, :, :] = left_s11 - right_s11

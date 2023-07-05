@@ -15,7 +15,7 @@ from umbms.loadsave import save_pickle
 from umbms.beamform.fwdproj import fd_fwd_proj, fd_fwd_proj_vel_freq
 from umbms.beamform.optimfuncs import get_ref_derivs, get_ref_derivs_vel_freq
 
-from umbms.plot import plt_sino, plt_fd_sino
+from umbms.plot.sinogramplot import plt_sino, plt_fd_sino
 from umbms.plot.imgplots import plot_fd_img
 
 

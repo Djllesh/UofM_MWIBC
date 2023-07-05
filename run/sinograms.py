@@ -13,7 +13,7 @@ from umbms import get_proj_path, verify_path, get_script_logger
 from umbms.loadsave import load_pickle, save_pickle
 
 from umbms.plot.imgplots import plot_fd_img, plot_fd_img_with_intersections
-from umbms.plot import plt_sino, plt_fd_sino
+from umbms.plot.sinogramplot import plt_sino, plt_fd_sino
 
 from umbms.beamform.orr import orr_recon
 from umbms.beamform.dmas import fd_dmas

@@ -12,6 +12,7 @@ from scipy.interpolate import CubicSpline
 from scipy.constants import speed_of_light
 from umbms.beamform.iczt import iczt
 from umbms.beamform.utility import get_xy_arrs
+from umbms.plot.sinogramplot import show_sinogram
 import matplotlib.pyplot as plt
 
 __VAC_SPEED = speed_of_light
@@ -389,7 +390,7 @@ def get_boundary_iczt(adi_emp_cropped, ant_rad, n_ant_pos=72,
               ini_f=ini_f, fin_f=fin_f)
 
     # time response data
-    ts = np.linspace(ini_t * 1e9, fin_t * 1e9, 700)
+    ts = np.linspace(ini_t * 1e9, fin_t * 1e9, n_time_pts)
 
     # polar angle data
     angles = np.linspace(0, np.deg2rad(355), n_ant_pos) \
@@ -397,7 +398,7 @@ def get_boundary_iczt(adi_emp_cropped, ant_rad, n_ant_pos=72,
 
     # # angles for plotting
     plt_angles = np.linspace(0, 355, n_ant_pos)
-    ts_plt = ts[:700]
+    ts_plt = ts[:n_time_pts]
     # #
     # # initializing an array of time-responces
     tr_threshold = np.array([])
@@ -514,31 +515,39 @@ def get_boundary_iczt(adi_emp_cropped, ant_rad, n_ant_pos=72,
     # calculate the center of mass fo this shape
     x_cm, y_cm = find_centre_of_mass(rho, angles)
 
-    td_plt = td[:700, :]
-    plt_extent = [0, 355, ts_plt[-1], ts_plt[0]]
-    plt_aspect_ratio = 355 / ts_plt[-1]
+    # td_plt = td[:, :]
+    # plt_extent = [0, 355, ts_plt[-1], ts_plt[0]]
+    # plt_aspect_ratio = 355 / ts_plt[-1]
+    #
+    # show_sinogram(data=td_plt, aspect_ratio=plt_aspect_ratio,
+    #               extent=plt_extent, title='Boundary check',
+    #               out_dir=out_dir,
+    #               save_str='boundary_vs_sino_data_crop_1000'
+    #                                         '.png',
+    #               ts=ts_plt, transparent=False, bound_angles=plt_angles,
+    #               bound_times=tr_threshold)
 
-    # Plot primary scatter forward projection only
-    plt.figure()
-    plt.rc('font', family='Times New Roman')
-    plt.imshow(np.abs(td_plt), aspect=plt_aspect_ratio, cmap='inferno',
-               extent=plt_extent)
-    plt.colorbar(format='%.2e').ax.tick_params(labelsize=16)
-    plt.gca().set_yticks([round(ii, 2)
-                          for ii in ts[::200 // 8]])
-    plt.gca().set_xticks([round(ii)
-                          for ii in np.linspace(0, 355, 355)[::75]])
-    plt.title('Boundary check', fontsize=20)
-    plt.xlabel('Polar Angle of Antenna Position ('
-               + r'$^\circ$' + ')',
-               fontsize=16)
-    plt.ylabel('Time of Response (ns)', fontsize=16)
-    plt.plot(plt_angles, tr_threshold, 'r-', linewidth=1, label='Threshold')
-    # plt.plot(plt_angles, tr_approx, 'r--', linewidth=1, label='Approximation')
-    # plt.legend()
-    plt.tight_layout()
-    plt.savefig(os.path.join(out_dir, 'boundary_vs_sino_noncrop.png'),
-                dpi=300)
+    # # Plot primary scatter forward projection only
+    # plt.figure()
+    # plt.rc('font', family='Times New Roman')
+    # plt.imshow(np.abs(td_plt), aspect=plt_aspect_ratio, cmap='inferno',
+    #            extent=plt_extent)
+    # plt.colorbar(format='%.2e').ax.tick_params(labelsize=16)
+    # plt.gca().set_yticks([round(ii, 2)
+    #                       for ii in ts_plt[::np.size(ts_plt) // 8]])
+    # plt.gca().set_xticks([round(ii)
+    #                       for ii in np.linspace(0, 355, 355)[::75]])
+    # plt.title('Boundary check', fontsize=20)
+    # plt.xlabel('Polar Angle of Antenna Position ('
+    #            + r'$^\circ$' + ')',
+    #            fontsize=16)
+    # plt.ylabel('Time of Response (ns)', fontsize=16)
+    # plt.plot(plt_angles, tr_threshold, 'r-', linewidth=1, label='Threshold')
+    # # plt.plot(plt_angles, tr_approx, 'r--', linewidth=1, label='Approximation')
+    # # plt.legend()
+    # plt.tight_layout()
+    # plt.savefig(os.path.join(out_dir, 'boundary_vs_sino_noncrop.png'),
+    #             dpi=300)
 
     # x = rho * np.cos(angles)
     # y = rho * np.sin(angles)
