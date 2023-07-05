@@ -655,10 +655,9 @@ def plot_fd_img_with_intersections(img, cs, ant_pos_x, ant_pos_y, pix_xs,
 
 def plot_fd_img_differential(img, *, cs_left=None, cs_right=None,
                              tum_x=0.0, tum_y=0.0, tum_rad=0.0,
-                             adi_rad=0.0, ox=0.0, oy=0.0, roi_rad=0.0,
-                             img_rad=0.0,
-                             save_str='', save_fig=False, cmap='inferno',
-                             title='',
+                             adi_rad=0.0, x_shift=0.0, y_shift=0.0,
+                             roi_rad=0.0,img_rad=0.0,save_str='',
+                             save_fig=False, cmap='inferno', title='',
                              crop_img=True, cbar_fmt='%.1f', phantom_id='',
                              transparent=False, dpi=300, save_close=True):
     """Displays a reconstruction, making a publication-ready figure
@@ -719,8 +718,8 @@ def plot_fd_img_differential(img, *, cs_left=None, cs_right=None,
     # Define angles for plot the tissue geometry
     draw_angs = np.linspace(0, 2 * np.pi, 1000)
 
-    breast_xs, breast_ys = (adi_rad * 100 * np.cos(draw_angs) + ox * 100,
-                            adi_rad * 100 * np.sin(draw_angs) + oy * 100)
+    breast_xs, breast_ys = (adi_rad * 100 * np.cos(draw_angs),
+                            adi_rad * 100 * np.sin(draw_angs))
 
     # Define the x/y coordinates of the approximate tumor outline
     tum_xs, tum_ys = (tum_rad * 100 * np.cos(draw_angs) + tum_x * 100,
@@ -773,8 +772,8 @@ def plot_fd_img_differential(img, *, cs_left=None, cs_right=None,
         if cs_right is not None:
             phi = np.deg2rad(np.arange(0, 360, 0.1))
             rho = cs_right(phi)
-            xs = rho * np.cos(phi) * 100
-            ys = rho * np.sin(phi) * 100
+            xs = rho * np.cos(phi) * 100 + x_shift * 100
+            ys = rho * np.sin(phi) * 100 + y_shift * 100
             plt.plot(xs, ys, 'b-', label='Right breast boundary ')
 
         # plt.legend(loc='upper left')

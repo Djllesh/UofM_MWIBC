@@ -3,8 +3,14 @@ Tyson Reimer
 University of Manitoba
 June 27th, 2019
 """
+import os
+
 import matplotlib
 import matplotlib.pyplot as plt
+from matplotlib import pyplot as plt
+
+from umbms.beamform.iczt import iczt
+
 matplotlib.use('Agg')
 import numpy as np
 
@@ -164,3 +170,153 @@ def plot_sino(td_data, ini_t, fin_t, title='',
 
     else:  # If not saving the figure, then show the figure
         plt.show()
+
+
+def plt_sino(fd, title, save_str, out_dir, cbar_fmt='%.2e',
+             transparent=True, close=True):
+
+    # Find the minimum retained frequency
+    scan_fs = np.linspace(2e9, 9e9, 1001)  # Frequencies used in scan
+    min_f = 2e9  # Min frequency to retain
+    tar_fs = scan_fs >= min_f  # Target frequencies to retain
+    min_retain_f = np.min(scan_fs[tar_fs])  # Min freq actually retained
+
+    # Create variables for plotting
+    ts = np.linspace(0.5, 5.5, 700)
+    plt_extent = [0, 355, ts[-1], ts[0]]
+    plt_aspect_ratio = 355 / ts[-1]
+
+    # Conert to the time-domain
+    td = iczt(fd, ini_t=0.5e-9, fin_t=5.5e-9, n_time_pts=700,
+              ini_f=min_retain_f, fin_f=9e9)
+
+    show_sinogram(data=td, aspect_ratio=plt_aspect_ratio,
+                  extent=plt_extent, title=title, out_dir=out_dir,
+                  save_str=save_str, ts=ts, cbar_fmt=cbar_fmt,
+                  transparent=transparent, close=close)
+    #
+    # # Plot primary scatter forward projection only
+    # plt.figure()
+    # plt.rc('font', family='Times New Roman')
+    # plt.imshow(np.abs(td), aspect=plt_aspect_ratio, cmap='inferno',
+    #            extent=plt_extent)
+    # plt.colorbar(format=cbar_fmt).ax.tick_params(labelsize=16)
+    # plt.gca().set_yticks([round(ii, 2)
+    #                       for ii in ts[::700 // 8]])
+    # plt.gca().set_xticks([round(ii)
+    #                       for ii in np.linspace(0, 355, 355)[::75]])
+    # plt.title('%s' % title, fontsize=20)
+    # plt.xlabel('Polar Angle of Antenna Position ('
+    #            + r'$^\circ$' + ')',
+    #            fontsize=16)
+    # plt.ylabel('Time of Response (ns)', fontsize=16)
+    # plt.tight_layout()
+    # plt.savefig(os.path.join(out_dir, '%s' % save_str),
+    #             dpi=300, transparent=transparent)
+    # if close:
+    #     plt.close()
+
+
+def plt_fd_sino(fd, title, save_str, out_dir, cbar_fmt='%.2e',
+                transparent=True, close=True):
+
+    # Find the minimum retained frequency
+    scan_fs = np.linspace(2e9, 9e9, 1001)  # Frequencies used in scan
+
+
+    # Create variables for plotting
+    fs = scan_fs
+    plt_extent = [0, 355, fs[-1] / 1e9, fs[0] / 1e9]
+    plt_aspect_ratio = 355 / (fs[-1] / 1e9)
+
+    # Plot primary scatter forward projection only
+    plt.figure()
+    plt.rc('font', family='Times New Roman')
+    plt.imshow(np.abs(fd), aspect=plt_aspect_ratio, cmap='inferno',
+               extent=plt_extent)
+    plt.colorbar(format=cbar_fmt).ax.tick_params(labelsize=16)
+    plt.tick_params(labelsize=14)
+    plt.gca().set_yticks([2, 3, 4, 5, 6, 7, 8])
+    plt.gca().set_xticks([round(ii)
+                          for ii in np.linspace(0, 355, 355)[::75]])
+    plt.title('%s' % title, fontsize=20)
+    plt.xlabel('Polar Angle of Antenna Position ('
+               + r'$^\circ$' + ')',
+               fontsize=16)
+    plt.ylabel('Frequency (GHz)', fontsize=16)
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir, '%s' % save_str),
+                dpi=300, transparent=transparent)
+    if close:
+        plt.close()
+
+
+def show_sinogram(data, aspect_ratio, extent, title, out_dir, save_str,
+                  ts=None, bound_angles=None, bound_times=None,
+                  cbar_fmt='%.2e', transparent=True, close=True):
+    """ Calls imshow function on provided data, formats the plot,
+    and saves it
+
+    Parameters
+    ----------
+    data : array_like
+        Frequency- or time-domain data to plot
+    aspect_ratio : float
+        The aspect ratio for the plot
+    extent : array_like
+        x- and y-extent array for the plot
+    title : string
+        Title string that will appear on top of the sinogram
+    out_dir : string
+        Directory to save in
+    save_str : string
+        Filename of the sinogram
+    ts : array_like
+        Array of time points for TD plotting
+    bound_angles : array_like
+        Angle data for plotting the boundary
+    bound_times : array_like
+        Time of response data for plotting the boundary
+    cbar_fmt : string
+        Numerical format
+    transparent : bool
+        Transparency flag
+    close : bool
+        Flag to close the plot after exiting the function
+    """
+
+
+    # Plot primary scatter forward projection only
+    plt.figure()
+    plt.rc('font', family='Times New Roman')
+    plt.imshow(np.abs(data), aspect=aspect_ratio, cmap='inferno',
+               extent=extent)
+    plt.colorbar(format=cbar_fmt).ax.tick_params(labelsize=16)
+
+    if ts is not None:
+        plt.gca().set_yticks([round(ii, 2)
+                              for ii in ts[::np.size(ts) // 8]])
+        plt.ylabel('Time of Response (ns)', fontsize=16)
+    else:
+        # TODO: pass the fd values instead of hardcoding
+        plt.gca().set_yticks([2, 3, 4, 5, 6, 7, 8])
+        plt.ylabel('Frequency (GHz)', fontsize=16)
+
+    plt.gca().set_xticks([round(ii)
+                          for ii in np.linspace(0, 355, 355)[::75]])
+    plt.title('%s' % title, fontsize=20)
+    plt.xlabel('Polar Angle of Antenna Position ('
+               + r'$^\circ$' + ')',
+               fontsize=16)
+
+    if bound_angles is not None and bound_times is not None:
+        plt.plot(bound_angles, bound_times, 'r-', linewidth=1,
+                 label='Boundary')
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir, '%s' % save_str),
+                dpi=300, transparent=transparent)
+
+    if close:
+        plt.close()
+
