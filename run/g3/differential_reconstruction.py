@@ -12,6 +12,7 @@ import matplotlib
 import numpy as np
 from scipy.ndimage import shift
 
+
 # Use 'tkagg' to display plot windows, use 'agg' to *not* display
 # plot windows
 matplotlib.use('agg')
@@ -28,9 +29,13 @@ from umbms.beamform.propspeed import estimate_speed
 
 from umbms.hardware.antenna import apply_ant_pix_delay, to_phase_center
 
-from umbms.plot.imgplots import plot_fd_img, plot_fd_img_differential
+from umbms.beamform.iczt import iczt
 
-from umbms.boundary.boundary_detection import get_boundary_iczt
+from umbms.plot.imgplots import plot_fd_img, plot_fd_img_differential
+from umbms.plot.sinogramplot import plt_sino, show_sinogram
+
+from umbms.boundary.boundary_detection import get_boundary_iczt, \
+    fd_differential_align, cart_to_polar
 from umbms.boundary.differential_minimization import minimize_differential
 
 __CPU_COUNT = mp.cpu_count()
@@ -236,28 +241,28 @@ def recon_imgs(s11, idx_pairs, id_pairs, do_das=True, do_dmas=False,
                 cs_right, x_shift, y_shift = boundary_data_right[0]
 
 
-                plot_fd_img_differential(img=np.abs(das_imgs[ii, :, :]),
-                                         tum_x=tum_x / 100,
-                                         tum_y=tum_y / 100,
-                                         tum_rad=tum_rad / 100,
-                                         adi_rad=adi_rad / 100,
-                                         roi_rad=__ROI_RAD,
-                                         img_rad=__ROI_RAD,
-                                         save_str=os.path.join(das_o_dir,
-                                                               'id_%d-%d_comp_'
-                                                               'shifted.png'
-                                                               % (id_pairs[
-                                                                      ii, 0],
-                                                                   id_pairs[
-                                                                       ii, 1])),
-                                         transparent=False,
-                                         save_close=True,
-                                         save_fig=True,
-                                         cs_left=cs_left,
-                                         cs_right=cs_right,
-                                         x_shift=x_shift,
-                                         y_shift=y_shift
-                                         )
+                # plot_fd_img_differential(img=np.abs(das_imgs[ii, :, :]),
+                #                          tum_x=tum_x / 100,
+                #                          tum_y=tum_y / 100,
+                #                          tum_rad=tum_rad / 100,
+                #                          adi_rad=adi_rad / 100,
+                #                          roi_rad=__ROI_RAD,
+                #                          img_rad=__ROI_RAD,
+                #                          save_str=os.path.join(das_o_dir,
+                #                                                'id_%d-%d_comp_'
+                #                                                'shifted.png'
+                #                                                % (id_pairs[
+                #                                                       ii, 0],
+                #                                                    id_pairs[
+                #                                                        ii, 1])),
+                #                          transparent=False,
+                #                          save_close=True,
+                #                          save_fig=True,
+                #                          cs_left=cs_left,
+                #                          cs_right=cs_right,
+                #                          x_shift=x_shift,
+                #                          y_shift=y_shift
+                #                          )
 
             plot_fd_img(img=np.abs(das_imgs[ii, :, :]),
                         tum_x=tum_x / 100,
@@ -435,10 +440,32 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
             else:  # If not mirroring right breast
                 right_s11 = right_cal
 
-            if ii == 3 or ii == 4:
+            if ii == 3:
                 ant_rad = md[ii]['ant_rad'] / 100
+
+                s11_aligned_right = fd_differential_align(
+                    fd_emp_ref_left=left_s11[__SCAN_FS >= 2e9, :],
+                    fd_emp_ref_right=right_s11[__SCAN_FS >= 2e9, :],
+                    ini_t=1e-9, fin_t=2e-9, n_time_pts=1000,
+                    ini_f=2e9, fin_f=9e9)
+
+                plt_sino(fd=s11_aligned_right, title='Right breast phase '
+                                                     'shifted',
+                         out_dir=os.path.join(__O_DIR, 'boundary_r/'),
+                         save_str='right_phase_shifted.png')
+
+                plt_sino(fd=right_s11[__SCAN_FS >= 2e9, :],
+                         title='Right breast (empty chamber)',
+                         out_dir=os.path.join(__O_DIR, 'boundary_r/'),
+                         save_str='right_emp_ref.png')
+
+                plt_sino(fd=left_s11[__SCAN_FS >= 2e9, :],
+                         title='Left breast (empty chamber)',
+                         out_dir=os.path.join(__O_DIR, 'boundary_r/'),
+                         save_str='left_emp_ref.png')
+
                 cs_left, x_cm_left, y_cm_left = \
-                    get_boundary_iczt(adi_emp_cropped=left_s11[__SCAN_FS >
+                    get_boundary_iczt(adi_emp_cropped=left_s11[__SCAN_FS >=
                                                                2e9, :],
                                       ant_rad=ant_rad +
                                               0.03618 + 0.0449,
@@ -451,7 +478,7 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
                 boundary_data_left.append((cs_left, x_cm_left, y_cm_left))
 
                 cs_right, x_cm_right, y_cm_right = \
-                    get_boundary_iczt(adi_emp_cropped=right_s11[__SCAN_FS >
+                    get_boundary_iczt(adi_emp_cropped=right_s11[__SCAN_FS >=
                                                                 2e9, :],
                                       ant_rad=ant_rad +
                                               0.03618 + 0.0449,
@@ -462,8 +489,38 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
                                       n_time_pts=1000)
 
                 shift = minimize_differential(cs_left=cs_left,
-                                             cs_right=cs_right)
+                                              cs_right=cs_right)
 
+                right_s11[__SCAN_FS >= 2e9, :] = s11_aligned_right
+
+                # angles = np.linspace(0, np.deg2rad(355), 72) \
+                #          + np.deg2rad(-136.0)
+                # rho = cs_right(angles)
+                # xs_shifted = rho * np.cos(angles) + shift[0]
+                # ys_shifted = rho * np.sin(angles) + shift[1]
+                # rho_shifted, phi_shifted = cart_to_polar(xs_shifted,
+                #                                          ys_shifted)
+                # tr_shifted = (2 / 3e8) * (ant_rad + 0.03618 + 0.0449 -
+                #                           rho_shifted) * 1e9
+                #
+                # # angles for plotting
+                # plt_angles = np.linspace(0, 355, 72)
+                # ts_plt = np.linspace(0.5, 5.5, 700)
+                #
+                # td_plt = iczt(s11_aligned_right[:, :], ini_t=0.5e-9,
+                #               fin_t=5.5e-9, ini_f=2e9, fin_f=9e9,
+                #               n_time_pts=700)
+                # plt_extent = [0, 355, ts_plt[-1], ts_plt[0]]
+                # plt_aspect_ratio = 355 / ts_plt[-1]
+                #
+                # show_sinogram(data=td_plt, aspect_ratio=plt_aspect_ratio,
+                #               extent=plt_extent, title='Space shifted vs '
+                #                                        'phase shifted',
+                #               out_dir=os.path.join(__O_DIR, 'boundary_r/'),
+                #               save_str='space_shifted_vs_phase_shifted.png',
+                #               ts=ts_plt, transparent=False,
+                #               bound_angles=plt_angles,
+                #               bound_times=tr_shifted, bound_color='b')
 
                 boundary_data_right.append((cs_right, shift[0], shift[1]))
 

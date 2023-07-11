@@ -253,7 +253,8 @@ def plt_fd_sino(fd, title, save_str, out_dir, cbar_fmt='%.2e',
 
 def show_sinogram(data, aspect_ratio, extent, title, out_dir, save_str,
                   ts=None, bound_angles=None, bound_times=None,
-                  cbar_fmt='%.2e', transparent=True, close=True):
+                  bound_color='r', cbar_fmt='%.2e', transparent=True,
+                  close=True):
     """ Calls imshow function on provided data, formats the plot,
     and saves it
 
@@ -277,6 +278,8 @@ def show_sinogram(data, aspect_ratio, extent, title, out_dir, save_str,
         Angle data for plotting the boundary
     bound_times : array_like
         Time of response data for plotting the boundary
+    bound_color : string
+        Color of the boundary on top of the sinogram
     cbar_fmt : string
         Numerical format
     transparent : bool
@@ -310,7 +313,7 @@ def show_sinogram(data, aspect_ratio, extent, title, out_dir, save_str,
                fontsize=16)
 
     if bound_angles is not None and bound_times is not None:
-        plt.plot(bound_angles, bound_times, 'r-', linewidth=1,
+        plt.plot(bound_angles, bound_times, '%s-' % bound_color, linewidth=1,
                  label='Boundary')
 
     plt.tight_layout()

@@ -346,8 +346,8 @@ def find_centre_of_mass_from_cs(cs, n_points=200):
 def get_boundary_iczt(adi_emp_cropped, ant_rad, n_ant_pos=72,
                       ini_ant_ang=-136.0, ini_t=0.5e-9, fin_t=5.5e-9,
                       n_time_pts=700, ini_f=2e9, fin_f=9e9, peak_threshold=10,
-                      out_dir=''):
-
+                      plt_slices=False, plot_sino=False, out_dir='',
+                      cs_shift=None):
     """ Returns a CubicSpline interpolation
     function that approximates phantom boundary from a time-domain
     converted data
@@ -385,169 +385,58 @@ def get_boundary_iczt(adi_emp_cropped, ant_rad, n_ant_pos=72,
     x_cm, y_cm : float
         Cartesian coordinates of a centre of mass
     """
+
     # convert frequency-domain data to time-domain
     td = iczt(adi_emp_cropped, ini_t=ini_t, fin_t=fin_t, n_time_pts=n_time_pts,
               ini_f=ini_f, fin_f=fin_f)
 
     # time response data
     ts = np.linspace(ini_t * 1e9, fin_t * 1e9, n_time_pts)
+    # find the kernel
+    kernel = time_aligned_kernel(td)
+    # find all rho and ToR (time-of-response) values
+    # on each antenna position
+    rho, ToR = rho_ToR_from_td(td=td, ts=ts, kernel=kernel, ant_rad=ant_rad,
+                               peak_threshold=peak_threshold,
+                               plt_slices=plt_slices, out_dir=out_dir)
 
     # polar angle data
     angles = np.linspace(0, np.deg2rad(355), n_ant_pos) \
              + np.deg2rad(ini_ant_ang)
-
-    # # angles for plotting
-    plt_angles = np.linspace(0, 355, n_ant_pos)
-    ts_plt = ts[:n_time_pts]
-    # #
-    # # initializing an array of time-responces
-    tr_threshold = np.array([])
-    # tr_approx = np.array([])
-
-    # creating an array of polar distances for storing
-    rho = np.array([])
-
-    # average signal for correlation
-    avg_signal = np.abs(np.average(td, axis=1))
-
-    time_aligned_signals = np.zeros_like(td, dtype=float)
-    time_aligned_signals[:, 0] = np.abs(td[:, 0])
-    first_peak, _ = find_peaks(time_aligned_signals[:, 0],
-                               height=np.max(
-                                   time_aligned_signals[:, 0]) - 1e-9)
-
-    for ant_pos in range(1, np.size(td, axis=1), 1):
-        signal_peak, _ = find_peaks(np.abs(td[:, ant_pos]),
-                                    np.max(np.abs(td[:, ant_pos])) - 1e-9)
-        if signal_peak > first_peak:
-            shift = signal_peak - first_peak
-            time_aligned_signals[:np.size(time_aligned_signals, axis=0)
-                                  - shift[0], ant_pos] = \
-                np.abs(td[shift[0]:, ant_pos])
-        else:
-            shift = first_peak - signal_peak
-            time_aligned_signals[shift[0]:, ant_pos] = \
-                np.abs(td[:np.size(time_aligned_signals, axis=0) - shift[0],
-                       ant_pos])
-
-    kernel = np.average(time_aligned_signals, axis=1)
-    # kernel = avg_signal
-    # average peak index for correlation data interpretation
-    max_avg = np.max(kernel)
-    avg_peak, _ = find_peaks(kernel, height=max_avg - 1e-9)
-    previous_peak_idx = 0
-
-    for ant_pos in range(np.size(td, axis=1)):
-        # corresponding intensities
-        position = np.abs(td[:, ant_pos])
-
-        # correlation
-        corr = signal.correlate(position, kernel, 'same')
-
-        # resizing correlation back corresponding to the
-        # antenna position array length
-        lags = signal.correlation_lags(len(position), len(kernel), 'same')
-        max_corr = np.max(corr)
-        corr_peaks, _ = find_peaks(corr, height=max_corr - 1e-9)
-
-        # positive index - average signal is "shifted" to the right wrt
-        # the actual signal
-
-        # negative - to the left
-        indx_lag = lags[corr_peaks]
-
-        # approximate anticipated peak index
-        approx_peak_idx = avg_peak + indx_lag
-
-        # store anticipated time responce
-        # tr_approx = np.append(tr_approx, ts[approx_peak_idx])
-
-        # find the closest actual peak index to approximate
-        peaks, _ = find_peaks(position)
-        peak = peaks[np.argmin(np.abs(peaks - approx_peak_idx))]
-
-        if previous_peak_idx == 0 or np.abs(peak - previous_peak_idx) > \
-                peak_threshold:
-            peak = approx_peak_idx
-
-        # store the time responce obtained from threshold method
-        tr_threshold = np.append(tr_threshold, ts[peak])
-
-        # polar radius of a corresponding highest intensity response
-        # (corrected radius - radius of a time response)
-        rad = ant_rad - ts[peak] * 1e-9 * __VAC_SPEED / 2
-        # TODO: account for new antenna time delay
-
-        previous_peak_idx = peak
-        # appending polar radius to rho array
-        rho = np.append(rho, rad)
-
-        #
-        # fig, (ax1, ax2, ax3) = plt.subplots(3, figsize=(9, 10), dpi=100)
-        #
-        # ax1.plot(np.abs(position), 'b-')
-        # ax1.plot(peaks, np.abs(position[peaks]), 'rx', label='Peaks')
-        # ax1.plot(peak, np.abs(position[peak]), 'yx', label='Chosen peak')
-        # ax1.plot(approx_peak_idx, np.abs(position[approx_peak_idx]), 'mx',
-        #                                         label='Approximation response')
-        # ax1.set_title('Antenna position slice')
-        # ax2.plot(np.abs(kernel), 'r-')
-        # ax2.plot(avg_peak, np.abs(kernel[avg_peak]), 'kx',
-        #                         label='Average signal peak = %d' % avg_peak)
-        # ax2.set_title('Average signal for all positions')
-        # ax3.plot(lags, np.abs(corr), 'g-')
-        # ax3.plot(indx_lag, np.abs(corr[corr_peaks]), 'cx',
-        #     label='Correlation peak = %d\nThreshold: %d\nApproximation: %d'
-        #           % (indx_lag, peak, approx_peak_idx))
-        # # ax3.plot(np.abs(corr))
-        # ax3.set_title('Correlation of both signals')
-        # #
-        # fig.legend()
-        # plt.savefig(os.path.join(out_dir, 'slice_%d.png'
-        #                                     %  ant_pos))
-        # plt.close(fig)
-        # plt.show()
-
-    rho = np.flip(rho)
     # CubicSpline interpolation on a given set of data
     cs = polar_fit_cs(rho, angles)
 
     # calculate the center of mass fo this shape
     x_cm, y_cm = find_centre_of_mass(rho, angles)
 
-    # td_plt = td[:, :]
-    # plt_extent = [0, 355, ts_plt[-1], ts_plt[0]]
-    # plt_aspect_ratio = 355 / ts_plt[-1]
-    #
-    # show_sinogram(data=td_plt, aspect_ratio=plt_aspect_ratio,
-    #               extent=plt_extent, title='Boundary check',
-    #               out_dir=out_dir,
-    #               save_str='boundary_vs_sino_data_crop_1000'
-    #                                         '.png',
-    #               ts=ts_plt, transparent=False, bound_angles=plt_angles,
-    #               bound_times=tr_threshold)
+    if plot_sino:
+        # angles for plotting
+        plt_angles = np.linspace(0, 355, n_ant_pos)
+        ts_plt = ts[:n_time_pts]
 
-    # # Plot primary scatter forward projection only
-    # plt.figure()
-    # plt.rc('font', family='Times New Roman')
-    # plt.imshow(np.abs(td_plt), aspect=plt_aspect_ratio, cmap='inferno',
-    #            extent=plt_extent)
-    # plt.colorbar(format='%.2e').ax.tick_params(labelsize=16)
-    # plt.gca().set_yticks([round(ii, 2)
-    #                       for ii in ts_plt[::np.size(ts_plt) // 8]])
-    # plt.gca().set_xticks([round(ii)
-    #                       for ii in np.linspace(0, 355, 355)[::75]])
-    # plt.title('Boundary check', fontsize=20)
-    # plt.xlabel('Polar Angle of Antenna Position ('
-    #            + r'$^\circ$' + ')',
-    #            fontsize=16)
-    # plt.ylabel('Time of Response (ns)', fontsize=16)
-    # plt.plot(plt_angles, tr_threshold, 'r-', linewidth=1, label='Threshold')
-    # # plt.plot(plt_angles, tr_approx, 'r--', linewidth=1, label='Approximation')
-    # # plt.legend()
-    # plt.tight_layout()
-    # plt.savefig(os.path.join(out_dir, 'boundary_vs_sino_noncrop.png'),
-    #             dpi=300)
+        td_plt = td[:, :]
+        plt_extent = [0, 355, ts_plt[-1], ts_plt[0]]
+        plt_aspect_ratio = 355 / ts_plt[-1]
+
+        show_sinogram(data=td_plt, aspect_ratio=plt_aspect_ratio,
+                      extent=plt_extent, title='Boundary check',
+                      out_dir=out_dir,
+                      save_str='boundary_vs_sino_no_shift.png',
+                      ts=ts_plt, transparent=False, bound_angles=plt_angles,
+                      bound_times=ToR, bound_color='r')
+
+        if cs_shift is not None:
+            xs_shifted = rho * np.cos(angles) + cs_shift[0]
+            ys_shifted = rho * np.sin(angles) + cs_shift[1]
+            rho_shifted, phi_shifted = cart_to_polar(xs_shifted, ys_shifted)
+            tr_shifted = (2 / __VAC_SPEED) * (ant_rad - rho_shifted) * 1e9
+
+            show_sinogram(data=td_plt, aspect_ratio=plt_aspect_ratio,
+                          extent=plt_extent, title='Boundary check',
+                          out_dir=out_dir,
+                          save_str='boundary_vs_sino_shift.png',
+                          ts=ts_plt, transparent=False, bound_angles=plt_angles,
+                          bound_times=tr_shifted, bound_color='b')
 
     # x = rho * np.cos(angles)
     # y = rho * np.sin(angles)
@@ -577,5 +466,236 @@ def get_boundary_iczt(adi_emp_cropped, ant_rad, n_ant_pos=72,
     #
     # deviation = np.average(delta_r_dev)
     # uns_dev = np.average(np.abs(delta_r_dev))
-
     return cs, x_cm, y_cm
+
+
+def time_aligned_kernel(td):
+    """Produces a kernel for cross-correlation by time-aligning most
+    intense peaks
+
+    Parameters
+    ----------
+    td : array_like
+        Skin response array in time domain
+
+    Returns
+    ----------
+    kernel : array_like
+        Kernel for cross-correlation
+    """
+
+    # Initialize the array to store aligned responses
+    time_aligned_signals = np.zeros_like(td, dtype=float)
+    # Aligning wrt to the first antenna position
+    time_aligned_signals[:, 0] = np.abs(td[:, 0])
+    # Find the time of response for the first antenna position
+    first_peak, _ = find_peaks(time_aligned_signals[:, 0],
+                               height=np.max(
+                                   time_aligned_signals[:, 0]) - 1e-9)
+
+    # for each antenna position
+    for ant_pos in range(1, np.size(td, axis=1), 1):
+        # find the max intensity ToR
+        signal_peak, _ = find_peaks(np.abs(td[:, ant_pos]),
+                                    np.max(np.abs(td[:, ant_pos])) - 1e-9)
+        # if the ToR is later
+        if signal_peak > first_peak:
+            shift = signal_peak - first_peak
+            # then on this position fill from the start of the array to
+            # the position *shift* units back from the end
+            time_aligned_signals[:np.size(time_aligned_signals, axis=0)
+                                  - shift[0], ant_pos] = \
+                np.abs(td[shift[0]:, ant_pos])
+        # if the ToR is earlier
+        else:
+            shift = first_peak - signal_peak
+            # then on this position fill from the *shift* index to the
+            # end of the array
+            time_aligned_signals[shift[0]:, ant_pos] = \
+                np.abs(td[:np.size(time_aligned_signals, axis=0) - shift[0],
+                       ant_pos])
+
+    # obtain the kernel by averaging
+    kernel = np.average(time_aligned_signals, axis=1)
+
+    return kernel
+
+
+def rho_ToR_from_td(td, ts, kernel, ant_rad, peak_threshold,
+                    plt_slices, out_dir):
+
+    # creating an array of polar distances for storing
+    rho = np.array([])
+    # initializing an array of time-responces
+    ToR = np.array([])
+
+    # average peak index for correlation data interpretation
+    max_avg = np.max(kernel)
+    avg_peak, _ = find_peaks(kernel, height=max_avg - 1e-9)
+    previous_peak_idx = 0
+
+    for ant_pos in range(np.size(td, axis=1)):
+
+        # -------PEAK SEARCH--------- #
+
+        # corresponding intensities
+        position = np.abs(td[:, ant_pos])
+        # correlation
+        corr = signal.correlate(position, kernel, 'same')
+        # resizing correlation back corresponding to the
+        # antenna position array length
+        lags = signal.correlation_lags(len(position), len(kernel), 'same')
+        max_corr = np.max(corr)
+        corr_peaks, _ = find_peaks(corr, height=max_corr - 1e-9)
+
+        # ------PEAK SELECTION------- #
+
+        # positive index - average signal is "shifted" to the right wrt
+        # the actual signal negative - to the left
+        indx_lag = lags[corr_peaks]
+        # approximate anticipated peak index
+        approx_peak_idx = avg_peak + indx_lag
+        # find the closest actual peak index to approximate
+        peaks, _ = find_peaks(position)
+        peak = peaks[np.argmin(np.abs(peaks - approx_peak_idx))]
+        # Correlation-matching peak proximity selection (CMPPS)
+        if previous_peak_idx == 0 or np.abs(peak - previous_peak_idx) > \
+                peak_threshold:
+            peak = approx_peak_idx
+
+        # --------POLAR RADIUS------- #
+
+        # store the time response obtained from CMPPS method
+        ToR = np.append(ToR, ts[peak])
+        # polar radius of a corresponding highest intensity response
+        # (corrected radius - radius of a time response)
+        rad = ant_rad - ts[peak] * 1e-9 * __VAC_SPEED / 2
+        # TODO: account for new antenna time delay
+        # appending polar radius to rho array
+        rho = np.append(rho, rad)
+
+        if plt_slices:
+            plot_slices(position, peaks, peak, approx_peak_idx, kernel,
+                        avg_peak, lags, corr, corr_peaks, indx_lag, ant_pos,
+                        out_dir)
+
+        # for next iteration
+        previous_peak_idx = peak
+
+    # the rotation is counter-clockwise
+    rho = np.flip(rho)
+
+    return rho, ToR
+
+
+def plot_slices(position, peaks, peak, approx_peak_idx, kernel, avg_peak, lags,
+                corr, corr_peaks, indx_lag, ant_pos, out_dir):
+    """Produces the plot of the antenna position slice with a kernel and
+    a result of correlation
+
+    """
+
+    fig, (ax1, ax2, ax3) = plt.subplots(3, figsize=(9, 10), dpi=100)
+
+    ax1.plot(np.abs(position), 'b-')
+    ax1.plot(peaks, np.abs(position[peaks]), 'rx', label='Peaks')
+    ax1.plot(peak, np.abs(position[peak]), 'yx', label='Chosen peak')
+    ax1.plot(approx_peak_idx, np.abs(position[approx_peak_idx]), 'mx',
+             label='Approximation '
+                   'response')
+    ax1.set_title('Antenna position slice')
+    ax2.plot(np.abs(kernel), 'r-')
+    ax2.plot(avg_peak, np.abs(kernel[avg_peak]), 'kx',
+             label='Average signal peak = %d' %
+                   avg_peak)
+    ax2.set_title('Average signal for all positions')
+    ax3.plot(lags, np.abs(corr), 'g-')
+    ax3.plot(indx_lag, np.abs(corr[corr_peaks]), 'cx',
+             label='Correlation peak = %d\nCMPPS: %d\nApproximation: %d'
+                   % (indx_lag, peak, approx_peak_idx))
+    ax3.set_title('Correlation of both signals')
+    fig.legend()
+    plt.savefig(os.path.join(out_dir, 'slice_%d.png' % ant_pos))
+    plt.close(fig)
+
+
+def fd_differential_align(fd_emp_ref_left, fd_emp_ref_right, ant_rad=0.0,
+                          ini_t=0.5e-9, fin_t=5.5e-9, n_time_pts=700,
+                          ini_f=2e9, fin_f=9e9, peak_threshold=10):
+    """Converts aligned time-responses into frequency domain
+
+    https://en.wikipedia.org/wiki/Fourier_transform
+    Performs a phase shift wrt the time shift per antenna position
+
+    Assuming the left breast is fixed
+
+    Parameters
+    ----------
+    fd_emp_ref_left : array_like
+        FD data of the left breast (empty chamber reference)
+    fd_emp_ref_right : array_like
+        FD data of the right breast (empty chamber reference)
+    ant_rad : float
+        Radius of antenna position AFTER all the corrections
+    ini_t : float
+        The starting time-of-response to be used for computing the ICZT,
+        in seconds
+    fin_t : float
+        The stopping time-of-response to be used for computing the ICZT,
+        in seconds
+    n_time_pts : int
+        The number of points in the time-domain at which the transform
+        will be evaluated
+    ini_f : float
+        The initial frequency used in the scan, in Hz
+    fin_f : float
+        The final frequency used in the scan, in Hz
+    peak_threshold : int
+        The maximal allowed index jump in time points array
+        (recommended not to change)
+
+    Returns
+    ----------
+    s11_aligned_right :  array_like
+        FD data that corresponds to spatial alignment of the right
+        breast wrt to the left
+    """
+
+    # TEMPORARY
+    fs = np.linspace(1e9, 9e9, 1001)
+    fs = fs[fs >= 2e9]
+    freqs = np.tile(fs, (72, 1)).T
+
+
+    # convert FD to TD
+    td_left = iczt(fd_emp_ref_left, ini_t=ini_t, fin_t=fin_t,
+                   n_time_pts=n_time_pts, ini_f=ini_f, fin_f=fin_f)
+    td_right = iczt(fd_emp_ref_right, ini_t=ini_t, fin_t=fin_t,
+                    n_time_pts=n_time_pts, ini_f=ini_f, fin_f=fin_f)
+
+    # time response data
+    ts = np.linspace(ini_t * 1e9, fin_t * 1e9, n_time_pts)
+
+    # find the kernels
+    kernel_left = time_aligned_kernel(td_left)
+    kernel_right = time_aligned_kernel(td_right)
+
+    # find all ToR values on each antenna position
+    _, ToR_left = rho_ToR_from_td(td=td_left, ts=ts, kernel=kernel_left,
+                                  ant_rad=ant_rad,
+                                  peak_threshold=peak_threshold,
+                                  plt_slices=False, out_dir='')
+    _, ToR_right = rho_ToR_from_td(td=td_right, ts=ts, kernel=kernel_right,
+                                   ant_rad=ant_rad,
+                                   peak_threshold=peak_threshold,
+                                   plt_slices=False, out_dir='')
+    # time shifts
+    delta_t = (ToR_right - ToR_left) * 1e-9
+    # exponential factor for Fourier transform
+    exp_conversion = np.exp(2j * np.pi * delta_t * freqs)
+    # conversion
+    s11_aligned_right = fd_emp_ref_right * exp_conversion
+
+    return s11_aligned_right
+
+
