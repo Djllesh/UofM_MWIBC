@@ -26,7 +26,7 @@ measured_tum_perm = 77.11
 ###############################################################################
 
 
-def get_roi(roi_rad, m_size, ant_rad):
+def get_roi(roi_rho, m_size, arr_rho):
     """Return binary mask for central circular region of interest
 
     Returns a binary mask in which a circular region of interest is set
@@ -34,17 +34,17 @@ def get_roi(roi_rad, m_size, ant_rad):
 
     Parameters
     ----------
-    roi_rad : float
-        The radius (in meters) of the inner circular region of interest
+    roi_rho : float
+        The radius of the inner circular region of interest, in [cm]
     m_size : int
         The number of pixels along one dimension used to define the
         model-space
-    ant_rad : float
-        The radius of the antenna scan trajectory in meters
+    arr_rho : float
+        The radius of the array of interest, in [cm]
     """
 
     # Get arrays for the x,y positions of each pixel
-    pix_xs, pix_ys = get_xy_arrs(m_size, ant_rad)
+    pix_xs, pix_ys = get_xy_arrs(m_size, arr_rho)
 
     # Find the distance from each pixel to the center of the model space
     pix_dist_from_center = np.sqrt(pix_xs**2 + pix_ys**2)
@@ -52,7 +52,7 @@ def get_roi(roi_rad, m_size, ant_rad):
     # Get the region of interest as all the pixels inside the
     # circle-of-interest
     roi = np.zeros([m_size, m_size], dtype=bool)
-    roi[pix_dist_from_center < roi_rad] = True
+    roi[pix_dist_from_center < roi_rho] = True
 
     return roi
 

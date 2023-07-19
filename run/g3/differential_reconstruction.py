@@ -12,7 +12,6 @@ import matplotlib
 import numpy as np
 from scipy.ndimage import shift
 
-
 # Use 'tkagg' to display plot windows, use 'agg' to *not* display
 # plot windows
 # matplotlib.use('agg')
@@ -36,7 +35,9 @@ from umbms.plot.imgplots import plot_fd_img, plot_fd_img_differential, \
 from umbms.plot.sinogramplot import plt_sino, show_sinogram
 
 from umbms.boundary.boundary_detection import get_boundary_iczt, \
-    fd_differential_align, cart_to_polar, time_aligned_kernel, rho_ToR_from_td
+    fd_differential_align, cart_to_polar, time_aligned_kernel, \
+    rho_ToR_from_td, shift_cs, extract_delta_t_from_boundary, \
+    prepare_fd_data, phase_shift_aligned_boundaries
 from umbms.boundary.differential_minimization import minimize_differential
 
 __CPU_COUNT = mp.cpu_count()
@@ -245,7 +246,6 @@ def recon_imgs(s11, idx_pairs, id_pairs, do_das=True, do_dmas=False,
                 cs_left, _, _ = boundary_data_left[0]
                 cs_right, x_shift, y_shift = boundary_data_right[0]
 
-
                 # plot_fd_img_differential(img=np.abs(das_imgs[ii, :, :]),
                 #                          tum_x=tum_x / 100,
                 #                          tum_y=tum_y / 100,
@@ -276,7 +276,8 @@ def recon_imgs(s11, idx_pairs, id_pairs, do_das=True, do_dmas=False,
                         adi_rad=adi_rad / 100,
                         roi_rad=__ROI_RAD,
                         img_rad=__ROI_RAD,
-                        save_str=os.path.join(das_o_dir, 'id_%d-%d.png'
+                        save_str=os.path.join(das_o_dir,
+                                              'id_%d-%d_boundary_align.png'
                                               % (id_pairs[ii, 0],
                                                  id_pairs[ii, 1])),
                         transparent=False,
@@ -447,34 +448,20 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
                 right_s11 = right_cal
 
             if ii == 3:
-                ant_rad = md[ii]['ant_rad'] / 100
+                ant_rad = md[ii]['ant_rad'] / 100 + 0.03618 + 0.0449
 
-                s11_aligned_right = fd_differential_align(
-                    fd_emp_ref_left=left_s11[__SCAN_FS >= 2e9, :],
-                    fd_emp_ref_right=right_s11[__SCAN_FS >= 2e9, :],
-                    ini_t=1e-9, fin_t=2e-9, n_time_pts=1000,
-                    ini_f=2e9, fin_f=9e9)
+                # s11_aligned_right = fd_differential_align(
+                #     fd_emp_ref_left=left_s11[__SCAN_FS >= 2e9, :],
+                #     fd_emp_ref_right=right_s11[__SCAN_FS >= 2e9, :],
+                #     ini_t=1e-9, fin_t=2e-9, n_time_pts=1000,
+                #     ini_f=2e9, fin_f=9e9)
 
-                # plt_sino(fd=s11_aligned_right, title='Right breast phase '
-                #                                      'shifted',
-                #          out_dir=os.path.join(__O_DIR, 'boundary_r/'),
-                #          save_str='right_phase_shifted.png')
-                #
-                # plt_sino(fd=right_s11[__SCAN_FS >= 2e9, :],
-                #          title='Right breast (empty chamber)',
-                #          out_dir=os.path.join(__O_DIR, 'boundary_r/'),
-                #          save_str='right_emp_ref.png')
-                #
-                # plt_sino(fd=left_s11[__SCAN_FS >= 2e9, :],
-                #          title='Left breast (empty chamber)',
-                #          out_dir=os.path.join(__O_DIR, 'boundary_r/'),
-                #          save_str='left_emp_ref.png')
+
 
                 cs_left, x_cm_left, y_cm_left = \
                     get_boundary_iczt(adi_emp_cropped=left_s11[__SCAN_FS >=
                                                                2e9, :],
-                                      ant_rad=ant_rad +
-                                              0.03618 + 0.0449,
+                                      ant_rad=ant_rad,
                                       out_dir=os.path.join(__O_DIR,
                                                            'boundary_l/'),
                                       ini_f=2e9, fin_f=9e9,
@@ -486,8 +473,7 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
                 cs_right, x_cm_right, y_cm_right = \
                     get_boundary_iczt(adi_emp_cropped=right_s11[__SCAN_FS >=
                                                                 2e9, :],
-                                      ant_rad=ant_rad +
-                                              0.03618 + 0.0449,
+                                      ant_rad=ant_rad,
                                       out_dir=os.path.join(__O_DIR,
                                                            'boundary_r/'),
                                       ini_f=2e9, fin_f=9e9,
@@ -496,22 +482,53 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
 
                 # --------- TEMPORARY --------- #
 
-                angles = np.linspace(0, np.deg2rad(355), 72) \
-                         + np.deg2rad(-136.)
-
                 shift = minimize_differential(cs_left=cs_left,
                                               cs_right=cs_right)
 
-                xs_cs = cs_right(angles) * np.cos(angles)
-                ys_cs = cs_right(angles) * np.sin(angles)
+                cs_right_shifted = shift_cs(cs=cs_right, delta_x=shift[0],
+                                            delta_y=shift[1])
 
-                xs_cs_left = cs_left(angles) * np.cos(angles)
-                ys_cs_left = cs_left(angles) * np.sin(angles)
+                s11_aligned_right = phase_shift_aligned_boundaries(
+                    fd_emp_ref_right=right_s11[__SCAN_FS >= 2e9, :],
+                    ant_rad=ant_rad,
+                    cs_right_shifted=cs_right_shifted, ini_t=1e-9, fin_t=2e-9,
+                    n_time_pts=1000, ini_f=2e9, fin_f=__FIN_F, n_fs=__N_FS,
+                    scan_ini_f=__INI_F, scan_fin_f=None)
 
-                antennas_to_shifted_boundary(cs=cs_right,
-                                             delta_x=shift[0],
-                                             delta_y=shift[1],
-                                             ant_rad=ant_rad)
+                plt_sino(fd=s11_aligned_right, title='Right breast phase '
+                                                     'shifted',
+                         out_dir=os.path.join(__O_DIR, 'boundary_r/'),
+                         save_str='right_phase_shifted.png')
+
+                plt_sino(fd=right_s11[__SCAN_FS >= 2e9, :],
+                         title='Right breast (empty chamber)',
+                         out_dir=os.path.join(__O_DIR, 'boundary_r/'),
+                         save_str='right_emp_ref.png')
+
+                plt_sino(fd=left_s11[__SCAN_FS >= 2e9, :],
+                         title='Left breast (empty chamber)',
+                         out_dir=os.path.join(__O_DIR, 'boundary_r/'),
+                         save_str='left_emp_ref.png')
+
+                # td, ts, kernel = prepare_fd_data(
+                #     adi_emp_cropped=right_s11[__SCAN_FS >= 2e9, :],
+                #     ini_t=1e-9, fin_t=2e-9, n_time_pts=1000,
+                #     ini_f=2e9, fin_f=9e9)
+                #
+                # _, tor_right = rho_ToR_from_td(td, ts, kernel,
+                #                                ant_rad=ant_rad,
+                #                                peak_threshold=10,
+                #                                plt_slices=False, out_dir='')
+                #
+                # extract_delta_t_from_boundary(tor_right=tor_right,
+                #                               cs_right_shifted=cs_right_shifted,
+                #                               ant_rad=ant_rad)
+
+                # antennas_to_shifted_boundary(cs=cs_right,
+                #                              delta_x=shift[0],
+                #                              delta_y=shift[1],
+                #                              ant_rad=ant_rad)
+
                 # --------- TEMPORARY --------- #
 
                 right_s11[__SCAN_FS >= 2e9, :] = s11_aligned_right

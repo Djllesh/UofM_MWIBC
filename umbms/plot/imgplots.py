@@ -787,7 +787,7 @@ def plot_fd_img_differential(img, *, cs_left=None, cs_right=None,
 def antennas_to_shifted_boundary(cs, delta_x, delta_y, ant_rad,
                                  n_ant_pos=72,
                                  ini_ant_ang=-136.0,
-                                 fin_ant_ang=355., xs_left=None, ys_left=None):
+                                 fin_ant_ang=355.):
     """Creates a plot of a shifted and unshifted boundaries with
     corresponding antenna positions
 
@@ -821,34 +821,53 @@ def antennas_to_shifted_boundary(cs, delta_x, delta_y, ant_rad,
     xs_shifted = xs + delta_x
     ys_shifted = ys + delta_y
 
-    unshifted_idx4 = np.argmin(np.sqrt((ant_xs[4] - xs) ** 2 +
-                                       (ant_ys[4] - ys) ** 2))
+    for ant_pos in [4, 52]:
 
-    shifted_idx4 = np.argmin(np.sqrt((ant_xs[4] - xs_shifted) ** 2 +
-                                     (ant_ys[4] - ys_shifted) ** 2))
+        plt.plot(ant_xs[ant_pos], ant_ys[ant_pos], 'ro')
 
-    plt.plot((ant_xs[4], xs[unshifted_idx4]),
-             (ant_ys[4], ys[unshifted_idx4]),
-             'b-', linewidth=0.5)
-    plt.plot(xs[unshifted_idx4], ys[unshifted_idx4], 'b.')
-    plt.plot((ant_xs[4], xs_shifted[shifted_idx4]),
-             (ant_ys[4], ys_shifted[shifted_idx4]),
-             'r-', linewidth=0.5)
-    plt.plot(xs_shifted[shifted_idx4], ys_shifted[shifted_idx4], 'r.')
+        unshifted_idx = np.argmin(np.sqrt((ant_xs[ant_pos] - plot_xs) ** 2 +
+                                          (ant_ys[ant_pos] - plot_ys) ** 2))
 
-    unshifted_idx52 = np.argmin(np.sqrt((ant_xs[52] - xs) ** 2 +
-                                        (ant_ys[52] - ys) ** 2))
+        unshifted_x = plot_xs[unshifted_idx]
+        unshifted_y = plot_ys[unshifted_idx]
 
-    shifted_idx52 = np.argmin(np.sqrt((ant_xs[52] - xs_shifted) ** 2 +
-                                      (ant_ys[52] - ys_shifted) ** 2))
+        closest_unshifted_idx = np.argmin(np.sqrt((unshifted_x - xs) ** 2 +
+                                                  (unshifted_y - ys) ** 2))
 
-    plt.plot((ant_xs[52], xs[unshifted_idx52]),
-             (ant_ys[52], ys[unshifted_idx52]), 'b-', linewidth=0.5)
-    plt.plot(xs[unshifted_idx52], ys[unshifted_idx52], 'b.')
-    plt.plot((ant_xs[52], xs_shifted[shifted_idx52]),
-             (ant_ys[52], ys_shifted[shifted_idx52]),
-             'r-', linewidth=0.5)
-    plt.plot(xs_shifted[shifted_idx52], ys_shifted[shifted_idx52], 'r.')
+        closest_unshifted_idxs = [(closest_unshifted_idx - 1) % n_ant_pos,
+                                  closest_unshifted_idx,
+                                  (closest_unshifted_idx + 1) % n_ant_pos]
+
+        plt.plot(xs[closest_unshifted_idxs], ys[closest_unshifted_idxs], 'k.')
+
+        shifted_idx = np.argmin(np.sqrt((ant_xs[ant_pos] -
+                                         plot_xs_shifted) ** 2 +
+                                        (ant_ys[ant_pos] -
+                                         plot_ys_shifted) ** 2))
+
+        shifted_x = plot_xs_shifted[shifted_idx]
+        shifted_y = plot_ys_shifted[shifted_idx]
+
+        closest_shifted_idx = np.argmin(np.sqrt((shifted_x - xs_shifted) ** 2 +
+                                                (shifted_y - ys_shifted) ** 2))
+
+        closest_shifted_idxs = [(closest_shifted_idx - 1) % n_ant_pos,
+                                closest_shifted_idx,
+                                (closest_shifted_idx + 1) % n_ant_pos]
+
+        plt.plot(xs_shifted[closest_shifted_idxs],
+                 ys_shifted[closest_shifted_idxs], 'r.')
+
+        plt.plot((ant_xs[ant_pos], unshifted_x),
+                 (ant_ys[ant_pos], unshifted_y),
+                 'b-', linewidth=0.5)
+        plt.plot(unshifted_x, unshifted_y, 'b.')
+
+        plt.plot((ant_xs[ant_pos], plot_xs_shifted[shifted_idx]),
+                 (ant_ys[ant_pos], plot_ys_shifted[shifted_idx]),
+                 'r-', linewidth=0.5)
+        plt.plot(plot_xs_shifted[shifted_idx], plot_ys_shifted[shifted_idx],
+                 'r.')
 
     plt.axis('square')
     plt.show()
