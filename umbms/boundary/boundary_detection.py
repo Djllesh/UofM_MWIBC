@@ -391,7 +391,7 @@ def get_boundary_iczt(adi_emp_cropped, ant_rad, n_ant_pos=72,
               ini_f=ini_f, fin_f=fin_f)
 
     # time response data
-    ts = np.linspace(ini_t * 1e9, fin_t * 1e9, n_time_pts)
+    ts = np.linspace(ini_t, fin_t, n_time_pts)
     # find the kernel
     kernel = time_aligned_kernel(td)
     # find all rho and ToR (time-of-response) values
@@ -523,7 +523,35 @@ def time_aligned_kernel(td):
 
 def rho_ToR_from_td(td, ts, kernel, ant_rad, peak_threshold,
                     plt_slices, out_dir):
+    """Completes the CMPPS routine, returns the breast phantom boundary
+    as an array of rho and time responses
 
+    Parameters
+    ----------
+    td : array_like
+        Scan data in time domain
+    ts : array_like
+        Time points used in the sinogram
+    kernel : array_like
+        Kernel for cross-correlation
+    ant_rad : float
+         Radius of antenna position AFTER all the corrections
+    peak_threshold : int
+        The maximal allowed index jump in time points array
+        (recommended not to change)
+    plt_slices : bool
+        Flag to plot single antenna slices
+    out_dir : str
+         Directory to save slices
+
+    Returns
+    ----------
+    rho : array_like
+        Array of rho values at each antenna position (m)
+    ToR : array_like
+        Array of values of the time-of-response for every antenna
+        position (s)
+    """
     # creating an array of polar distances for storing
     rho = np.array([])
     # initializing an array of time-responces
@@ -569,7 +597,7 @@ def rho_ToR_from_td(td, ts, kernel, ant_rad, peak_threshold,
         ToR = np.append(ToR, ts[peak])
         # polar radius of a corresponding highest intensity response
         # (corrected radius - radius of a time response)
-        rad = ant_rad - ts[peak] * 1e-9 * __VAC_SPEED / 2
+        rad = ant_rad - ts[peak] * __VAC_SPEED / 2
         # TODO: account for new antenna time delay
         # appending polar radius to rho array
         rho = np.append(rho, rad)
@@ -621,7 +649,8 @@ def plot_slices(position, peaks, peak, approx_peak_idx, kernel, avg_peak, lags,
 
 def fd_differential_align(fd_emp_ref_left, fd_emp_ref_right, ant_rad=0.0,
                           ini_t=0.5e-9, fin_t=5.5e-9, n_time_pts=700,
-                          ini_f=2e9, fin_f=9e9, peak_threshold=10):
+                          ini_f=2e9, fin_f=9e9, peak_threshold=10,
+                          scan_ini_f=1e9, scan_fin_f=9e9, n_fs=1001):
     """Converts aligned time-responses into frequency domain
 
     https://en.wikipedia.org/wiki/Fourier_transform
@@ -639,21 +668,26 @@ def fd_differential_align(fd_emp_ref_left, fd_emp_ref_right, ant_rad=0.0,
         Radius of antenna position AFTER all the corrections
     ini_t : float
         The starting time-of-response to be used for computing the ICZT,
-        in seconds
+        (s)
     fin_t : float
         The stopping time-of-response to be used for computing the ICZT,
-        in seconds
+        (s)
     n_time_pts : int
         The number of points in the time-domain at which the transform
         will be evaluated
     ini_f : float
-        The initial frequency used in the scan, in Hz
+        The smallest frequency to be retained, (Hz)
     fin_f : float
-        The final frequency used in the scan, in Hz
+        The largest frequency to be retained, (Hz)
     peak_threshold : int
         The maximal allowed index jump in time points array
         (recommended not to change)
-
+    scan_ini_f : int
+        The first frequency of the scan (Hz)
+    scan_fin_f : int
+        The last frequency of the scan (Hz)
+    n_fs : int
+        Number of frequency steps
     Returns
     ----------
     s11_aligned_right :  array_like
@@ -661,11 +695,13 @@ def fd_differential_align(fd_emp_ref_left, fd_emp_ref_right, ant_rad=0.0,
         breast wrt to the left
     """
 
-    # TEMPORARY
-    fs = np.linspace(1e9, 9e9, 1001)
-    fs = fs[fs >= 2e9]
-    freqs = np.tile(fs, (72, 1)).T
-
+    # Number of antenna positions
+    n_ant_pos = np.size(fd_emp_ref_left, axis=1)
+    # Obtain frequency array for phase shifting
+    # (retaining frequency range [ini_f, scan_fin_f))
+    fs = np.linspace(scan_ini_f, scan_fin_f, n_fs)
+    fs = fs[fs >= ini_f]
+    freqs = np.tile(fs, (n_ant_pos, 1)).T
 
     # convert FD to TD
     td_left = iczt(fd_emp_ref_left, ini_t=ini_t, fin_t=fin_t,
@@ -674,7 +710,7 @@ def fd_differential_align(fd_emp_ref_left, fd_emp_ref_right, ant_rad=0.0,
                     n_time_pts=n_time_pts, ini_f=ini_f, fin_f=fin_f)
 
     # time response data
-    ts = np.linspace(ini_t * 1e9, fin_t * 1e9, n_time_pts)
+    ts = np.linspace(ini_t, fin_t, n_time_pts)
 
     # find the kernels
     kernel_left = time_aligned_kernel(td_left)
@@ -690,7 +726,11 @@ def fd_differential_align(fd_emp_ref_left, fd_emp_ref_right, ant_rad=0.0,
                                    peak_threshold=peak_threshold,
                                    plt_slices=False, out_dir='')
     # time shifts
-    delta_t = (ToR_right - ToR_left) * 1e-9
+    delta_t = (ToR_right - ToR_left)
+
+    # delta1 = delta_t[:36]
+    # delta2 = delta_t[36:]
+    # diff = np.abs(delta1 - delta2)
     # exponential factor for Fourier transform
     exp_conversion = np.exp(2j * np.pi * delta_t * freqs)
     # conversion
