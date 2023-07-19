@@ -8,13 +8,13 @@ import matplotlib.widgets
 import numpy as np
 import matplotlib.pyplot as plt
 
-matplotlib.use('Agg')
+# matplotlib.use('Agg')
 
 import umbms.beamform.breastmodels as breastmodels
 from umbms.beamform.utility import get_xy_arrs
 from umbms.plot.stlplot import get_phantom_xy_for_z, get_shell_xy_for_z
 
-###############################################################################
+# ##############################################################################
 
 # Conversion factor from [m] to [cm]
 __M_to_CM = 100
@@ -656,7 +656,7 @@ def plot_fd_img_with_intersections(img, cs, ant_pos_x, ant_pos_y, pix_xs,
 def plot_fd_img_differential(img, *, cs_left=None, cs_right=None,
                              tum_x=0.0, tum_y=0.0, tum_rad=0.0,
                              adi_rad=0.0, x_shift=0.0, y_shift=0.0,
-                             roi_rad=0.0,img_rad=0.0,save_str='',
+                             roi_rad=0.0, img_rad=0.0, save_str='',
                              save_fig=False, cmap='inferno', title='',
                              crop_img=True, cbar_fmt='%.1f', phantom_id='',
                              transparent=False, dpi=300, save_close=True):
@@ -782,3 +782,73 @@ def plot_fd_img_differential(img, *, cs_left=None, cs_right=None,
 
         if save_close:  # If wanting to close the fig after saving
             plt.close()
+
+
+def antennas_to_shifted_boundary(cs, delta_x, delta_y, ant_rad,
+                                 n_ant_pos=72,
+                                 ini_ant_ang=-136.0,
+                                 fin_ant_ang=355., xs_left=None, ys_left=None):
+    """Creates a plot of a shifted and unshifted boundaries with
+    corresponding antenna positions
+
+    """
+
+    plot_angs = np.deg2rad(np.arange(0, 360, 0.1))
+    plot_rhos = cs(plot_angs)
+
+    plot_xs = plot_rhos * np.cos(plot_angs)
+    plot_ys = plot_rhos * np.sin(plot_angs)
+
+    plot_xs_shifted = plot_xs + delta_x
+    plot_ys_shifted = plot_ys + delta_y
+    plt.plot(plot_xs, plot_ys, 'k-', linewidth=1)
+    plt.plot(plot_xs_shifted, plot_ys_shifted, 'b--', linewidth=1)
+    ant_angs = np.linspace(0, np.deg2rad(fin_ant_ang),
+                           n_ant_pos) + np.deg2rad(ini_ant_ang)
+
+    xs = cs(ant_angs) * np.cos(ant_angs)
+    ys = cs(ant_angs) * np.sin(ant_angs)
+
+    ant_angs = np.flip(ant_angs)
+
+    ant_xs = np.cos(ant_angs) * ant_rad
+    ant_ys = np.sin(ant_angs) * ant_rad
+    plt.scatter(ant_xs, ant_ys, marker='x')
+    plt.plot(ant_xs[4], ant_ys[4], 'ro')
+    plt.plot(ant_xs[52], ant_ys[52], 'ro')
+    # plt.plot(xs, ys, 'b.-')
+
+    xs_shifted = xs + delta_x
+    ys_shifted = ys + delta_y
+
+    unshifted_idx4 = np.argmin(np.sqrt((ant_xs[4] - xs) ** 2 +
+                                       (ant_ys[4] - ys) ** 2))
+
+    shifted_idx4 = np.argmin(np.sqrt((ant_xs[4] - xs_shifted) ** 2 +
+                                     (ant_ys[4] - ys_shifted) ** 2))
+
+    plt.plot((ant_xs[4], xs[unshifted_idx4]),
+             (ant_ys[4], ys[unshifted_idx4]),
+             'b-', linewidth=0.5)
+    plt.plot(xs[unshifted_idx4], ys[unshifted_idx4], 'b.')
+    plt.plot((ant_xs[4], xs_shifted[shifted_idx4]),
+             (ant_ys[4], ys_shifted[shifted_idx4]),
+             'r-', linewidth=0.5)
+    plt.plot(xs_shifted[shifted_idx4], ys_shifted[shifted_idx4], 'r.')
+
+    unshifted_idx52 = np.argmin(np.sqrt((ant_xs[52] - xs) ** 2 +
+                                        (ant_ys[52] - ys) ** 2))
+
+    shifted_idx52 = np.argmin(np.sqrt((ant_xs[52] - xs_shifted) ** 2 +
+                                      (ant_ys[52] - ys_shifted) ** 2))
+
+    plt.plot((ant_xs[52], xs[unshifted_idx52]),
+             (ant_ys[52], ys[unshifted_idx52]), 'b-', linewidth=0.5)
+    plt.plot(xs[unshifted_idx52], ys[unshifted_idx52], 'b.')
+    plt.plot((ant_xs[52], xs_shifted[shifted_idx52]),
+             (ant_ys[52], ys_shifted[shifted_idx52]),
+             'r-', linewidth=0.5)
+    plt.plot(xs_shifted[shifted_idx52], ys_shifted[shifted_idx52], 'r.')
+
+    plt.axis('square')
+    plt.show()

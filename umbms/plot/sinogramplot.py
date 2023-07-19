@@ -11,7 +11,7 @@ from matplotlib import pyplot as plt
 
 from umbms.beamform.iczt import iczt
 
-matplotlib.use('Agg')
+# matplotlib.use('Agg')
 import numpy as np
 
 ###############################################################################

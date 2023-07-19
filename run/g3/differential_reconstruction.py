@@ -15,14 +15,14 @@ from scipy.ndimage import shift
 
 # Use 'tkagg' to display plot windows, use 'agg' to *not* display
 # plot windows
-matplotlib.use('agg')
+# matplotlib.use('agg')
 
 from umbms import get_proj_path, verify_path, get_script_logger
 
 from umbms.loadsave import load_pickle, save_pickle
 from umbms.beamform.das import fd_das
 
-from umbms.beamform.utility import get_fd_phase_factor
+from umbms.beamform.utility import get_fd_phase_factor, apply_ant_t_delay
 from umbms.beamform.time_delay import get_pix_ts_old
 
 from umbms.beamform.propspeed import estimate_speed
@@ -31,11 +31,12 @@ from umbms.hardware.antenna import apply_ant_pix_delay, to_phase_center
 
 from umbms.beamform.iczt import iczt
 
-from umbms.plot.imgplots import plot_fd_img, plot_fd_img_differential
+from umbms.plot.imgplots import plot_fd_img, plot_fd_img_differential, \
+    antennas_to_shifted_boundary
 from umbms.plot.sinogramplot import plt_sino, show_sinogram
 
 from umbms.boundary.boundary_detection import get_boundary_iczt, \
-    fd_differential_align, cart_to_polar
+    fd_differential_align, cart_to_polar, time_aligned_kernel, rho_ToR_from_td
 from umbms.boundary.differential_minimization import minimize_differential
 
 __CPU_COUNT = mp.cpu_count()
@@ -171,7 +172,8 @@ def recon_imgs(s11, idx_pairs, id_pairs, do_das=True, do_dmas=False,
     verify_path(orr_o_dir)
 
     # For each breast pair
-    for ii in range(3, np.size(s11_pair_diffs, axis=0)):
+    # for ii in range(np.size(s11_pair_diffs, axis=0)):
+    for ii in [2]:
 
         logger.info('\tWorking on pair [%4d / %4d]...'
                     % (ii + 1, np.size(s11_pair_diffs, axis=0)))
@@ -203,24 +205,27 @@ def recon_imgs(s11, idx_pairs, id_pairs, do_das=True, do_dmas=False,
             tum_rad = 0
 
         # Get the scan metadata explicitly
-        ant_rad = md_left['ant_rad']
+        ant_rad = md_left['ant_rad'] / 100
         adi_rad = __ADI_RADS[md_left['phant_id'].split('F')[0]]
 
+        ant_rad += 0.03618
+        ant_rho = apply_ant_t_delay(scan_rad=ant_rad, new_ant=True)
+
         # Account for phase center of the antenna
-        ant_rho = to_phase_center(meas_rho=ant_rad)
+        # ant_rho = to_phase_center(meas_rho=ant_rad / 100)
 
         # Estimate the propagation speed in the imaging domain
-        speed = estimate_speed(adi_rad=adi_rad / 100, ant_rad=ant_rho / 100)
+        speed = estimate_speed(adi_rad=adi_rad / 100, ant_rad=ant_rho)
 
         # Get the approximate pixel time delays
-        pix_ts = get_pix_ts_old(ant_rad=ant_rho / 100,
+        pix_ts = get_pix_ts_old(ant_rad=ant_rho,
                                 m_size=__M_SIZE,
                                 roi_rad=__ROI_RAD,
                                 speed=speed,
                                 ini_ant_ang=-136.0)
 
         # Correct for antenna t delay
-        pix_ts = apply_ant_pix_delay(pix_ts)
+        # pix_ts = apply_ant_pix_delay(pix_ts)
 
         # Get the phase factor for efficient computation
         phase_fac = get_fd_phase_factor(pix_ts=pix_ts)
@@ -236,7 +241,7 @@ def recon_imgs(s11, idx_pairs, id_pairs, do_das=True, do_dmas=False,
             das_t = time.time() - das_start
             logger.info('\t\tDAS completed in %.1f sec' % das_t)
 
-            if ii == 3:
+            if ii == 2:
                 cs_left, _, _ = boundary_data_left[0]
                 cs_right, x_shift, y_shift = boundary_data_right[0]
 
@@ -250,7 +255,7 @@ def recon_imgs(s11, idx_pairs, id_pairs, do_das=True, do_dmas=False,
                 #                          img_rad=__ROI_RAD,
                 #                          save_str=os.path.join(das_o_dir,
                 #                                                'id_%d-%d_comp_'
-                #                                                'shifted.png'
+                #                                                'unshifted.png'
                 #                                                % (id_pairs[
                 #                                                       ii, 0],
                 #                                                    id_pairs[
@@ -260,8 +265,8 @@ def recon_imgs(s11, idx_pairs, id_pairs, do_das=True, do_dmas=False,
                 #                          save_fig=True,
                 #                          cs_left=cs_left,
                 #                          cs_right=cs_right,
-                #                          x_shift=x_shift,
-                #                          y_shift=y_shift
+                #                          x_shift=0,
+                #                          y_shift=0
                 #                          )
 
             plot_fd_img(img=np.abs(das_imgs[ii, :, :]),
@@ -414,7 +419,8 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
         boundary_data_left = []
         boundary_data_right = []
         # For each breast pair
-        for ii in range(np.size(s11_pair_diffs, axis=0)):
+        # for ii in range(np.size(s11_pair_diffs, axis=0)):
+        for ii in range(4):
 
             # Get breast data, pre-cal
             left_uncal = s11_data[idx_pairs[ii, 0], :, :]
@@ -449,20 +455,20 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
                     ini_t=1e-9, fin_t=2e-9, n_time_pts=1000,
                     ini_f=2e9, fin_f=9e9)
 
-                plt_sino(fd=s11_aligned_right, title='Right breast phase '
-                                                     'shifted',
-                         out_dir=os.path.join(__O_DIR, 'boundary_r/'),
-                         save_str='right_phase_shifted.png')
-
-                plt_sino(fd=right_s11[__SCAN_FS >= 2e9, :],
-                         title='Right breast (empty chamber)',
-                         out_dir=os.path.join(__O_DIR, 'boundary_r/'),
-                         save_str='right_emp_ref.png')
-
-                plt_sino(fd=left_s11[__SCAN_FS >= 2e9, :],
-                         title='Left breast (empty chamber)',
-                         out_dir=os.path.join(__O_DIR, 'boundary_r/'),
-                         save_str='left_emp_ref.png')
+                # plt_sino(fd=s11_aligned_right, title='Right breast phase '
+                #                                      'shifted',
+                #          out_dir=os.path.join(__O_DIR, 'boundary_r/'),
+                #          save_str='right_phase_shifted.png')
+                #
+                # plt_sino(fd=right_s11[__SCAN_FS >= 2e9, :],
+                #          title='Right breast (empty chamber)',
+                #          out_dir=os.path.join(__O_DIR, 'boundary_r/'),
+                #          save_str='right_emp_ref.png')
+                #
+                # plt_sino(fd=left_s11[__SCAN_FS >= 2e9, :],
+                #          title='Left breast (empty chamber)',
+                #          out_dir=os.path.join(__O_DIR, 'boundary_r/'),
+                #          save_str='left_emp_ref.png')
 
                 cs_left, x_cm_left, y_cm_left = \
                     get_boundary_iczt(adi_emp_cropped=left_s11[__SCAN_FS >=
@@ -488,8 +494,25 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
                                       ini_t=1e-9, fin_t=2e-9,
                                       n_time_pts=1000)
 
+                # --------- TEMPORARY --------- #
+
+                angles = np.linspace(0, np.deg2rad(355), 72) \
+                         + np.deg2rad(-136.)
+
                 shift = minimize_differential(cs_left=cs_left,
                                               cs_right=cs_right)
+
+                xs_cs = cs_right(angles) * np.cos(angles)
+                ys_cs = cs_right(angles) * np.sin(angles)
+
+                xs_cs_left = cs_left(angles) * np.cos(angles)
+                ys_cs_left = cs_left(angles) * np.sin(angles)
+
+                antennas_to_shifted_boundary(cs=cs_right,
+                                             delta_x=shift[0],
+                                             delta_y=shift[1],
+                                             ant_rad=ant_rad)
+                # --------- TEMPORARY --------- #
 
                 right_s11[__SCAN_FS >= 2e9, :] = s11_aligned_right
 

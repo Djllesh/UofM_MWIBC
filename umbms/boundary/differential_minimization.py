@@ -50,7 +50,7 @@ def MSE(shift, cs_left, cs_right):
 
 
 def minimize_differential(cs_left, cs_right):
-    """Minimizes the MSE, outputs thee needed shift
+    """Minimizes the MSE, outputs the needed shift
 
     Parameters
     ----------
