@@ -233,6 +233,37 @@ def polar_fit_cs(rho, phi):
     return CubicSpline(phi, rho)
 
 
+def shift_cs(cs, delta_x, delta_y):
+    """Shifts the CubicSpline according to Cartesian shift in the image
+    domain
+
+    Parameters
+    -----------
+    cs : PPoly
+        CubicSplice of a given boundary
+    delta_x, delta_y : float
+        Spatial shift
+
+    Returns
+    -----------
+    cs_shifted : PPoly
+        CubicSpline that corresponds to the spatial shift
+    """
+    angs = np.linspace(0, np.deg2rad(360), 300)
+    rhos = cs(angs)
+
+    xs = rhos * np.cos(angs)
+    ys = rhos * np.sin(angs)
+
+    xs_shifted = xs + delta_x
+    ys_shifted = ys + delta_y
+
+    rho_shifted, phi_shifted = cart_to_polar(xs_shifted, ys_shifted)
+    cs_shifted = CubicSpline(phi_shifted, rho_shifted)
+
+    return cs_shifted
+
+
 def get_binary_mask(cs, m_size, roi_rad, precision_scaling_factor=1):
     """Returns a binary mask that corresponds to breast phantom boundary
 
@@ -343,7 +374,23 @@ def find_centre_of_mass_from_cs(cs, n_points=200):
     return x_cm, y_cm
 
 
-def get_boundary_iczt(adi_emp_cropped, ant_rad, n_ant_pos=72,
+def prepare_fd_data(adi_emp_cropped, ini_t, fin_t, n_time_pts, ini_f, fin_f):
+    """Prepares unorganized data for boundary detection
+
+    """
+
+    # convert frequency-domain data to time-domain
+    td = iczt(adi_emp_cropped, ini_t=ini_t, fin_t=fin_t, n_time_pts=n_time_pts,
+              ini_f=ini_f, fin_f=fin_f)
+    # time response data
+    ts = np.linspace(ini_t, fin_t, n_time_pts)
+    # find the kernel
+    kernel = time_aligned_kernel(td)
+
+    return td, ts, kernel
+
+
+def get_boundary_iczt(adi_emp_cropped, ant_rad, *, n_ant_pos=72,
                       ini_ant_ang=-136.0, ini_t=0.5e-9, fin_t=5.5e-9,
                       n_time_pts=700, ini_f=2e9, fin_f=9e9, peak_threshold=10,
                       plt_slices=False, plot_sino=False, out_dir='',
@@ -386,14 +433,13 @@ def get_boundary_iczt(adi_emp_cropped, ant_rad, n_ant_pos=72,
         Cartesian coordinates of a centre of mass
     """
 
-    # convert frequency-domain data to time-domain
-    td = iczt(adi_emp_cropped, ini_t=ini_t, fin_t=fin_t, n_time_pts=n_time_pts,
-              ini_f=ini_f, fin_f=fin_f)
+    # Prepare the data to obtain time-domain scan data, time points and time
+    # aligned kernel for cross-correlation
+    td, ts, kernel = prepare_fd_data(adi_emp_cropped=adi_emp_cropped,
+                                     ini_t=ini_t, fin_t=fin_t,
+                                     n_time_pts=n_time_pts, ini_f=ini_f,
+                                     fin_f=fin_f)
 
-    # time response data
-    ts = np.linspace(ini_t, fin_t, n_time_pts)
-    # find the kernel
-    kernel = time_aligned_kernel(td)
     # find all rho and ToR (time-of-response) values
     # on each antenna position
     rho, ToR = rho_ToR_from_td(td=td, ts=ts, kernel=kernel, ant_rad=ant_rad,
@@ -435,7 +481,8 @@ def get_boundary_iczt(adi_emp_cropped, ant_rad, n_ant_pos=72,
                           extent=plt_extent, title='Boundary check',
                           out_dir=out_dir,
                           save_str='boundary_vs_sino_shift.png',
-                          ts=ts_plt, transparent=False, bound_angles=plt_angles,
+                          ts=ts_plt, transparent=False,
+                          bound_angles=plt_angles,
                           bound_times=tr_shifted, bound_color='b')
 
     # x = rho * np.cos(angles)
@@ -647,6 +694,29 @@ def plot_slices(position, peaks, peak, approx_peak_idx, kernel, avg_peak, lags,
     plt.close(fig)
 
 
+def retain_and_tile_freqs(scan_ini_f, scan_fin_f, ini_f, n_fs, n_ant_pos):
+    # TODO: documentation
+
+    # Obtain frequency array for phase shifting
+    # (retaining frequency range [ini_f, scan_fin_f))
+    fs = np.linspace(scan_ini_f, scan_fin_f, n_fs)
+    fs = fs[fs >= ini_f]
+    freqs = np.tile(fs, (n_ant_pos, 1)).T
+
+    return freqs
+
+
+def phase_shift(fd, delta_t, freqs):
+    # TODO: documentation
+
+    # exponential factor for Fourier transform
+    exp_conversion = np.exp(2j * np.pi * delta_t * freqs)
+    # conversion
+    shifted_fd = fd * exp_conversion
+
+    return shifted_fd
+
+
 def fd_differential_align(fd_emp_ref_left, fd_emp_ref_right, ant_rad=0.0,
                           ini_t=0.5e-9, fin_t=5.5e-9, n_time_pts=700,
                           ini_f=2e9, fin_f=9e9, peak_threshold=10,
@@ -697,12 +767,10 @@ def fd_differential_align(fd_emp_ref_left, fd_emp_ref_right, ant_rad=0.0,
 
     # Number of antenna positions
     n_ant_pos = np.size(fd_emp_ref_left, axis=1)
-    # Obtain frequency array for phase shifting
-    # (retaining frequency range [ini_f, scan_fin_f))
-    fs = np.linspace(scan_ini_f, scan_fin_f, n_fs)
-    fs = fs[fs >= ini_f]
-    freqs = np.tile(fs, (n_ant_pos, 1)).T
-
+    # Get frequencies for phase shifting
+    freqs = retain_and_tile_freqs(scan_ini_f=scan_ini_f,
+                                  scan_fin_f=scan_fin_f, ini_f=ini_f,
+                                  n_fs=n_fs, n_ant_pos=n_ant_pos)
     # convert FD to TD
     td_left = iczt(fd_emp_ref_left, ini_t=ini_t, fin_t=fin_t,
                    n_time_pts=n_time_pts, ini_f=ini_f, fin_f=fin_f)
@@ -731,11 +799,88 @@ def fd_differential_align(fd_emp_ref_left, fd_emp_ref_right, ant_rad=0.0,
     # delta1 = delta_t[:36]
     # delta2 = delta_t[36:]
     # diff = np.abs(delta1 - delta2)
-    # exponential factor for Fourier transform
-    exp_conversion = np.exp(2j * np.pi * delta_t * freqs)
-    # conversion
-    s11_aligned_right = fd_emp_ref_right * exp_conversion
+
+    # Phase shift
+    s11_aligned_right = phase_shift(fd=fd_emp_ref_right, delta_t=delta_t,
+                                    freqs=freqs)
 
     return s11_aligned_right
 
 
+def extract_delta_t_from_boundary(tor_right, cs_right_shifted, ant_rad,
+                                  n_ant_pos=72, ini_ant_ang=-136.):
+    """
+
+    Parameters
+    ----------
+    tor_right : array_like
+        An array of times-of-response for an unshifted right boundary
+    cs_right_shifted : PPoly
+        Shifted CubicSpline of the right breast to align with the left
+    ant_rad : float
+        Corrected antenna radius
+
+    Returns
+    ----------
+    delta_t : array_like
+        An array of time differences for further phase shift
+    """
+
+    ant_angs = np.linspace(0, np.deg2rad(355), n_ant_pos) + \
+               np.deg2rad(ini_ant_ang)
+    ant_angs = np.flip(ant_angs)
+
+    cs_angs = np.linspace(0, np.deg2rad(360), 1000)
+    rhos = cs_right_shifted(cs_angs)
+
+    ant_xs = ant_rad * np.cos(ant_angs)
+    ant_ys = ant_rad * np.sin(ant_angs)
+
+    breast_xs = rhos * np.cos(cs_angs)
+    breast_ys = rhos * np.sin(cs_angs)
+
+    distances = np.sqrt((ant_xs[:, None] - breast_xs) ** 2 +
+                        (ant_ys[:, None] - breast_ys) ** 2)
+
+    min_dists = np.min(distances, axis=-1)
+
+    tor_shifted = min_dists / __VAC_SPEED * 2
+    delta_t = tor_right - tor_shifted
+
+    return delta_t
+
+
+def phase_shift_aligned_boundaries(fd_emp_ref_right, ant_rad, cs_right_shifted,
+                                   ini_t, fin_t, n_time_pts, ini_f, fin_f,
+                                   n_fs, scan_ini_f, scan_fin_f):
+
+    if scan_fin_f is None:
+        scan_fin_f = fin_f
+
+    # Number of antenna positions
+    n_ant_pos = np.size(fd_emp_ref_right, axis=1)
+
+    td, ts, kernel = prepare_fd_data(
+        adi_emp_cropped=fd_emp_ref_right,
+        ini_t=ini_t, fin_t=fin_t, n_time_pts=n_time_pts,
+        ini_f=ini_f, fin_f=fin_f)
+
+    _, tor_right = rho_ToR_from_td(td, ts, kernel,
+                                   ant_rad=ant_rad, peak_threshold=10,
+                                   plt_slices=False, out_dir='')
+
+    # Get frequencies for phase shifting
+    freqs = retain_and_tile_freqs(scan_ini_f=scan_ini_f,
+                                  scan_fin_f=scan_fin_f,
+                                  n_fs=n_fs, ini_f=ini_f,
+                                  n_ant_pos=n_ant_pos)
+
+    delta_t = extract_delta_t_from_boundary(tor_right=tor_right,
+                                            cs_right_shifted=cs_right_shifted,
+                                            ant_rad=ant_rad)
+
+    # Phase shift
+    s11_aligned_right = phase_shift(fd=fd_emp_ref_right, delta_t=delta_t,
+                                    freqs=freqs)
+
+    return s11_aligned_right

@@ -176,7 +176,7 @@ def plt_sino(fd, title, save_str, out_dir, cbar_fmt='%.2e',
              transparent=True, close=True):
 
     # Find the minimum retained frequency
-    scan_fs = np.linspace(2e9, 9e9, 1001)  # Frequencies used in scan
+    scan_fs = np.linspace(1e9, 9e9, 1001)  # Frequencies used in scan
     min_f = 2e9  # Min frequency to retain
     tar_fs = scan_fs >= min_f  # Target frequencies to retain
     min_retain_f = np.min(scan_fs[tar_fs])  # Min freq actually retained
