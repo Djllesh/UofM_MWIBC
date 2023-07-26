@@ -37,8 +37,9 @@ from umbms.plot.sinogramplot import plt_sino, show_sinogram
 from umbms.boundary.boundary_detection import get_boundary_iczt, \
     fd_differential_align, cart_to_polar, time_aligned_kernel, \
     rho_ToR_from_td, shift_cs, extract_delta_t_from_boundary, \
-    prepare_fd_data, phase_shift_aligned_boundaries
-from umbms.boundary.differential_minimization import minimize_differential
+    prepare_fd_data, phase_shift_aligned_boundaries, shift_rot_cs
+from umbms.boundary.differential_minimization import \
+    minimize_differential_shift, minimize_differential_shift_rot
 
 __CPU_COUNT = mp.cpu_count()
 ###############################################################################
@@ -447,7 +448,7 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
             else:  # If not mirroring right breast
                 right_s11 = right_cal
 
-            if ii == 3:
+            if ii == 2:
                 ant_rad = md[ii]['ant_rad'] / 100 + 0.03618 + 0.0449
 
                 # s11_aligned_right = fd_differential_align(
@@ -455,8 +456,6 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
                 #     fd_emp_ref_right=right_s11[__SCAN_FS >= 2e9, :],
                 #     ini_t=1e-9, fin_t=2e-9, n_time_pts=1000,
                 #     ini_f=2e9, fin_f=9e9)
-
-
 
                 cs_left, x_cm_left, y_cm_left = \
                     get_boundary_iczt(adi_emp_cropped=left_s11[__SCAN_FS >=
@@ -482,11 +481,12 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
 
                 # --------- TEMPORARY --------- #
 
-                shift = minimize_differential(cs_left=cs_left,
-                                              cs_right=cs_right)
+                shift = minimize_differential_shift_rot(cs_left=cs_left,
+                                                        cs_right=cs_right)
 
-                cs_right_shifted = shift_cs(cs=cs_right, delta_x=shift[0],
-                                            delta_y=shift[1])
+                cs_right_shifted = shift_rot_cs(cs=cs_right, delta_x=shift[0],
+                                                delta_y=shift[1],
+                                                delta_phi=shift[2])
 
                 s11_aligned_right = phase_shift_aligned_boundaries(
                     fd_emp_ref_right=right_s11[__SCAN_FS >= 2e9, :],
@@ -509,6 +509,14 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
                          title='Left breast (empty chamber)',
                          out_dir=os.path.join(__O_DIR, 'boundary_r/'),
                          save_str='left_emp_ref.png')
+
+                left_right_ref = left_s11[__SCAN_FS >= 2e9, :] -\
+                                 s11_aligned_right
+
+                plt_sino(fd=left_right_ref,
+                         title='Left - right (after alignment)',
+                         out_dir=os.path.join(__O_DIR, 'boundary_r/'),
+                         save_str='left-right_aligned.png')
 
                 # td, ts, kernel = prepare_fd_data(
                 #     adi_emp_cropped=right_s11[__SCAN_FS >= 2e9, :],
