@@ -12,6 +12,7 @@ from scipy.interpolate import CubicSpline
 from scipy.constants import speed_of_light
 from umbms.beamform.iczt import iczt
 from umbms.beamform.utility import get_xy_arrs
+from umbms.boundary.differential_minimization import shift_and_rotate
 from umbms.plot.sinogramplot import show_sinogram
 import matplotlib.pyplot as plt
 
@@ -264,6 +265,41 @@ def shift_cs(cs, delta_x, delta_y):
     return cs_shifted
 
 
+def shift_rot_cs(cs, delta_x, delta_y, delta_phi):
+    """Shifts and rotates the CubicSpline according to Cartesian shift
+    in the image domain
+
+    Parameters
+    -----------
+    cs : PPoly
+        CubicSplice of a given boundary
+    delta_x, delta_y : float
+        Spatial shift
+    delta_phi : float
+        Spatial rotation
+
+    Returns
+    -----------
+    cs_shifted : PPoly
+        CubicSpline that corresponds to the spatial shift
+    """
+    angs = np.linspace(0, np.deg2rad(360), 300)
+    rhos = cs(angs)
+
+    xs = rhos * np.cos(angs)
+    ys = rhos * np.sin(angs)
+
+    xs_shift_rot, ys_shift_rot = shift_and_rotate(xs=xs, ys=ys,
+                                                  delta_x=delta_x,
+                                                  delta_y=delta_y,
+                                                  delta_phi=delta_phi)
+
+    rho_shift_rot, phi_shift_rot = cart_to_polar(xs_shift_rot, ys_shift_rot)
+    cs_shifted = CubicSpline(phi_shift_rot, rho_shift_rot)
+
+    return cs_shifted
+
+
 def get_binary_mask(cs, m_size, roi_rad, precision_scaling_factor=1):
     """Returns a binary mask that corresponds to breast phantom boundary
 
@@ -375,9 +411,7 @@ def find_centre_of_mass_from_cs(cs, n_points=200):
 
 
 def prepare_fd_data(adi_emp_cropped, ini_t, fin_t, n_time_pts, ini_f, fin_f):
-    """Prepares unorganized data for boundary detection
-
-    """
+    """Prepares unorganized data for boundary detection"""
 
     # convert frequency-domain data to time-domain
     td = iczt(adi_emp_cropped, ini_t=ini_t, fin_t=fin_t, n_time_pts=n_time_pts,
@@ -695,10 +729,36 @@ def plot_slices(position, peaks, peak, approx_peak_idx, kernel, avg_peak, lags,
 
 
 def retain_and_tile_freqs(scan_ini_f, scan_fin_f, ini_f, n_fs, n_ant_pos):
-    # TODO: documentation
+    """Creates a tiled array of frequencies for phase shifting.
+
+    The frequencies are created in the range [scan_ini_f, scan_fin_f]
+    with a step size n_fs.
+
+    The frequencies are retained in the range [ini_f, scan_fin_f] on a
+    condition ini_f >= scan_ini_f
+
+    The frequencies are tiled n_ant_pos times.
+
+    Parameters
+    -----------
+    scan_ini_f : float
+        Starting frequency of the scan
+    scan_fin_f : float
+        Finishing frequency of the scan
+    ini_f : float
+        Frequency to retain (higher than)
+    n_fs : int
+        Step size
+    n_ant_pos : int
+        Number of antenna positions during the scan
+
+    Returns
+    ------------
+    freqs : array_like
+        The tiled array
+    """
 
     # Obtain frequency array for phase shifting
-    # (retaining frequency range [ini_f, scan_fin_f))
     fs = np.linspace(scan_ini_f, scan_fin_f, n_fs)
     fs = fs[fs >= ini_f]
     freqs = np.tile(fs, (n_ant_pos, 1)).T
@@ -707,7 +767,23 @@ def retain_and_tile_freqs(scan_ini_f, scan_fin_f, ini_f, n_fs, n_ant_pos):
 
 
 def phase_shift(fd, delta_t, freqs):
-    # TODO: documentation
+    """Preforms a phase shift on the frequency domain data
+
+    Parameters
+    ------------
+    fd : array_like
+        Frequency domain data of the scan
+    delta_t : array_like
+        Time shifts for every antenna position
+    freqs : array_like
+        Frequencies used in the scan (tiled for more efficient
+        computation)
+
+    Returns
+    ------------
+    shifted_fd : array_like
+        Frequency domain data after phase shifting
+    """
 
     # exponential factor for Fourier transform
     exp_conversion = np.exp(2j * np.pi * delta_t * freqs)
@@ -853,18 +929,58 @@ def extract_delta_t_from_boundary(tor_right, cs_right_shifted, ant_rad,
 def phase_shift_aligned_boundaries(fd_emp_ref_right, ant_rad, cs_right_shifted,
                                    ini_t, fin_t, n_time_pts, ini_f, fin_f,
                                    n_fs, scan_ini_f, scan_fin_f):
+    """Performs phase shifting procedure based on the spatial shift
+    of the boundary
 
+    Parameters
+    -----------
+    fd_emp_ref_right : array_like
+        Frequency domain data of the unshifted right breast scan
+        (empty chamber reference)
+    ant_rad : float
+        Radius of antenna AFTER applying the corrections
+    cs_right_shifted : PPoly
+        CubicSpline of the shifted right breast boundary
+    ini_t : float
+        Initial time point for ICZT (s)
+    fin_t : float
+        Finishing time point for ICZT (s)
+    n_time_pts : int
+        Number of time points
+    ini_f : float
+        Initial frequency that retains (Hz)
+    fin_f : float
+        Finishing frequency (Hz)
+    n_fs : int
+        Number of frequencies
+    scan_ini_f : float
+        Initial frequency of the scan (Hz)
+    scan_fin_f : float
+        Finishing frequency of the scan (Hz)
+
+    Returns
+    ---------
+    s11_aligned_right : array_like
+        Resulting S11 data after the application of the phase shift
+    """
+
+    # if regular scan (up to 9GHz)
     if scan_fin_f is None:
+        # the range to retain and the range of the scan end at the same
+        # frequency
         scan_fin_f = fin_f
 
     # Number of antenna positions
     n_ant_pos = np.size(fd_emp_ref_right, axis=1)
 
+    #
     td, ts, kernel = prepare_fd_data(
         adi_emp_cropped=fd_emp_ref_right,
         ini_t=ini_t, fin_t=fin_t, n_time_pts=n_time_pts,
         ini_f=ini_f, fin_f=fin_f)
 
+    # Prepare the data to obtain time-domain scan data, time points and
+    # time aligned kernel for cross-correlation
     _, tor_right = rho_ToR_from_td(td, ts, kernel,
                                    ant_rad=ant_rad, peak_threshold=10,
                                    plt_slices=False, out_dir='')
@@ -875,6 +991,8 @@ def phase_shift_aligned_boundaries(fd_emp_ref_right, ant_rad, cs_right_shifted,
                                   n_fs=n_fs, ini_f=ini_f,
                                   n_ant_pos=n_ant_pos)
 
+    # Find delta_t values that correspond to a spatial shift
+    # of the boundary
     delta_t = extract_delta_t_from_boundary(tor_right=tor_right,
                                             cs_right_shifted=cs_right_shifted,
                                             ant_rad=ant_rad)
