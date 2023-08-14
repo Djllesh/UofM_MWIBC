@@ -37,7 +37,8 @@ from umbms.plot.sinogramplot import plt_sino, show_sinogram
 from umbms.boundary.boundary_detection import get_boundary_iczt, \
     fd_differential_align, cart_to_polar, time_aligned_kernel, \
     rho_ToR_from_td, shift_cs, extract_delta_t_from_boundary, \
-    prepare_fd_data, phase_shift_aligned_boundaries, shift_rot_cs
+    prepare_fd_data, phase_shift_aligned_boundaries, shift_rot_cs, \
+    window_skin_alignment
 from umbms.boundary.differential_minimization import \
     minimize_differential_shift, minimize_differential_shift_rot
 
@@ -494,6 +495,10 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
                     cs_right_shifted=cs_right_shifted, ini_t=1e-9, fin_t=2e-9,
                     n_time_pts=1000, ini_f=2e9, fin_f=__FIN_F, n_fs=__N_FS,
                     scan_ini_f=__INI_F, scan_fin_f=None)
+
+                window_skin_alignment(s11_aligned_right,
+                                      left_s11[__SCAN_FS >= 2e9, :],
+                                      ant_rad=ant_rad)
 
                 plt_sino(fd=s11_aligned_right, title='Right breast phase '
                                                      'shifted',

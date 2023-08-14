@@ -11,7 +11,7 @@ from scipy.signal import find_peaks
 from scipy.interpolate import CubicSpline
 from scipy.constants import speed_of_light
 from umbms.beamform.iczt import iczt
-from umbms.beamform.utility import get_xy_arrs
+from umbms.beamform.utility import get_xy_arrs, rect
 from umbms.boundary.differential_minimization import shift_and_rotate
 from umbms.plot.sinogramplot import show_sinogram
 import matplotlib.pyplot as plt
@@ -410,7 +410,8 @@ def find_centre_of_mass_from_cs(cs, n_points=200):
     return x_cm, y_cm
 
 
-def prepare_fd_data(adi_emp_cropped, ini_t, fin_t, n_time_pts, ini_f, fin_f):
+def prepare_fd_data(adi_emp_cropped, ini_t, fin_t, n_time_pts, ini_f, fin_f,
+                    temp=False):
     """Prepares unorganized data for boundary detection"""
 
     # convert frequency-domain data to time-domain
@@ -420,7 +421,6 @@ def prepare_fd_data(adi_emp_cropped, ini_t, fin_t, n_time_pts, ini_f, fin_f):
     ts = np.linspace(ini_t, fin_t, n_time_pts)
     # find the kernel
     kernel = time_aligned_kernel(td)
-
     return td, ts, kernel
 
 
@@ -479,6 +479,13 @@ def get_boundary_iczt(adi_emp_cropped, ant_rad, *, n_ant_pos=72,
     rho, ToR = rho_ToR_from_td(td=td, ts=ts, kernel=kernel, ant_rad=ant_rad,
                                peak_threshold=peak_threshold,
                                plt_slices=plt_slices, out_dir=out_dir)
+
+    t_start = np.min(ToR)
+    t_end = np.max(ToR)
+    t_fin = ts[-1]
+    rect_pre_skin = rect(ts, t_start/2, t_start)
+    rect_skin = rect(ts, t_start + (t_end - t_start)/2, t_end-t_start)
+    rect_post_skin = rect(ts, t_end + (t_fin-t_end)/2, t_fin-t_end)
 
     # polar angle data
     angles = np.linspace(0, np.deg2rad(355), n_ant_pos) \
@@ -598,7 +605,6 @@ def time_aligned_kernel(td):
 
     # obtain the kernel by averaging
     kernel = np.average(time_aligned_signals, axis=1)
-
     return kernel
 
 
@@ -660,7 +666,8 @@ def rho_ToR_from_td(td, ts, kernel, ant_rad, peak_threshold,
         # ------PEAK SELECTION------- #
 
         # positive index - average signal is "shifted" to the right wrt
-        # the actual signal negative - to the left
+        # the actual signal
+        # negative - to the left
         indx_lag = lags[corr_peaks]
         # approximate anticipated peak index
         approx_peak_idx = avg_peak + indx_lag
@@ -902,6 +909,7 @@ def extract_delta_t_from_boundary(tor_right, cs_right_shifted, ant_rad,
         An array of time differences for further phase shift
     """
 
+    # angles - real angles of antenna
     ant_angs = np.linspace(0, np.deg2rad(355), n_ant_pos) + \
                np.deg2rad(ini_ant_ang)
     ant_angs = np.flip(ant_angs)
@@ -909,17 +917,20 @@ def extract_delta_t_from_boundary(tor_right, cs_right_shifted, ant_rad,
     cs_angs = np.linspace(0, np.deg2rad(360), 1000)
     rhos = cs_right_shifted(cs_angs)
 
+    # antenna positions
     ant_xs = ant_rad * np.cos(ant_angs)
     ant_ys = ant_rad * np.sin(ant_angs)
 
+    # coordinates of the breast outline
     breast_xs = rhos * np.cos(cs_angs)
     breast_ys = rhos * np.sin(cs_angs)
 
+    # distances from antennas to the phantom
     distances = np.sqrt((ant_xs[:, None] - breast_xs) ** 2 +
                         (ant_ys[:, None] - breast_ys) ** 2)
 
     min_dists = np.min(distances, axis=-1)
-
+    # convert distances to time of flight
     tor_shifted = min_dists / __VAC_SPEED * 2
     delta_t = tor_right - tor_shifted
 
@@ -1002,3 +1013,158 @@ def phase_shift_aligned_boundaries(fd_emp_ref_right, ant_rad, cs_right_shifted,
                                     freqs=freqs)
 
     return s11_aligned_right
+
+
+def window_skin_alignment(fd_emp_ref_right, fd_emp_ref_left, ant_rad=0.0,
+                          ini_t=0.5e-9, fin_t=5.5e-9, n_time_pts=700,
+                          ini_f=2e9, fin_f=9e9, peak_threshold=10,
+                          scan_ini_f=1e9, scan_fin_f=9e9, n_fs=1001):
+    """Shifts the skin response in a thin window defined by the earliest
+    and latest skin signals
+
+    Parameters
+    ----------
+    fd_emp_ref_left : array_like
+        FD data of the left breast (empty chamber reference)
+    fd_emp_ref_right : array_like
+        FD data of the right breast (empty chamber reference)
+    ant_rad : float
+        Radius of antenna position AFTER all the corrections
+    ini_t : float
+        The starting time-of-response to be used for computing the ICZT,
+        (s)
+    fin_t : float
+        The stopping time-of-response to be used for computing the ICZT,
+        (s)
+    n_time_pts : int
+        The number of points in the time-domain at which the transform
+        will be evaluated
+    ini_f : float
+        The smallest frequency to be retained, (Hz)
+    fin_f : float
+        The largest frequency to be retained, (Hz)
+    peak_threshold : int
+        The maximal allowed index jump in time points array
+        (recommended not to change)
+    scan_ini_f : int
+        The first frequency of the scan (Hz)
+    scan_fin_f : int
+        The last frequency of the scan (Hz)
+    n_fs : int
+        Number of frequency steps
+    """
+
+    # convert FD to TD
+    td_left = iczt(fd_emp_ref_left, ini_t=ini_t, fin_t=fin_t,
+                   n_time_pts=n_time_pts, ini_f=ini_f, fin_f=fin_f)
+    td_right = iczt(fd_emp_ref_right, ini_t=ini_t, fin_t=fin_t,
+                    n_time_pts=n_time_pts, ini_f=ini_f, fin_f=fin_f)
+
+    # time response data
+    ts = np.linspace(ini_t, fin_t, n_time_pts)
+
+    # find the kernels
+    kernel_left = time_aligned_kernel(td_left)
+    kernel_right = time_aligned_kernel(td_right)
+
+    # find all ToR values on each antenna position
+    _, ToR_left = rho_ToR_from_td(td=td_left, ts=ts, kernel=kernel_left,
+                                  ant_rad=ant_rad,
+                                  peak_threshold=peak_threshold,
+                                  plt_slices=False, out_dir='')
+    _, ToR_right = rho_ToR_from_td(td=td_right, ts=ts, kernel=kernel_right,
+                                   ant_rad=ant_rad,
+                                   peak_threshold=peak_threshold,
+                                   plt_slices=False, out_dir='')
+
+    signal_for_plotting = np.abs(td_right[:, 0])
+    peaks, _ = find_peaks(-signal_for_plotting)
+    max_peak = np.argwhere(ts == ToR_right[0])[0]
+    peaks_to_decide = peaks - max_peak
+    t_start = ts[max_peak + peaks_to_decide[peaks_to_decide < 0][-1]]
+    t_end = ts[max_peak + peaks_to_decide[peaks_to_decide > 0][0]]
+    t_fin = ts[-1]
+    rect_pre_skin = rect(ts, t_start / 2, t_start)
+    rect_skin = rect(ts, t_start + (t_end - t_start) / 2, t_end - t_start)
+    rect_post_skin = rect(ts, t_end + (t_fin - t_end) / 2, t_fin - t_end)
+
+    fig = plt.figure()
+    fig.set_figheight(6)
+    fig.set_figwidth(6)
+    ax1 = plt.subplot2grid((4, 2), (0, 0))
+    ax2 = plt.subplot2grid((4, 2), (0, 1))
+    ax3 = plt.subplot2grid((4, 2), (1, 0))
+    ax4 = plt.subplot2grid((4, 2), (1, 1))
+    ax5 = plt.subplot2grid((4, 2), (2, 0))
+    ax6 = plt.subplot2grid((4, 2), (2, 1))
+    ax7 = plt.subplot2grid((4, 2), (3, 0), colspan=2)
+    ax1.sharex(ax2)
+
+    ax1.plot(ts, rect_pre_skin, 'r-')
+    ax1.set_title('Pre-skin')
+    ax2.plot(ts, rect_pre_skin*signal_for_plotting, 'r-')
+    ax2.set_title('Pre-skin')
+
+    ax3.plot(ts, rect_skin, 'b-')
+    ax3.set_title('Skin')
+    ax4.plot(ts, rect_skin*signal_for_plotting, 'b-')
+    ax4.set_title('Skin')
+
+    ax5.plot(ts, rect_post_skin, 'r-')
+    ax5.set_title('Post-skin')
+    ax6.plot(ts, rect_post_skin*signal_for_plotting, 'r-')
+    ax6.set_title('Post-skin')
+
+    signal_composed = rect_pre_skin * signal_for_plotting + \
+                      rect_skin * signal_for_plotting + \
+                      rect_post_skin * signal_for_plotting
+
+    ax7.plot(ts, signal_composed, 'k-')
+    ax7.set_title('Full signal')
+    plt.tight_layout()
+    plt.show()
+    plt.close(fig)
+
+    fig = plt.figure()
+    fig.set_figheight(6)
+    fig.set_figwidth(6)
+    ax1 = plt.subplot2grid((4, 2), (0, 0))
+    ax2 = plt.subplot2grid((4, 2), (0, 1))
+    ax3 = plt.subplot2grid((4, 2), (1, 0))
+    ax4 = plt.subplot2grid((4, 2), (1, 1))
+    ax5 = plt.subplot2grid((4, 2), (2, 0))
+    ax6 = plt.subplot2grid((4, 2), (2, 1))
+    ax7 = plt.subplot2grid((4, 2), (3, 0), colspan=2)
+
+    freqs = np.linspace(1e9, 9e9, 1001)
+    freqs = freqs[freqs >= 2e9]
+
+    ax1.plot(ts, rect_pre_skin, 'r-')
+    ax1.set_title('Pre-skin')
+    ax2.plot(freqs, t_start * np.sinc(freqs*t_start) *
+             np.exp(1j * np.pi * freqs * t_start), 'r-')
+    ax2.set_title('Pre-skin')
+
+    ax3.plot(ts, rect_skin, 'b-')
+    ax3.set_title('Skin')
+    ax4.plot(freqs, (t_end-t_start)*np.sinc(freqs*(t_end-t_start)) *
+                     np.exp(1j * np.pi * freqs * (t_start + (
+                            t_end-t_start)/2)), 'b-')
+    ax4.set_title('Skin')
+
+    ax5.plot(ts, rect_post_skin, 'r-')
+    ax5.set_title('Post-skin')
+    ax6.plot(freqs, (t_fin-t_end)*np.sinc(freqs*(t_fin-t_end)) *
+                     np.exp(1j * np.pi * freqs * (t_end + (
+                            t_fin-t_end)/2)), 'r-')
+    ax6.set_title('Post-skin')
+
+    signal_composed = rect_pre_skin * signal_for_plotting + \
+                      rect_skin * signal_for_plotting + \
+                      rect_post_skin * signal_for_plotting
+
+    ax7.plot(ts, signal_composed, 'k-')
+    ax7.set_title('Full signal')
+    plt.tight_layout()
+    plt.show()
+

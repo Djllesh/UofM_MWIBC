@@ -1,6 +1,37 @@
 import numpy as np
 
 
+def rect(t, t0, a):
+    """Rectangular function
+
+    rect((t-t0)/a) = {
+                      0, if |(t-t0)/a| > 1/2
+                      1/2, if |(t-t0)/a| = 1/2
+                      1, if |(t-t0)/a| < 1/2
+                      }
+
+    Parameters
+    -----------
+    t : array_like
+        Array of time points
+    t0 : float
+        Time shift
+    a : float
+        Half-width of the rectangle
+
+    Returns
+    ----------
+    rectangle : array_like
+        Result of rect function as given in the description
+    """
+
+    rectangle = np.zeros_like(t)
+    rectangle[np.abs((t-t0)/a) < 1/2] = 1
+    rectangle[np.abs((t-t0)/a) == 1/2] = 1/2
+
+    return rectangle
+
+
 def get_xy_arrs(m_size, roi_rad):
     """Finds the x/y position of each pixel in the image-space
 
