@@ -182,7 +182,7 @@ if __name__ == "__main__":
     # Call this func without plotting to print out the pos error values
     plt_rand_pos_errs(c_xs=c_xs_CoM_r, c_ys=c_ys_CoM_r,
                       xs=t_coords[:, 0], ys=t_coords[:, 1], logger=logger,
-                      o_dir_str='regular_das/', save_str='', make_plts=False)
+                      o_dir_str='regular_das/', save_str='', make_plts=True)
 
     # Initialize arrays for size analysis
     rho_sizes = np.zeros([np.size(imgs_reg, axis=0), ])
@@ -230,7 +230,7 @@ if __name__ == "__main__":
     plt.ylabel('Target Response Extent (cm)', fontsize=22)
     plt.grid()
     plt.tight_layout()
-    plt.savefig(os.path.join(out_dir, 'size/paper/Antenna time delay/'
+    plt.savefig(os.path.join(out_dir, 'size/20230808symposium/'
                                       'reg_das_rho_extent_vs_rho.png'),
                 dpi=150,
                 transparent=False)
@@ -246,7 +246,7 @@ if __name__ == "__main__":
     plt.ylabel('Target Response Extent (cm)', fontsize=22)
     plt.grid()
     plt.tight_layout()
-    plt.savefig(os.path.join(out_dir, 'size/paper/Antenna time delay/'
+    plt.savefig(os.path.join(out_dir, 'size/20230808symposium/'
                                       'reg_das_phi_extent_vs_rho.png'),
                 dpi=150,
                 transparent=False)
@@ -299,7 +299,7 @@ if __name__ == "__main__":
 
     plt_rand_pos_errs(c_xs=c_xs_CoM_b, c_ys=c_ys_CoM_b,
                       xs=t_coords[:, 0], ys=t_coords[:, 1], logger=logger,
-                      o_dir_str='binary_das/', save_str='', make_plts=False)
+                      o_dir_str='binary_das/', save_str='', make_plts=True)
 
     rho_sizes = np.zeros([np.size(imgs_b, axis=0), ])
     phi_sizes = np.zeros([np.size(imgs_b, axis=0), ])
@@ -337,7 +337,7 @@ if __name__ == "__main__":
     plt.ylabel('Target Response Extent (cm)', fontsize=22)
     plt.grid()
     plt.tight_layout()
-    plt.savefig(os.path.join(out_dir, 'size/paper/Antenna time delay/'
+    plt.savefig(os.path.join(out_dir, 'size/20230808symposium/'
                                       'binary_das_rho_extent_vs_rho.png'),
                 dpi=150,
                 transparent=False)
@@ -353,7 +353,7 @@ if __name__ == "__main__":
     plt.ylabel('Target Response Extent (cm)', fontsize=22)
     plt.grid()
     plt.tight_layout()
-    plt.savefig(os.path.join(out_dir, 'size/paper/Antenna time delay/'
+    plt.savefig(os.path.join(out_dir, 'size/20230808symposium/'
                                       'binary_das_phi_extent_vs_rho.png'),
                 dpi=150,
                 transparent=False)
@@ -402,7 +402,7 @@ if __name__ == "__main__":
     plt_rand_pos_errs(c_xs=c_xs_CoM_fdnc, c_ys=c_ys_CoM_fdnc,
                       xs=t_coords[:, 0], ys=t_coords[:, 1], logger=logger,
                       o_dir_str='freq_dep_non_cond_das/', save_str='',
-                      make_plts=False)
+                      make_plts=True)
 
     rho_sizes = np.zeros([np.size(imgs_fdnc, axis=0), ])
     phi_sizes = np.zeros([np.size(imgs_fdnc, axis=0), ])
@@ -440,7 +440,7 @@ if __name__ == "__main__":
     plt.ylabel('Target Response Extent (cm)', fontsize=22)
     plt.grid()
     plt.tight_layout()
-    plt.savefig(os.path.join(out_dir, 'size/paper/Antenna time delay/'
+    plt.savefig(os.path.join(out_dir, 'size/20230808symposium/'
                                       'fdnc_das_rho_extent_vs_rho.png'),
                 dpi=150,
                 transparent=False)
@@ -456,7 +456,7 @@ if __name__ == "__main__":
     plt.ylabel('Target Response Extent (cm)', fontsize=22)
     plt.grid()
     plt.tight_layout()
-    plt.savefig(os.path.join(out_dir, 'size/paper/Antenna time delay/'
+    plt.savefig(os.path.join(out_dir, 'size/20230808symposium/'
                                       'fdnc_das_phi_extent_vs_rho.png'),
                 dpi=150,
                 transparent=False)
@@ -503,7 +503,7 @@ if __name__ == "__main__":
 
     plt_rand_pos_errs(c_xs=c_xs_CoM_fd, c_ys=c_ys_CoM_fd,
                       xs=t_coords[:, 0], ys=t_coords[:, 1], logger=logger,
-                      o_dir_str='freq_dep_das/', save_str='', make_plts=False)
+                      o_dir_str='freq_dep_das/', save_str='', make_plts=True)
 
     rho_sizes = np.zeros([np.size(imgs_fd, axis=0), ])
     phi_sizes = np.zeros([np.size(imgs_fd, axis=0), ])
@@ -541,7 +541,7 @@ if __name__ == "__main__":
     plt.ylabel('Target Response Extent (cm)', fontsize=22)
     plt.grid()
     plt.tight_layout()
-    plt.savefig(os.path.join(out_dir, 'size/paper/Antenna time delay/'
+    plt.savefig(os.path.join(out_dir, 'size/20230808symposium/'
                                       'fd_das_rho_extent_vs_rho.png'),
                 dpi=150,
                 transparent=False)
@@ -557,7 +557,7 @@ if __name__ == "__main__":
     plt.ylabel('Target Response Extent (cm)', fontsize=22)
     plt.grid()
     plt.tight_layout()
-    plt.savefig(os.path.join(out_dir, 'size/paper/Antenna time delay/'
+    plt.savefig(os.path.join(out_dir, 'size/20230808symposium/'
                                       'fd_das_phi_extent_vs_rho.png'),
                 dpi=150,
                 transparent=False)
@@ -604,7 +604,7 @@ if __name__ == "__main__":
 
     plt_rand_pos_errs(c_xs=c_xs_CoM_rt, c_ys=c_ys_CoM_rt,
                       xs=t_coords[:, 0], ys=t_coords[:, 1], logger=logger,
-                      o_dir_str='rt_das/', save_str='', make_plts=False)
+                      o_dir_str='rt_das/', save_str='', make_plts=True)
 
     rho_sizes = np.zeros([np.size(imgs_rt, axis=0), ])
     phi_sizes = np.zeros([np.size(imgs_rt, axis=0), ])
@@ -645,7 +645,7 @@ if __name__ == "__main__":
     plt.ylabel('Target Response Extent (cm)', fontsize=22)
     plt.grid()
     plt.tight_layout()
-    plt.savefig(os.path.join(out_dir, 'size/paper/Antenna time delay/'
+    plt.savefig(os.path.join(out_dir, 'size/20230808symposium/'
                                       'rt_das_rho_extent_vs_rho.png'),
                 dpi=150,
                 transparent=False)
@@ -661,7 +661,7 @@ if __name__ == "__main__":
     plt.ylabel('Target Response Extent (cm)', fontsize=22)
     plt.grid()
     plt.tight_layout()
-    plt.savefig(os.path.join(out_dir, 'size/paper/Antenna time delay/'
+    plt.savefig(os.path.join(out_dir, 'size/20230808symposium/'
                                       'rt_das_phi_extent_vs_rho.png'),
                 dpi=150,
                 transparent=False)
@@ -678,33 +678,30 @@ if __name__ == "__main__":
 
     plot_obs_vs_recon(xs=t_coords[:, 0], ys=t_coords[:, 1],
                       compare_xs=c_xs_CoM_r, compare_ys=c_ys_CoM_r,
-                      save_str='regular_das', o_dir_str='paper/Antenna time '
-                                                        'delay/',
+                      save_str='regular_das', o_dir_str='20230808symposium/',
                       x_lim_lhs=x_lim_lhs, x_lim_rhs=x_lim_rhs,
                       y_lim_bot=y_lim_bot, y_lim_top=y_lim_top)
 
     plot_obs_vs_recon(xs=t_coords[:, 0], ys=t_coords[:, 1],
                       compare_xs=c_xs_CoM_b, compare_ys=c_ys_CoM_b,
-                      save_str='binary_das', o_dir_str='paper/Antenna time '
-                                                       'delay/',
+                      save_str='binary_das', o_dir_str='20230808symposium/',
                       x_lim_lhs=x_lim_lhs, x_lim_rhs=x_lim_rhs,
                       y_lim_bot=y_lim_bot, y_lim_top=y_lim_top)
 
     plot_obs_vs_recon(xs=t_coords[:, 0], ys=t_coords[:, 1],
                       compare_xs=c_xs_CoM_fdnc, compare_ys=c_ys_CoM_fdnc,
-                      save_str='fdnc_das', o_dir_str='paper/Antenna time '
-                                                     'delay/',
+                      save_str='fdnc_das', o_dir_str='20230808symposium/',
                       x_lim_lhs=x_lim_lhs, x_lim_rhs=x_lim_rhs,
                       y_lim_bot=y_lim_bot, y_lim_top=y_lim_top)
 
     plot_obs_vs_recon(xs=t_coords[:, 0], ys=t_coords[:, 1],
                       compare_xs=c_xs_CoM_fd, compare_ys=c_ys_CoM_fd,
-                      save_str='fd_das', o_dir_str='paper/Antenna time delay/',
+                      save_str='fd_das', o_dir_str='20230808symposium/',
                       x_lim_lhs=x_lim_lhs, x_lim_rhs=x_lim_rhs,
                       y_lim_bot=y_lim_bot, y_lim_top=y_lim_top)
 
     plot_obs_vs_recon(xs=t_coords[:, 0], ys=t_coords[:, 1],
                       compare_xs=c_xs_CoM_rt, compare_ys=c_ys_CoM_rt,
-                      save_str='rt_das', o_dir_str='paper/Antenna time delay/',
+                      save_str='rt_das', o_dir_str='20230808symposium/',
                       x_lim_lhs=x_lim_lhs, x_lim_rhs=x_lim_rhs,
                       y_lim_bot=y_lim_bot, y_lim_top=y_lim_top)

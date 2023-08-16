@@ -483,9 +483,9 @@ def get_boundary_iczt(adi_emp_cropped, ant_rad, *, n_ant_pos=72,
     t_start = np.min(ToR)
     t_end = np.max(ToR)
     t_fin = ts[-1]
-    rect_pre_skin = rect(ts, t_start/2, t_start)
-    rect_skin = rect(ts, t_start + (t_end - t_start)/2, t_end-t_start)
-    rect_post_skin = rect(ts, t_end + (t_fin-t_end)/2, t_fin-t_end)
+    rect_pre_skin = rect(ts, t_start / 2, t_start)
+    rect_skin = rect(ts, t_start + (t_end - t_start) / 2, t_end - t_start)
+    rect_post_skin = rect(ts, t_end + (t_fin - t_end) / 2, t_fin - t_end)
 
     # polar angle data
     angles = np.linspace(0, np.deg2rad(355), n_ant_pos) \
@@ -1022,6 +1022,14 @@ def window_skin_alignment(fd_emp_ref_right, fd_emp_ref_left, ant_rad=0.0,
     """Shifts the skin response in a thin window defined by the earliest
     and latest skin signals
 
+    TODO:
+        1. Verify that the convolution with sinc function outputs the
+        same signal as the recorded
+        2. Calculate the time shifts and apply them specifically to the
+        skin term in the sum
+        3. Verify that the skin gets aligned and that it is the only
+        part of the image that is being manipulated
+
     Parameters
     ----------
     fd_emp_ref_left : array_like
@@ -1077,13 +1085,25 @@ def window_skin_alignment(fd_emp_ref_right, fd_emp_ref_left, ant_rad=0.0,
                                    peak_threshold=peak_threshold,
                                    plt_slices=False, out_dir='')
 
-    signal_for_plotting = np.abs(td_right[:, 0])
-    peaks, _ = find_peaks(-signal_for_plotting)
+    # Demonstrating the maths on the first antenna position signal
+    signal_td = np.abs(td_right[:, 0])
+    # Searching for the peaks of the vertically flipped signal
+    # to capture the whole width of the skin peak
+    peaks, _ = find_peaks(-signal_td)
+    # Maximal peak refers to a primary skin response (it might not be
+    # of maximal intensity
     max_peak = np.argwhere(ts == ToR_right[0])[0]
+    # The start and the end of the skin are two closest peaks to
+    # the primary skin response on either side
     peaks_to_decide = peaks - max_peak
     t_start = ts[max_peak + peaks_to_decide[peaks_to_decide < 0][-1]]
     t_end = ts[max_peak + peaks_to_decide[peaks_to_decide > 0][0]]
     t_fin = ts[-1]
+
+    # ---------------- TEMPORARY BELOW ---------------- #
+
+    # Rect functions to make sure we capture the correct part of the
+    # signal
     rect_pre_skin = rect(ts, t_start / 2, t_start)
     rect_skin = rect(ts, t_start + (t_end - t_start) / 2, t_end - t_start)
     rect_post_skin = rect(ts, t_end + (t_fin - t_end) / 2, t_fin - t_end)
@@ -1091,80 +1111,66 @@ def window_skin_alignment(fd_emp_ref_right, fd_emp_ref_left, ant_rad=0.0,
     fig = plt.figure()
     fig.set_figheight(6)
     fig.set_figwidth(6)
-    ax1 = plt.subplot2grid((4, 2), (0, 0))
-    ax2 = plt.subplot2grid((4, 2), (0, 1))
-    ax3 = plt.subplot2grid((4, 2), (1, 0))
-    ax4 = plt.subplot2grid((4, 2), (1, 1))
-    ax5 = plt.subplot2grid((4, 2), (2, 0))
-    ax6 = plt.subplot2grid((4, 2), (2, 1))
-    ax7 = plt.subplot2grid((4, 2), (3, 0), colspan=2)
-    ax1.sharex(ax2)
+    ax1 = plt.subplot2grid((5, 2), (0, 0))
+    ax2 = plt.subplot2grid((5, 2), (0, 1))
+    ax3 = plt.subplot2grid((5, 2), (1, 0))
+    ax4 = plt.subplot2grid((5, 2), (1, 1))
+    ax5 = plt.subplot2grid((5, 2), (2, 0))
+    ax6 = plt.subplot2grid((5, 2), (2, 1))
+    ax7 = plt.subplot2grid((5, 2), (3, 0), colspan=2)
+    ax8 = plt.subplot2grid((5, 2), (4, 0), colspan=2)
 
-    ax1.plot(ts, rect_pre_skin, 'r-')
-    ax1.set_title('Pre-skin')
-    ax2.plot(ts, rect_pre_skin*signal_for_plotting, 'r-')
-    ax2.set_title('Pre-skin')
-
-    ax3.plot(ts, rect_skin, 'b-')
-    ax3.set_title('Skin')
-    ax4.plot(ts, rect_skin*signal_for_plotting, 'b-')
-    ax4.set_title('Skin')
-
-    ax5.plot(ts, rect_post_skin, 'r-')
-    ax5.set_title('Post-skin')
-    ax6.plot(ts, rect_post_skin*signal_for_plotting, 'r-')
-    ax6.set_title('Post-skin')
-
-    signal_composed = rect_pre_skin * signal_for_plotting + \
-                      rect_skin * signal_for_plotting + \
-                      rect_post_skin * signal_for_plotting
-
-    ax7.plot(ts, signal_composed, 'k-')
-    ax7.set_title('Full signal')
-    plt.tight_layout()
-    plt.show()
-    plt.close(fig)
-
-    fig = plt.figure()
-    fig.set_figheight(6)
-    fig.set_figwidth(6)
-    ax1 = plt.subplot2grid((4, 2), (0, 0))
-    ax2 = plt.subplot2grid((4, 2), (0, 1))
-    ax3 = plt.subplot2grid((4, 2), (1, 0))
-    ax4 = plt.subplot2grid((4, 2), (1, 1))
-    ax5 = plt.subplot2grid((4, 2), (2, 0))
-    ax6 = plt.subplot2grid((4, 2), (2, 1))
-    ax7 = plt.subplot2grid((4, 2), (3, 0), colspan=2)
-
+    # Frequencies used in the scan
     freqs = np.linspace(1e9, 9e9, 1001)
     freqs = freqs[freqs >= 2e9]
 
     ax1.plot(ts, rect_pre_skin, 'r-')
-    ax1.set_title('Pre-skin')
-    ax2.plot(freqs, t_start * np.sinc(freqs*t_start) *
-             np.exp(1j * np.pi * freqs * t_start), 'r-')
-    ax2.set_title('Pre-skin')
+    ax1.set_title('Pre-skin, rect')
+
+    # S11 * sinc for the pre-skin region
+    pre_skin_sinc_conv = np.convolve(
+        fd_emp_ref_right[:, 0], t_start * np.sinc(
+            freqs * t_start) * np.exp(-1j * np.pi * freqs * t_start),
+                mode='same')
+
+    ax2.plot(freqs, pre_skin_sinc_conv, 'r-')
+    ax2.set_title('Pre-skin, sinc convolution')
 
     ax3.plot(ts, rect_skin, 'b-')
-    ax3.set_title('Skin')
-    ax4.plot(freqs, (t_end-t_start)*np.sinc(freqs*(t_end-t_start)) *
-                     np.exp(1j * np.pi * freqs * (t_start + (
-                            t_end-t_start)/2)), 'b-')
-    ax4.set_title('Skin')
+    ax3.set_title('Skin, rect')
+
+    # S11 * sinc for the skin region
+    skin_sinc_conv = np.convolve(
+        fd_emp_ref_right[:, 0], (t_end - t_start) * np.sinc(
+            freqs * (t_end - t_start)) * np.exp(-2j * np.pi * freqs * (
+                t_start + (t_end - t_start) / 2)), mode='same')
+
+    ax4.plot(freqs, skin_sinc_conv, 'b-')
+    ax4.set_title('Skin, sinc convolution')
 
     ax5.plot(ts, rect_post_skin, 'r-')
-    ax5.set_title('Post-skin')
-    ax6.plot(freqs, (t_fin-t_end)*np.sinc(freqs*(t_fin-t_end)) *
-                     np.exp(1j * np.pi * freqs * (t_end + (
-                            t_fin-t_end)/2)), 'r-')
-    ax6.set_title('Post-skin')
+    ax5.set_title('Post-skin, rect')
+    ax5.set_xlabel('Time of flight, s')
+    ax6.set_xlabel('Frequency, Hz')
 
-    signal_composed = rect_pre_skin * signal_for_plotting + \
-                      rect_skin * signal_for_plotting + \
-                      rect_post_skin * signal_for_plotting
+    # S11 * sinc for after the skin region
+    post_skin_sinc_conv = np.convolve(
+        fd_emp_ref_right[:, 0], (t_fin - t_end) * np.sinc(
+            freqs * (t_fin - t_end)) * np.exp(-2j * np.pi * freqs *
+                (t_end +(t_fin - t_end) / 2)), mode='same')
 
-    ax7.plot(ts, signal_composed, 'k-')
-    ax7.set_title('Full signal')
+    ax6.plot(freqs, post_skin_sinc_conv, 'r-')
+    ax6.set_title('Post-skin, sinc convolution')
+
+    signal_composed_sinc = np.abs(pre_skin_sinc_conv + skin_sinc_conv + \
+                                  post_skin_sinc_conv)
+
+    ax7.plot(freqs, signal_composed_sinc, 'm-')
+    ax7.set_title('Signal composed')
+
+    ax8.plot(freqs, np.abs(fd_emp_ref_right[:, 0]), 'k-')
+    ax8.set_title('Original signal')
+    ax8.set_xlabel('Frequency, Hz')
     plt.tight_layout()
     plt.show()
-
+    # ---------------- TEMPORARY ABOVE ---------------- #
