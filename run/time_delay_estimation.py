@@ -7,7 +7,7 @@ May 31st, 2023
 
 # This script is a layout of all the novel algorithms developed during
 # GRI-GRA internships
-
+import matplotlib.pyplot as plt
 import os
 import numpy as np
 import pandas
@@ -112,7 +112,22 @@ if __name__ == "__main__":
     velocities_zero_cond = get_breast_speed_freq(freqs, permittivities,
                                                  zero_conductivities)
     velocities = get_breast_speed_freq(freqs, permittivities, conductivities)
-
+    plt.rc('font', family='Times New Roman')
+    fig = plt.figure()
+    ax = plt.axes()
+    plt.plot(freqs * 1e-9, velocities * 1e-8)
+    plt.xlim(freqs[0] * 1e-9, freqs[-1] * 1e-9)
+    plt.ylim(velocities[0] * 1e-8, velocities[-1] * 1e-8)
+    x_ticks_nums = np.arange(2, 10)
+    y_ticks_nums = velocities[::142] * 1e-8
+    y_ticks = [r'%.2f $\cdot$ 10$^8$' % y_ticks_nums[i] for i in range(8)]
+    ax.set_xticks(x_ticks_nums)
+    ax.set_yticks(y_ticks_nums)
+    ax.set_yticklabels(y_ticks)
+    plt.xlabel('Frequency (GHz)', fontsize=16)
+    plt.ylabel('Propagation speed m/s', fontsize=16)
+    plt.grid()
+    plt.show()
     # The output dir, where the reconstructions will be stored
     out_dir = os.path.join(__OUT_DIR, 'recons/Immediate reference/Antenna '
                                       'time delay/')

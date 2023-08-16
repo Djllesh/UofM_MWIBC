@@ -424,7 +424,7 @@ def plt_rand_pos_errs(c_xs, c_ys, xs, ys, o_dir_str, logger,
                    fontsize=22)
         plt.ylabel('Target Positioning Error (mm)', fontsize=22)
         plt.tight_layout()
-        plt.show()
+        # plt.show()
         plt.savefig(os.path.join(out_dir,
                                  '%s_posErr_vs_PolarRho.png' % save_str),
                     dpi=300,
@@ -445,7 +445,7 @@ def plt_rand_pos_errs(c_xs, c_ys, xs, ys, o_dir_str, logger,
         plt.xlabel('x-Error (mm)', fontsize=22)
         plt.ylabel("Count / KDE", fontsize=22)
         plt.tight_layout()
-        plt.show()
+        # plt.show()
         plt.savefig(os.path.join(out_dir, '%s_xError_Distros.png' % save_str),
                     dpi=300,
                     transparent=True)
@@ -464,7 +464,7 @@ def plt_rand_pos_errs(c_xs, c_ys, xs, ys, o_dir_str, logger,
         plt.xlabel('y-Error (mm)', fontsize=22)
         plt.ylabel("Count / KDE", fontsize=22)
         plt.tight_layout()
-        plt.show()
+        # plt.show()
         plt.savefig(os.path.join(out_dir, '%s_yError_Distros.png' % save_str),
                     dpi=300,
                     transparent=True)
@@ -480,9 +480,9 @@ def plt_rand_pos_errs(c_xs, c_ys, xs, ys, o_dir_str, logger,
         plt.axvline(x=10 * np.mean(pos_errs),
                     color=viridis(0), linestyle='-')
         plt.xlabel('Localization Error (mm)', fontsize=22)
-        plt.ylabel("Count / KDE", fontsize=22)
+        plt.ylabel("Count", fontsize=22)
         plt.tight_layout()
-        plt.show()
+        # plt.show()
         plt.savefig(os.path.join(out_dir, '%s_posError_Distros.png' % save_str),
                     dpi=300,
                     transparent=True)
