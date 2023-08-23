@@ -792,7 +792,7 @@ def phase_shift(fd, delta_t, freqs):
     """
 
     # exponential factor for Fourier transform
-    exp_conversion = np.exp(2j * np.pi * delta_t * freqs)
+    exp_conversion = np.exp(-2j * np.pi * delta_t * freqs)
     # conversion
     shifted_fd = fd * exp_conversion
 
@@ -876,7 +876,7 @@ def fd_differential_align(fd_emp_ref_left, fd_emp_ref_right, ant_rad=0.0,
                                    peak_threshold=peak_threshold,
                                    plt_slices=False, out_dir='')
     # time shifts
-    delta_t = (ToR_right - ToR_left)
+    delta_t = (ToR_left - ToR_right)
 
     # delta1 = delta_t[:36]
     # delta2 = delta_t[36:]
@@ -931,7 +931,7 @@ def extract_delta_t_from_boundary(tor_right, cs_right_shifted, ant_rad,
     min_dists = np.min(distances, axis=-1)
     # convert distances to time of flight
     tor_shifted = min_dists / __VAC_SPEED * 2
-    delta_t = tor_right - tor_shifted
+    delta_t = tor_shifted - tor_right
 
     return delta_t
 
@@ -1021,13 +1021,6 @@ def window_skin_alignment(fd_emp_ref_right, fd_emp_ref_left, ant_rad=0.0,
     """Shifts the skin response in a thin window defined by the earliest
     and latest skin signals
 
-    TODO:
-        1. Verify that the convolution with sinc function outputs the
-        same signal as the recorded
-        2. Calculate the time shifts and apply them specifically to the
-        skin term in the sum
-        3. Verify that the skin gets aligned and that it is the only
-        part of the image that is being manipulated
 
     Parameters
     ----------
@@ -1084,105 +1077,88 @@ def window_skin_alignment(fd_emp_ref_right, fd_emp_ref_left, ant_rad=0.0,
                                    peak_threshold=peak_threshold,
                                    plt_slices=False, out_dir='')
 
-    # Frequencies used in the scan
-    freqs = np.linspace(1e9, 9e9, 1001)
-    freqs = freqs[freqs >= 2e9]
-    df = np.diff(freqs)[0]
-    ifft_ts = np.fft.fftfreq(n=np.size(freqs), d=df)
+    # Find time shifts for the skin
+    delta_t = ToR_left - ToR_right
 
-    # Demonstrating the maths on the first antenna position signal
-    signal_td = np.abs(td_right[:, 0])
-    # Searching for the peaks of the vertically flipped signal
-    # to capture the whole width of the skin peak
-    peaks, _ = find_peaks(-signal_td)
-    # Maximal peak refers to a primary skin response (it might not be
-    # of maximal intensity
-    max_peak = np.argwhere(ts == ToR_right[0])[0]
-    # The start and the end of the skin are two closest peaks to
-    # the primary skin response on either side
-    peaks_to_decide = peaks - max_peak
-    t_start = ts[max_peak + peaks_to_decide[peaks_to_decide < 0][-1]]
-    t_end = ts[max_peak + peaks_to_decide[peaks_to_decide > 0][0]]
+    # Frequencies used in the scan
+    freqs = np.linspace(scan_ini_f, scan_fin_f, n_fs)
+    freqs = freqs[freqs >= ini_f]
+    df = np.diff(freqs)[0]
+
+    # find a frequency that is the closest positive to zero
+    # with a step size = df
+    f_0 = freqs[0] - df * (freqs[0]//df)
+
+    # Arrange an array of the size *7000* (a very large array)
+    freqs_to_convolve = np.arange(f_0 - 3500 * df, f_0 + 3500 * df, df)
+
+    # Extract the time point to ensure no loss in data (TD -> FD)
+    ifft_ts = np.fft.fftfreq(n=np.size(freqs_to_convolve), d=df)
     t_0 = np.min(ifft_ts)
     t_fin = np.max(ifft_ts)
 
-    # ---------------- TEMPORARY BELOW ---------------- #
+    new_right_breast_fd = np.empty_like(fd_emp_ref_right, dtype=complex)
 
-    # Rect functions to make sure we capture the correct part of the
-    # signal
-    rect_pre_skin = rect(ts, t_start / 2, t_start)
-    rect_skin = rect(ts, t_start + (t_end - t_start) / 2, t_end - t_start)
-    rect_post_skin = rect(ts, t_end + (t_fin - t_end) / 2, t_fin - t_end)
+    for ii in range(np.size(fd_emp_ref_right, axis=1)):  # for each antenna pos
 
-    fig = plt.figure()
-    fig.set_figheight(6)
-    fig.set_figwidth(6)
-    ax1 = plt.subplot2grid((5, 2), (0, 0))
-    ax2 = plt.subplot2grid((5, 2), (0, 1))
-    ax3 = plt.subplot2grid((5, 2), (1, 0))
-    ax4 = plt.subplot2grid((5, 2), (1, 1))
-    ax5 = plt.subplot2grid((5, 2), (2, 0))
-    ax6 = plt.subplot2grid((5, 2), (2, 1))
-    ax7 = plt.subplot2grid((5, 2), (3, 0), colspan=2)
-    ax8 = plt.subplot2grid((5, 2), (4, 0), colspan=2)
+        # ================ EXTRACTING THE SKIN WINDOW ================ #
+        signal_td = np.abs(td_right[:, ii])
+        # Searching for the peaks of the vertically flipped signal
+        # to capture the whole width of the skin peak
+        peaks, _ = find_peaks(-signal_td)
+        # Maximal peak refers to a primary skin response (it might not be
+        # of maximal intensity
+        max_peak = np.argwhere(ts == ToR_right[ii])[0]
+        # The start and the end of the skin are two closest peaks to
+        # the primary skin response on either side
+        peaks_to_decide = peaks - max_peak
+        t_start = ts[max_peak + peaks_to_decide[peaks_to_decide < 0][-1]]
+        t_end = ts[max_peak + peaks_to_decide[peaks_to_decide > 0][0]]
 
-    ax1.plot(ts, rect_pre_skin, 'r-')
-    ax1.set_title('Pre-skin, rect')
+        # ============= PREPARE DATA FOR THE CONVOLUTION ============= #
+        # Zero-pad the signal so it can be easily extracted from the
+        # result of the convolution
+        original_signal_zero_padded = np.zeros_like(freqs_to_convolve,
+                                                    dtype=complex)
+        # Start at the index that corresponds to frequency ini_f in
+        # a large array of frequencies
+        start_freq_for_padding = int(np.size(freqs_to_convolve) // 2 - 1 +\
+                                 freqs[0] // df)
+        # Assign the signal to this region
+        original_signal_zero_padded[start_freq_for_padding:
+                                    start_freq_for_padding+np.size(
+                                        fd_emp_ref_right, axis=0)] = \
+            fd_emp_ref_right[:, ii]
 
-    freqs_to_convolve = np.arange(freqs[0] - 3000*df, freqs[0] + 3000*df, df)
-    # times = np.linspace(t_0, t_fin, np.size(freqs_to_convolve))
-    # dt = np.diff(times)[0]
-    # freqs_from_ifft = np.fft.fftfreq(n=np.size(times), d=dt)
+        # ============= APPLY THE FOURIER TRANSFORM RULES ============ #
+        # S11 * sinc for the pre-skin region
+        pre_skin_sinc_conv = np.convolve(
+            original_signal_zero_padded, (t_start - t_0) * np.sinc(
+                freqs_to_convolve * (t_start - t_0)) * np.exp(-2j * np.pi *
+                    freqs_to_convolve * (t_0 + (t_start - t_0)/2)), mode='same')
 
-    # freqs_to_convolve = freqs
-    freqs_oi = np.logical_and(freqs_to_convolve >= freqs[0],
-                              freqs_to_convolve <= freqs[-1])
-    # S11 * sinc for the pre-skin region
-    pre_skin_sinc_conv = np.convolve(
-        fd_emp_ref_right[:, 0], (t_start - t_0) * np.sinc(
-            freqs_to_convolve * (t_start - t_0)) * np.exp(2j * np.pi *
-                freqs_to_convolve * (t_0 + (t_start - t_0)/2)), mode='same')
+        # S11 * sinc for the skin region
+        skin_sinc_conv = np.convolve(
+            original_signal_zero_padded, (t_end - t_start) * np.sinc(
+                freqs_to_convolve * (t_end - t_start)) * np.exp(-2j * np.pi *
+                    freqs_to_convolve * (t_start + (t_end - t_start) / 2)),
+            mode='same') * np.exp(-2j * np.pi * freqs_to_convolve * delta_t[0])
 
-    ax2.plot(freqs_to_convolve, pre_skin_sinc_conv, 'r-')
-    ax2.set_title('Pre-skin, sinc convolution')
+        # S11 * sinc for after the skin region
+        post_skin_sinc_conv = np.convolve(
+            original_signal_zero_padded, (t_fin - t_end) * np.sinc(
+                freqs_to_convolve * (t_fin - t_end)) * np.exp(-2j * np.pi *
+                    freqs_to_convolve * (t_end + (t_fin - t_end) / 2)),
+            mode='same')
 
-    ax3.plot(ts, rect_skin, 'b-')
-    ax3.set_title('Skin, rect')
+        # Times df due to a large step size and a discrepancy between a
+        # discrete and continuous convolution
+        signal_composed = (pre_skin_sinc_conv + skin_sinc_conv + \
+                                      post_skin_sinc_conv) * df
 
-    # S11 * sinc for the skin region
-    skin_sinc_conv = np.convolve(
-        fd_emp_ref_right[:, 0], (t_end - t_start) * np.sinc(
-            freqs_to_convolve * (t_end - t_start)) * np.exp(2j * np.pi *
-                freqs_to_convolve * (t_start + (t_end - t_start) / 2)),
-        mode='same')
+        new_right_breast_fd[:, ii] = signal_composed[
+                                     start_freq_for_padding + 1:
+                                     start_freq_for_padding + np.size(
+                                        fd_emp_ref_right, axis=0) + 1]
 
-    ax4.plot(freqs_to_convolve, skin_sinc_conv, 'b-')
-    ax4.set_title('Skin, sinc convolution')
-
-    ax5.plot(ts, rect_post_skin, 'r-')
-    ax5.set_title('Post-skin, rect')
-    ax5.set_xlabel('Time of flight, s')
-    ax6.set_xlabel('Frequency, Hz')
-
-    # S11 * sinc for after the skin region
-    post_skin_sinc_conv = np.convolve(
-        fd_emp_ref_right[:, 0], (t_fin - t_end) * np.sinc(
-            freqs_to_convolve * (t_fin - t_end)) * np.exp(2j * np.pi *
-                freqs_to_convolve * (t_end + (t_fin - t_end) / 2)),
-        mode='same')
-
-    ax6.plot(freqs_to_convolve, post_skin_sinc_conv, 'r-')
-    ax6.set_title('Post-skin, sinc convolution')
-
-    signal_composed_sinc = np.abs(pre_skin_sinc_conv + skin_sinc_conv + \
-                                  post_skin_sinc_conv)
-
-    ax7.plot(freqs_to_convolve, signal_composed_sinc, 'm-')
-    ax7.set_title('Signal composed')
-
-    ax8.plot(freqs, np.abs(fd_emp_ref_right[:, 0]), 'k-')
-    ax8.set_title('Original signal')
-    ax8.set_xlabel('Frequency, Hz')
-    plt.tight_layout()
-    plt.show()
-    # ---------------- TEMPORARY ABOVE ---------------- #
+    return new_right_breast_fd

@@ -279,7 +279,7 @@ def recon_imgs(s11, idx_pairs, id_pairs, do_das=True, do_dmas=False,
                         roi_rad=__ROI_RAD,
                         img_rad=__ROI_RAD,
                         save_str=os.path.join(das_o_dir,
-                                              'id_%d-%d_boundary_align.png'
+                                              'id_%d-%d_window.png'
                                               % (id_pairs[ii, 0],
                                                  id_pairs[ii, 1])),
                         transparent=False,
@@ -496,9 +496,9 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
                     n_time_pts=1000, ini_f=2e9, fin_f=__FIN_F, n_fs=__N_FS,
                     scan_ini_f=__INI_F, scan_fin_f=None)
 
-                window_skin_alignment(s11_aligned_right,
-                                      left_s11[__SCAN_FS >= 2e9, :],
-                                      ant_rad=ant_rad)
+                s11_aligned_right = window_skin_alignment(s11_aligned_right,
+                                    left_s11[__SCAN_FS >= 2e9, :],
+                                    ant_rad=ant_rad)
 
                 plt_sino(fd=s11_aligned_right, title='Right breast phase '
                                                      'shifted',
