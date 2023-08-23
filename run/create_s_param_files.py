@@ -5,10 +5,10 @@ from umbms.loadsave import (load_pickle, save_pickle,
 import os
 import numpy as np
 
-# __DATA_DIR = 'C:/Users/illia/Desktop/Experimental data/20230309/'
-__DATA_DIR = 'C:/Users/illia/Desktop/MWIBC/UofM_MWIBC/output/' \
-             'cyl_phantom/recons/Immediate reference/Gen 2/' \
-             'Intensity comparison/intensity_dict.pickle'
+__DATA_DIR = 'C:/Users/illia/Desktop/Experimental data/20230821/20230821/'
+# __DATA_DIR = 'C:/Users/illia/Desktop/MWIBC/UofM_MWIBC/output/' \
+#              'cyl_phantom/recons/Immediate reference/Gen 2/' \
+#              'Intensity comparison/intensity_dict.pickle'
 
 # a = load_pickle(os.path.join(__DATA_DIR, 's11_data.pickle'))
 
@@ -16,7 +16,7 @@ __DATA_DIR = 'C:/Users/illia/Desktop/MWIBC/UofM_MWIBC/output/' \
 clean_birrs_folder(__DATA_DIR)
 fs_in_dir = os.listdir(__DATA_DIR)
 
-s11_data = np.zeros([(int(len(fs_in_dir) / 2)), 1001, 72],
+s11_data = np.zeros([(int(len(fs_in_dir)/2)), 1001, 72],
                     dtype=complex)
 s21_data = np.zeros_like(s11_data)
 
