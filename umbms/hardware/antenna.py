@@ -37,17 +37,17 @@ def to_phase_center(meas_rho):
     ----------
     meas_rho : float
         The measured rho of the antenna; measured from the front edge
-        of the antenna stand, in [cm]
+        of the antenna stand, in [m]
 
     Returns
     -------
     cor_rho : float
         The corrected rho of the antenna, i.e., the rho corresponding
-        to the phase center of the antenna, in [cm]
+        to the phase center of the antenna, in [m]
     """
 
     # Add the length corresponding to the distance from the front edge
-    # of the antenna stand to the phase center of the antenna, in [cm]
+    # of the antenna stand to the phase center of the antenna, in [m]
     # (Value added should be 2.4 cm, based on analysis from May 29,
     # 2023)
     cor_rho = meas_rho + 0.024

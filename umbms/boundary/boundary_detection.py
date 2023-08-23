@@ -6,8 +6,7 @@ November 17, 2022
 import os
 import numpy as np
 from scipy import ndimage
-from scipy import signal
-from scipy.signal import find_peaks
+from scipy.signal import find_peaks, correlate, correlation_lags
 from scipy.interpolate import CubicSpline
 from scipy.constants import speed_of_light
 from umbms.beamform.iczt import iczt
@@ -656,10 +655,10 @@ def rho_ToR_from_td(td, ts, kernel, ant_rad, peak_threshold,
         # corresponding intensities
         position = np.abs(td[:, ant_pos])
         # correlation
-        corr = signal.correlate(position, kernel, 'same')
+        corr = correlate(position, kernel, 'same')
         # resizing correlation back corresponding to the
         # antenna position array length
-        lags = signal.correlation_lags(len(position), len(kernel), 'same')
+        lags = correlation_lags(len(position), len(kernel), 'same')
         max_corr = np.max(corr)
         corr_peaks, _ = find_peaks(corr, height=max_corr - 1e-9)
 
@@ -1085,6 +1084,12 @@ def window_skin_alignment(fd_emp_ref_right, fd_emp_ref_left, ant_rad=0.0,
                                    peak_threshold=peak_threshold,
                                    plt_slices=False, out_dir='')
 
+    # Frequencies used in the scan
+    freqs = np.linspace(1e9, 9e9, 1001)
+    freqs = freqs[freqs >= 2e9]
+    df = np.diff(freqs)[0]
+    ifft_ts = np.fft.fftfreq(n=np.size(freqs), d=df)
+
     # Demonstrating the maths on the first antenna position signal
     signal_td = np.abs(td_right[:, 0])
     # Searching for the peaks of the vertically flipped signal
@@ -1098,7 +1103,8 @@ def window_skin_alignment(fd_emp_ref_right, fd_emp_ref_left, ant_rad=0.0,
     peaks_to_decide = peaks - max_peak
     t_start = ts[max_peak + peaks_to_decide[peaks_to_decide < 0][-1]]
     t_end = ts[max_peak + peaks_to_decide[peaks_to_decide > 0][0]]
-    t_fin = ts[-1]
+    t_0 = np.min(ifft_ts)
+    t_fin = np.max(ifft_ts)
 
     # ---------------- TEMPORARY BELOW ---------------- #
 
@@ -1120,20 +1126,24 @@ def window_skin_alignment(fd_emp_ref_right, fd_emp_ref_left, ant_rad=0.0,
     ax7 = plt.subplot2grid((5, 2), (3, 0), colspan=2)
     ax8 = plt.subplot2grid((5, 2), (4, 0), colspan=2)
 
-    # Frequencies used in the scan
-    freqs = np.linspace(1e9, 9e9, 1001)
-    freqs = freqs[freqs >= 2e9]
-
     ax1.plot(ts, rect_pre_skin, 'r-')
     ax1.set_title('Pre-skin, rect')
 
+    freqs_to_convolve = np.arange(freqs[0] - 3000*df, freqs[0] + 3000*df, df)
+    # times = np.linspace(t_0, t_fin, np.size(freqs_to_convolve))
+    # dt = np.diff(times)[0]
+    # freqs_from_ifft = np.fft.fftfreq(n=np.size(times), d=dt)
+
+    # freqs_to_convolve = freqs
+    freqs_oi = np.logical_and(freqs_to_convolve >= freqs[0],
+                              freqs_to_convolve <= freqs[-1])
     # S11 * sinc for the pre-skin region
     pre_skin_sinc_conv = np.convolve(
-        fd_emp_ref_right[:, 0], t_start * np.sinc(
-            freqs * t_start) * np.exp(-1j * np.pi * freqs * t_start),
-                mode='same')
+        fd_emp_ref_right[:, 0], (t_start - t_0) * np.sinc(
+            freqs_to_convolve * (t_start - t_0)) * np.exp(2j * np.pi *
+                freqs_to_convolve * (t_0 + (t_start - t_0)/2)), mode='same')
 
-    ax2.plot(freqs, pre_skin_sinc_conv, 'r-')
+    ax2.plot(freqs_to_convolve, pre_skin_sinc_conv, 'r-')
     ax2.set_title('Pre-skin, sinc convolution')
 
     ax3.plot(ts, rect_skin, 'b-')
@@ -1142,10 +1152,11 @@ def window_skin_alignment(fd_emp_ref_right, fd_emp_ref_left, ant_rad=0.0,
     # S11 * sinc for the skin region
     skin_sinc_conv = np.convolve(
         fd_emp_ref_right[:, 0], (t_end - t_start) * np.sinc(
-            freqs * (t_end - t_start)) * np.exp(-2j * np.pi * freqs * (
-                t_start + (t_end - t_start) / 2)), mode='same')
+            freqs_to_convolve * (t_end - t_start)) * np.exp(2j * np.pi *
+                freqs_to_convolve * (t_start + (t_end - t_start) / 2)),
+        mode='same')
 
-    ax4.plot(freqs, skin_sinc_conv, 'b-')
+    ax4.plot(freqs_to_convolve, skin_sinc_conv, 'b-')
     ax4.set_title('Skin, sinc convolution')
 
     ax5.plot(ts, rect_post_skin, 'r-')
@@ -1156,16 +1167,17 @@ def window_skin_alignment(fd_emp_ref_right, fd_emp_ref_left, ant_rad=0.0,
     # S11 * sinc for after the skin region
     post_skin_sinc_conv = np.convolve(
         fd_emp_ref_right[:, 0], (t_fin - t_end) * np.sinc(
-            freqs * (t_fin - t_end)) * np.exp(-2j * np.pi * freqs *
-                (t_end +(t_fin - t_end) / 2)), mode='same')
+            freqs_to_convolve * (t_fin - t_end)) * np.exp(2j * np.pi *
+                freqs_to_convolve * (t_end + (t_fin - t_end) / 2)),
+        mode='same')
 
-    ax6.plot(freqs, post_skin_sinc_conv, 'r-')
+    ax6.plot(freqs_to_convolve, post_skin_sinc_conv, 'r-')
     ax6.set_title('Post-skin, sinc convolution')
 
     signal_composed_sinc = np.abs(pre_skin_sinc_conv + skin_sinc_conv + \
                                   post_skin_sinc_conv)
 
-    ax7.plot(freqs, signal_composed_sinc, 'm-')
+    ax7.plot(freqs_to_convolve, signal_composed_sinc, 'm-')
     ax7.set_title('Signal composed')
 
     ax8.plot(freqs, np.abs(fd_emp_ref_right[:, 0]), 'k-')
