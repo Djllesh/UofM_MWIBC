@@ -249,7 +249,7 @@ def shift_cs(cs, delta_x, delta_y):
     cs_shifted : PPoly
         CubicSpline that corresponds to the spatial shift
     """
-    angs = np.linspace(0, np.deg2rad(360), 300)
+    angs = np.linspace(0, np.deg2rad(359), 300)
     rhos = cs(angs)
 
     xs = rhos * np.cos(angs)
@@ -259,7 +259,7 @@ def shift_cs(cs, delta_x, delta_y):
     ys_shifted = ys + delta_y
 
     rho_shifted, phi_shifted = cart_to_polar(xs_shifted, ys_shifted)
-    cs_shifted = CubicSpline(phi_shifted, rho_shifted)
+    cs_shifted = polar_fit_cs(rho_shifted, phi_shifted)
 
     return cs_shifted
 
@@ -282,7 +282,8 @@ def shift_rot_cs(cs, delta_x, delta_y, delta_phi):
     cs_shifted : PPoly
         CubicSpline that corresponds to the spatial shift
     """
-    angs = np.linspace(0, np.deg2rad(360), 300)
+
+    angs = np.linspace(0, np.deg2rad(359), 300)
     rhos = cs(angs)
 
     xs = rhos * np.cos(angs)
@@ -294,7 +295,7 @@ def shift_rot_cs(cs, delta_x, delta_y, delta_phi):
                                                   delta_phi=delta_phi)
 
     rho_shift_rot, phi_shift_rot = cart_to_polar(xs_shift_rot, ys_shift_rot)
-    cs_shifted = CubicSpline(phi_shift_rot, rho_shift_rot)
+    cs_shifted = polar_fit_cs(rho_shift_rot, phi_shift_rot)
 
     return cs_shifted
 
@@ -478,13 +479,6 @@ def get_boundary_iczt(adi_emp_cropped, ant_rad, *, n_ant_pos=72,
     rho, ToR = rho_ToR_from_td(td=td, ts=ts, kernel=kernel, ant_rad=ant_rad,
                                peak_threshold=peak_threshold,
                                plt_slices=plt_slices, out_dir=out_dir)
-
-    t_start = np.min(ToR)
-    t_end = np.max(ToR)
-    t_fin = ts[-1]
-    rect_pre_skin = rect(ts, t_start / 2, t_start)
-    rect_skin = rect(ts, t_start + (t_end - t_start) / 2, t_end - t_start)
-    rect_post_skin = rect(ts, t_end + (t_fin - t_end) / 2, t_fin - t_end)
 
     # polar angle data
     angles = np.linspace(0, np.deg2rad(355), n_ant_pos) \
@@ -1109,14 +1103,14 @@ def window_skin_alignment(fd_emp_ref_right, fd_emp_ref_left, ant_rad=0.0,
         # Maximal peak refers to a primary skin response (it might not be
         # of maximal intensity
         max_peak = np.argwhere(ts == ToR_right[ii])[0]
-        # The start and the end of the skin are two closest peaks to
-        # the primary skin response on either side
+        # The start and the end of the skin are two closest negative
+        # peaks to the primary skin response on either side
         peaks_to_decide = peaks - max_peak
         t_start = ts[max_peak + peaks_to_decide[peaks_to_decide < 0][-1]]
         t_end = ts[max_peak + peaks_to_decide[peaks_to_decide > 0][0]]
 
         # ============= PREPARE DATA FOR THE CONVOLUTION ============= #
-        # Zero-pad the signal so it can be easily extracted from the
+        # Zero-pad the signal, so it can be easily extracted from the
         # result of the convolution
         original_signal_zero_padded = np.zeros_like(freqs_to_convolve,
                                                     dtype=complex)
@@ -1137,12 +1131,14 @@ def window_skin_alignment(fd_emp_ref_right, fd_emp_ref_left, ant_rad=0.0,
                 freqs_to_convolve * (t_start - t_0)) * np.exp(-2j * np.pi *
                     freqs_to_convolve * (t_0 + (t_start - t_0)/2)), mode='same')
 
-        # S11 * sinc for the skin region
+        # S11 * sinc for the skin region * phase shift based on the
+        # delta_t value for a given antenna position
         skin_sinc_conv = np.convolve(
             original_signal_zero_padded, (t_end - t_start) * np.sinc(
                 freqs_to_convolve * (t_end - t_start)) * np.exp(-2j * np.pi *
                     freqs_to_convolve * (t_start + (t_end - t_start) / 2)),
-            mode='same') * np.exp(-2j * np.pi * freqs_to_convolve * delta_t[0])
+            mode='same') * np.exp(-2j * np.pi * freqs_to_convolve * delta_t[
+            ii])
 
         # S11 * sinc for after the skin region
         post_skin_sinc_conv = np.convolve(
@@ -1160,5 +1156,16 @@ def window_skin_alignment(fd_emp_ref_right, fd_emp_ref_left, ant_rad=0.0,
                                      start_freq_for_padding + 1:
                                      start_freq_for_padding + np.size(
                                         fd_emp_ref_right, axis=0) + 1]
+
+        # Uncomment below to compare the left and right breast signals
+        # at every antenna position
+
+        # signal_to_plot = iczt(fd_data=new_right_breast_fd[:, ii],
+        #                       ini_t=ini_t, fin_t=fin_t,
+        #                       n_time_pts=n_time_pts,
+        #                       ini_f=ini_f, fin_f=fin_f)
+        # plt.plot(ts, td_left[:, ii], 'k-')
+        # plt.plot(ts, signal_to_plot, 'r--')
+        # plt.show()
 
     return new_right_breast_fd
