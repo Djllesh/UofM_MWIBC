@@ -74,7 +74,7 @@ def load_birrs_txt(txt_path):
     """
 
     # Load the data
-    raw_data = np.genfromtxt(txt_path, dtype='float', delimiter='')
+    raw_data = np.genfromtxt(txt_path, dtype='float', delimiter=',')
 
     # Find the number of frequencies and scan positions
     n_freqs, n_ant_pos = raw_data.shape
