@@ -1,7 +1,7 @@
 """
 Tyson Reimer
 University of Manitoba
-November 8 2018
+November 8, 2018
 """
 
 import numpy as np
@@ -124,7 +124,7 @@ def get_breast_speed_freq(freqs, permittivities, conductivities):
     permittivities : array_like 1001 X 1
         Permittivities fitted to a Cole-Cole model
     conductivities : array_like 1001 X 1
-        Conductivities fitted to a Cole-Coel model
+        Conductivities fitted to a Cole-Cole model
 
     Returns
     -----------

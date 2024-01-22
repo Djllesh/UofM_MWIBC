@@ -26,6 +26,7 @@ from umbms.boundary.boundary_detection import get_boundary_iczt, \
 from umbms.beamform.propspeed import estimate_speed, get_breast_speed_freq
 from umbms.boundary.raytrace import find_boundary_rt
 from umbms.plot.imgplots import plot_fd_img
+from umbms.plot.sinogramplot import plt_fd_sino
 
 __CPU_COUNT = mp.cpu_count()
 
@@ -37,9 +38,9 @@ __OUT_DIR = os.path.join(get_proj_path(), 'output/cyl_phantom/')
 verify_path(__OUT_DIR)
 __DIEL_DATA_DIR = os.path.join(get_proj_path(), 'data/freq_data/')
 
-__FD_NAME = 'cyl_phantom_immediate_reference_s11_rescan.pickle'
-__MD_NAME = 'metadata_cyl_phantom_immediate_reference_rescan.pickle'
-__DIEL_NAME = 'Dielectric Measurements Glycerin.csv'
+__FD_NAME = '20240109_s11_data.pickle'
+__MD_NAME = '20240109_metadata.pickle'
+__DIEL_NAME = '20240109_DGBE90.csv'
 
 ########################################################################
 
@@ -105,7 +106,7 @@ if __name__ == "__main__":
     df = pandas.read_csv(os.path.join(__DIEL_DATA_DIR, __DIEL_NAME))
 
     # Calculate velocity array
-    freqs = np.array(df["Freqs"].values, dtype=float)
+    freqs = np.array(df["Freqs"].values, dtype=float) * 1e6
     permittivities = np.array(df["Permittivity"].values)
     conductivities = np.array(df["Conductivity"].values)
     zero_conductivities = np.zeros_like(conductivities)
@@ -129,21 +130,23 @@ if __name__ == "__main__":
     # plt.grid()
     # plt.show()
     # The output dir, where the reconstructions will be stored
-    out_dir = os.path.join(__OUT_DIR, 'recons/Immediate reference/Antenna '
-                                      'time delay/')
+    out_dir = os.path.join(__OUT_DIR, 'recons/Immediate reference/'
+                                      '20240109_glass_rod/')
     verify_path(out_dir)
 
     for expt in range(n_expts):  # for all scans
-
+    # for expt in [4]:
         logger.info('Scan [%3d / %3d]...' % (expt + 1, n_expts))
 
         # Get the frequency domain data and metadata of this experiment
         tar_fd = fd_data[expt, :, :]
         tar_md = metadata[expt]
 
-        # if the scan has both empty and adipose references
+        # if the scan has both empty and adipose references and is not
+        # a rod reference
         if ~np.isnan(tar_md['emp_ref_id']) and \
-                ~np.isnan(tar_md['adi_ref_id2']):
+                ~np.isnan(tar_md['adi_ref_id2']) and \
+                    tar_md['type'] != "rod reference":
 
             # If the scan does include a tumour
             if ~np.isnan(tar_md['tum_diam']):
@@ -154,6 +157,8 @@ if __name__ == "__main__":
             else:
                 plt_str = "Empty phantom\n" \
                           "ID: %d" % expt
+            # TEMPORARY
+            plt_str = ''
 
             # Create a directory for storing .pickle files
             pickle_dir = os.path.join(out_dir, 'pickles/')
@@ -190,10 +195,9 @@ if __name__ == "__main__":
             # Get the adipose-only and empty reference data
             # for this scan
             adi_fd_emp = fd_data[expt_ids.index(tar_md['emp_ref_id']), :, :]
-            adi_fd = fd_data[expt_ids.index(tar_md['adi_ref_id2']), :, :]
+            adi_fd = fd_data[expt_ids.index(tar_md['rod_ref_id']), :, :]
             adi_cal_cropped_emp = (tar_fd - adi_fd_emp)
             adi_cal_cropped = (tar_fd - adi_fd)
-
 
             # 5 DIFFERENT RECONSTRUCTIONS
             ############################################################
