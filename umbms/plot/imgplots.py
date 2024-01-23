@@ -871,3 +871,85 @@ def antennas_to_shifted_boundary(cs, delta_x, delta_y, ant_rad,
 
     plt.axis('square')
     plt.show()
+
+
+def calculate_arc_map(pix_ts, td_data, iczt_time, *, n_ant_pos=72,
+                      threshold=0.5e-11):
+
+    arc_map = np.zeros_like(pix_ts)
+    time_indices = np.argmax(np.abs(td_data), axis=0)
+    values = np.max(np.abs(td_data), axis=0)
+    plt.rc('font', family='Times New Roman')
+
+    for ant_pos in range(n_ant_pos):
+        time = iczt_time[time_indices[ant_pos]] * np.ones_like(pix_ts[ant_pos])
+
+        mask = np.isclose(pix_ts[ant_pos] * 2, time, atol=threshold, rtol=0)
+
+        arc_map[ant_pos][mask] += values[ant_pos]
+
+    arc_map = np.sum(arc_map, axis=0)
+    return arc_map
+
+
+def plot_arc_map(pix_ts, td_data, iczt_time, img_roi, save_str, *, title='',
+                 n_ant_pos=72, threshold=0.5e-11, tar_x=0, tar_y=0,
+                 tar_rad=0, transparent=True):
+
+    arc_map = calculate_arc_map(pix_ts, td_data, iczt_time,
+                                n_ant_pos=n_ant_pos, threshold=threshold)
+
+    plt.imshow(arc_map, cmap='inferno', aspect='equal',
+               extent=[-img_roi, img_roi, -img_roi, img_roi])
+
+    angles = np.deg2rad(np.linspace(0, 360, 150))
+
+    tar_xs = tar_rad * np.cos(angles) + tar_x
+    tar_ys = tar_rad * np.sin(angles) + tar_y
+    plt.xlim(-img_roi, img_roi)
+    plt.ylim(-img_roi, img_roi)
+    plt.plot(tar_xs, tar_ys, color='r', linewidth=1.5, label='Target')
+    # Set the size of the axis tick labels
+    plt.tick_params(labelsize=14)
+    plt.xlabel('x-axis (cm)', fontsize=16)
+    plt.ylabel('y-axis (cm)', fontsize=16)
+    plt.title(title, fontsize=20)
+    # Specify the colorbar tick format and size
+    plt.colorbar(format='%.1e').ax.tick_params(labelsize=14)
+    plt.gca().set_xticks([-6, -4, -2, 0, 2, 4, 6])
+    plt.gca().set_yticks([-6, -4, -2, 0, 2, 4, 6])
+    plt.tight_layout()
+    plt.savefig(save_str, transparent=transparent, dpi=300,
+                bbox_inches='tight')
+
+    plt.close()
+
+
+def plot_known_arc_map(arc_map, img_roi, save_str, *,
+                       title='', tar_x=0, tar_y=0, tar_rad=0,
+                       transparent=True):
+
+    plt.imshow(arc_map, cmap='inferno', aspect='equal',
+               extent=[-img_roi, img_roi, -img_roi, img_roi])
+
+    angles = np.deg2rad(np.linspace(0, 360, 150))
+
+    tar_xs = tar_rad * np.cos(angles) + tar_x
+    tar_ys = tar_rad * np.sin(angles) + tar_y
+    plt.xlim(-img_roi, img_roi)
+    plt.ylim(-img_roi, img_roi)
+    plt.plot(tar_xs, tar_ys, color='r', linewidth=1.5, label='Target')
+    # Set the size of the axis tick labels
+    plt.tick_params(labelsize=14)
+    plt.xlabel('x-axis (cm)', fontsize=16)
+    plt.ylabel('y-axis (cm)', fontsize=16)
+    plt.title(title, fontsize=20)
+    # Specify the colorbar tick format and size
+    plt.colorbar(format='%.1e').ax.tick_params(labelsize=14)
+    plt.gca().set_xticks([-6, -4, -2, 0, 2, 4, 6])
+    plt.gca().set_yticks([-6, -4, -2, 0, 2, 4, 6])
+    plt.tight_layout()
+    plt.savefig(save_str, transparent=transparent, dpi=300,
+                bbox_inches='tight')
+
+    plt.close()
