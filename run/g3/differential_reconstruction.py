@@ -176,7 +176,7 @@ def recon_imgs(s11, idx_pairs, id_pairs, do_das=True, do_dmas=False,
 
     # For each breast pair
     # for ii in range(np.size(s11_pair_diffs, axis=0)):
-    for ii in [2]:
+    for ii in [2, 3, 6, 7]:
 
         logger.info('\tWorking on pair [%4d / %4d]...'
                     % (ii + 1, np.size(s11_pair_diffs, axis=0)))
@@ -423,7 +423,7 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
         boundary_data_right = []
         # For each breast pair
         # for ii in range(np.size(s11_pair_diffs, axis=0)):
-        for ii in range(4):
+        for ii in range(8):
 
             # Get breast data, pre-cal
             left_uncal = s11_data[idx_pairs[ii, 0], :, :]
@@ -449,7 +449,7 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
             else:  # If not mirroring right breast
                 right_s11 = right_cal
 
-            if ii == 2:
+            if ii in [2, 3, 6, 7]:
                 ant_rad = md[ii]['ant_rad'] / 100 + 0.03618 + 0.0449
 
                 # s11_aligned_right = fd_differential_align(
@@ -500,28 +500,28 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
                                     left_s11[__SCAN_FS >= 2e9, :],
                                     ant_rad=ant_rad)
 
-                plt_sino(fd=s11_aligned_right, title='Right breast phase '
-                                                     'shifted',
-                         out_dir=os.path.join(__O_DIR, 'boundary_r/'),
-                         save_str='right_phase_shifted.png')
-
-                plt_sino(fd=right_s11[__SCAN_FS >= 2e9, :],
-                         title='Right breast (empty chamber)',
-                         out_dir=os.path.join(__O_DIR, 'boundary_r/'),
-                         save_str='right_emp_ref.png')
-
-                plt_sino(fd=left_s11[__SCAN_FS >= 2e9, :],
-                         title='Left breast (empty chamber)',
-                         out_dir=os.path.join(__O_DIR, 'boundary_r/'),
-                         save_str='left_emp_ref.png')
+                # plt_sino(fd=s11_aligned_right, title='Right breast phase '
+                #                                      'shifted',
+                #          out_dir=os.path.join(__O_DIR, 'boundary_r/'),
+                #          save_str='right_phase_shifted.png')
+                #
+                # plt_sino(fd=right_s11[__SCAN_FS >= 2e9, :],
+                #          title='Right breast (empty chamber)',
+                #          out_dir=os.path.join(__O_DIR, 'boundary_r/'),
+                #          save_str='right_emp_ref.png')
+                #
+                # plt_sino(fd=left_s11[__SCAN_FS >= 2e9, :],
+                #          title='Left breast (empty chamber)',
+                #          out_dir=os.path.join(__O_DIR, 'boundary_r/'),
+                #          save_str='left_emp_ref.png')
 
                 left_right_ref = left_s11[__SCAN_FS >= 2e9, :] -\
                                  s11_aligned_right
 
-                plt_sino(fd=left_right_ref,
-                         title='Left - right (after alignment)',
-                         out_dir=os.path.join(__O_DIR, 'boundary_r/'),
-                         save_str='left-right_aligned.png')
+                # plt_sino(fd=left_right_ref,
+                #          title='Left - right (after alignment)',
+                #          out_dir=os.path.join(__O_DIR, 'boundary_r/'),
+                #          save_str='left-right_aligned.png')
 
                 # td, ts, kernel = prepare_fd_data(
                 #     adi_emp_cropped=right_s11[__SCAN_FS >= 2e9, :],

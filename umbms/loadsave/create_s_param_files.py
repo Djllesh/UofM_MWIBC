@@ -4,7 +4,7 @@ from umbms.loadsave import save_pickle, load_birrs_txt
 import os
 import numpy as np
 
-__DATA_DIR = 'C:/Users/prikh/Desktop/Exp data/20240109/20240109/'
+__DATA_DIR = 'C:/Users/Illia/Desktop/Experimental data/20240123/'
 
 fs_in_dir = os.listdir(__DATA_DIR)
 

@@ -8,7 +8,7 @@ import matplotlib.widgets
 import numpy as np
 import matplotlib.pyplot as plt
 
-# matplotlib.use('Agg')
+matplotlib.use('Agg')
 
 import umbms.beamform.breastmodels as breastmodels
 from umbms.beamform.utility import get_xy_arrs
@@ -879,7 +879,6 @@ def calculate_arc_map(pix_ts, td_data, iczt_time, *, n_ant_pos=72,
     arc_map = np.zeros_like(pix_ts)
     time_indices = np.argmax(np.abs(td_data), axis=0)
     values = np.max(np.abs(td_data), axis=0)
-    plt.rc('font', family='Times New Roman')
 
     for ant_pos in range(n_ant_pos):
         time = iczt_time[time_indices[ant_pos]] * np.ones_like(pix_ts[ant_pos])
@@ -892,12 +891,34 @@ def calculate_arc_map(pix_ts, td_data, iczt_time, *, n_ant_pos=72,
     return arc_map
 
 
+def calculate_arc_map_known_time(pix_ts, times_signals, *,
+                                 n_ant_pos=72,
+                                 threshold=0.5e-11):
+
+    arc_map = np.zeros_like(pix_ts)
+    times = times_signals[:, 0]
+    values = times_signals[:, 1]
+
+    for ant_pos in range(n_ant_pos):
+        time = times[ant_pos]
+
+        mask = np.isclose(pix_ts[ant_pos] * 2, time, atol=threshold, rtol=0)
+
+        arc_map[ant_pos][mask] += values[ant_pos]
+
+    arc_map = np.sum(arc_map, axis=0)
+    return arc_map
+
+
 def plot_arc_map(pix_ts, td_data, iczt_time, img_roi, save_str, *, title='',
                  n_ant_pos=72, threshold=0.5e-11, tar_x=0, tar_y=0,
-                 tar_rad=0, transparent=True):
+                 tar_rad=0, transparent=True, arc_map=None):
 
-    arc_map = calculate_arc_map(pix_ts, td_data, iczt_time,
-                                n_ant_pos=n_ant_pos, threshold=threshold)
+    if arc_map is None:
+        arc_map = calculate_arc_map(pix_ts, td_data, iczt_time,
+                                    n_ant_pos=n_ant_pos, threshold=threshold)
+
+    plt.rc('font', family='Times New Roman')
 
     plt.imshow(arc_map, cmap='inferno', aspect='equal',
                extent=[-img_roi, img_roi, -img_roi, img_roi])
