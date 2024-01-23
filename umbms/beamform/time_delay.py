@@ -10,7 +10,7 @@ from functools import partial
 import scipy.constants
 from umbms.beamform.intersections_analytical import (find_xy_ant_bound_circle,
                                                      find_xy_ant_bound_ellipse,
-                                               _parallel_find_bound_circle_pix)
+                                                     _parallel_find_bound_circle_pix)
 
 from umbms.beamform.utility import get_xy_arrs, get_ant_scan_xys
 
@@ -117,7 +117,7 @@ def get_pix_ts(ant_rad, m_size, roi_rad, air_speed, *, n_ant_pos=72,
     return calculate_time_delays(n_ant_pos, m_size, ant_xs, ant_ys,
                                  pix_xs, pix_ys, int_f_xs, int_f_ys, int_b_xs,
                                  int_b_ys, air_speed, breast_speed,
-                                 partial_ant_idx),\
+                                 partial_ant_idx), \
            int_f_xs, int_f_ys, int_b_xs, int_b_ys
 
 
@@ -344,6 +344,7 @@ def get_circle_intersections_parallel(n_ant_pos, m_size, ant_xs, ant_ys,
 
 def apply_syst_cor(xs, ys, x_err, y_err, phi_err):
     """Apply systematic error correction
+
     Parameters
     ----------
     xs : array_like
@@ -374,3 +375,90 @@ def apply_syst_cor(xs, ys, x_err, y_err, phi_err):
 
     return cor_xs2, cor_ys2
 
+
+def time_signal_per_antenna_modelled(tar_x, tar_y, tar_rad, ant_rad,
+                                     speed, *, int_f_xs=None, int_f_ys=None,
+                                     x_idx=None, y_idx=None,
+                                     breast_speed=None, air_speed=None,
+                                     n_ant_pos=72, ant_ini_ang=-136.):
+    """Returns a scalar value of the signal based on the theoretical
+    time-delay and 1/r^2 attenuation
+
+    Parameters
+    ----------
+    tar_x : float
+        Target x-coordinate (centre)
+    tar_y : float
+        Target y-coordinate (centre)
+    tar_rad : float
+        Target radius
+    ant_rad : float
+        Radius of antenna trajectory (m)
+    speed : float
+        Homogeneous speed (m/s)
+    int_f_xs : array-like n_ant_pos x m_size x m_size
+        x-coordinates of each front intersection
+    int_f_ys : array-like n_ant_pos x m_size x m_size
+        y-coordinates of each front intersection
+    breast_speed : float
+        The estimated propagation speed of the signal in phantom
+    air_speed : float
+        The estimated propagation speed of the signal in air
+    n_ant_pos : int
+        Number of discrete antenna positions
+    ant_ini_ang : float
+        Initial antenna angle
+
+    Returns
+    -------
+    times_signals : array_like
+        An array where the first column is times of the theoretical
+        response and second is the calculated signal value
+    """
+
+    ant_angs = np.flip(np.deg2rad(np.linspace(0, 355, n_ant_pos) +
+                                  ant_ini_ang))
+    ant_xs = ant_rad * np.cos(ant_angs)
+    ant_ys = ant_rad * np.sin(ant_angs)
+
+    # Initialize
+    times_signals = np.zeros(shape=(n_ant_pos, 2))
+
+    if int_f_xs is None:
+
+        for ant_pos in range(n_ant_pos):  # For every antenna
+
+            distance = np.sqrt((tar_x - ant_xs[ant_pos]) ** 2 + \
+                               (tar_y - ant_ys[ant_pos]) ** 2) - tar_rad
+
+            # Time is 2d/v
+            time = 2 * distance / speed + 0.19e-9
+            # Signal is attenuated
+            signal = 1 / distance**2
+
+            times_signals[ant_pos, 0] = time
+            times_signals[ant_pos, 1] = signal
+    else:
+
+        for ant_pos in range(n_ant_pos):  # For every antenna
+
+            distance = np.sqrt((tar_x - ant_xs[ant_pos]) ** 2 + \
+                               (tar_y - ant_ys[ant_pos]) ** 2) - tar_rad
+
+            # Time is 2d/v
+            air_to_plastic = np.sqrt(
+                (int_f_xs[ant_pos, y_idx, x_idx] - ant_xs[ant_pos])**2 +
+                (int_f_ys[ant_pos, y_idx, x_idx] - ant_ys[ant_pos])**2)
+            plastic_to_target = np.sqrt(
+                (int_f_xs[ant_pos, y_idx, x_idx] - tar_x)**2 +
+                (int_f_ys[ant_pos, y_idx, x_idx] - tar_y)**2) - tar_rad
+            time = 2 * air_to_plastic / air_speed + \
+                   2 * plastic_to_target / breast_speed
+
+            # Signal is attenuated
+            signal = 1 / distance ** 2
+
+            times_signals[ant_pos, 0] = time
+            times_signals[ant_pos, 1] = signal
+
+    return times_signals

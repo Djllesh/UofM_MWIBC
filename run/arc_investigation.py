@@ -5,8 +5,7 @@ Univerity of Manitoba,
 January 22nd, 2024
 """
 
-# This script is a layout of all the novel algorithms developed during
-# GRI-GRA internships
+
 import matplotlib.pyplot as plt
 import os
 import numpy as np
