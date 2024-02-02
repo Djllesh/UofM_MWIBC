@@ -885,7 +885,8 @@ def calculate_arc_map(pix_ts, td_data, iczt_time, *, n_ant_pos=72,
 
         mask = np.isclose(pix_ts[ant_pos] * 2, time, atol=threshold, rtol=0)
 
-        arc_map[ant_pos][mask] += values[ant_pos]
+        # arc_map[ant_pos][mask] += values[ant_pos]
+        arc_map[ant_pos][mask] += 1
 
     arc_map = np.sum(arc_map, axis=0)
     return arc_map

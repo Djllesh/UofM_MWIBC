@@ -432,13 +432,13 @@ def time_signal_per_antenna_modelled(tar_x, tar_y, tar_rad, ant_rad,
                                (tar_y - ant_ys[ant_pos]) ** 2) - tar_rad
 
             # Time is 2d/v
-            time = 2 * distance / speed + 0.19e-9
+            time = 2 * distance / speed + 2 * 0.19e-9
             # Signal is attenuated
             signal = 1 / distance**2
 
             times_signals[ant_pos, 0] = time
             times_signals[ant_pos, 1] = signal
-    else:
+    else: # Binary
 
         for ant_pos in range(n_ant_pos):  # For every antenna
 
@@ -453,11 +453,12 @@ def time_signal_per_antenna_modelled(tar_x, tar_y, tar_rad, ant_rad,
                 (int_f_xs[ant_pos, y_idx, x_idx] - tar_x)**2 +
                 (int_f_ys[ant_pos, y_idx, x_idx] - tar_y)**2) - tar_rad
             time = 2 * air_to_plastic / air_speed + \
-                   2 * plastic_to_target / breast_speed
+                   2 * plastic_to_target / breast_speed + 2 * 0.19e-9
 
             # Signal is attenuated
-            signal = 1 / distance ** 2
+            # signal = 1 / distance ** 2
 
+            signal = 1
             times_signals[ant_pos, 0] = time
             times_signals[ant_pos, 1] = signal
 
