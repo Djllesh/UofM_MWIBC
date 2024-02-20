@@ -456,9 +456,9 @@ def time_signal_per_antenna_modelled(tar_x, tar_y, tar_rad, ant_rad,
                    2 * plastic_to_target / breast_speed + 2 * 0.19e-9
 
             # Signal is attenuated
-            # signal = 1 / distance ** 2
+            signal = 1 / distance ** 2
 
-            signal = 1
+            # signal = 1
             times_signals[ant_pos, 0] = time
             times_signals[ant_pos, 1] = signal
 
