@@ -822,7 +822,6 @@ def antennas_to_shifted_boundary(cs, delta_x, delta_y, ant_rad,
     ys_shifted = ys + delta_y
 
     for ant_pos in [4, 52]:
-
         plt.plot(ant_xs[ant_pos], ant_ys[ant_pos], 'ro')
 
         unshifted_idx = np.argmin(np.sqrt((ant_xs[ant_pos] - plot_xs) ** 2 +
@@ -875,6 +874,27 @@ def antennas_to_shifted_boundary(cs, delta_x, delta_y, ant_rad,
 
 def calculate_arc_map(pix_ts, td_data, iczt_time, *, n_ant_pos=72,
                       threshold=0.5e-11):
+    """ Calculates the arc map for a given time-domain data. Maps the
+    highest intensity point.
+
+    Parameters
+    ------------
+    pix_ts : array_like
+        The time-delay array onto which the mapping is performed
+    td_data : array_like
+        The time domain data
+    iczt_time : array_like
+        The time array that corresponds to td_data
+    n_ant_pos : int
+        Number of antenna positions
+    threshold : float
+        The width of the arc
+
+    Returns
+    ------------
+    arc_map : array_like
+        The array of nested arcs
+    """
 
     arc_map = np.zeros_like(pix_ts)
     time_indices = np.argmax(np.abs(td_data), axis=0)
@@ -885,8 +905,52 @@ def calculate_arc_map(pix_ts, td_data, iczt_time, *, n_ant_pos=72,
 
         mask = np.isclose(pix_ts[ant_pos] * 2, time, atol=threshold, rtol=0)
 
-        # arc_map[ant_pos][mask] += values[ant_pos]
-        arc_map[ant_pos][mask] += 1
+        arc_map[ant_pos][mask] += values[ant_pos]
+        # arc_map[ant_pos][mask] += 1
+
+    arc_map = np.sum(arc_map, axis=0)
+    return arc_map
+
+
+def calculate_arc_map_window(pix_ts, td_data, iczt_time, *,
+                            n_ant_pos=72, threshold=0.5e-11):
+    """ Calculates the arc map for a given time-domain data. Maps all
+    the points within a window.
+
+    Parameters
+    ------------
+    pix_ts : array_like
+        The time-delay array onto which the mapping is performed
+    td_data : array_like
+        The time domain data
+    iczt_time : array_like
+        The time array that corresponds to td_data
+    n_ant_pos : int
+        Number of antenna positions
+    threshold : float
+        The width of the arc
+
+    Returns
+    ------------
+    arc_map : array_like
+        The array of nested arcs
+    """
+
+    arc_map = np.zeros_like(pix_ts)
+    # Define the window
+    w_min, w_max = np.min(pix_ts * 2), np.max(pix_ts * 2)
+    time_indices = np.logical_and(iczt_time >= w_min, iczt_time <= w_max)
+    times = iczt_time[time_indices]
+
+    for ant_pos in range(n_ant_pos):
+        # Time delay and intensity values within the given window
+        values = np.abs(td_data[time_indices, ant_pos])
+        for value, time in zip(values, times):
+
+            mask = np.isclose(pix_ts[ant_pos] * 2, time, atol=threshold,
+                              rtol=0)
+
+            arc_map[ant_pos][mask] += value
 
     arc_map = np.sum(arc_map, axis=0)
     return arc_map
@@ -895,7 +959,6 @@ def calculate_arc_map(pix_ts, td_data, iczt_time, *, n_ant_pos=72,
 def calculate_arc_map_known_time(pix_ts, times_signals, *,
                                  n_ant_pos=72,
                                  threshold=0.5e-11):
-
     arc_map = np.zeros_like(pix_ts)
     times = times_signals[:, 0]
     values = times_signals[:, 1]
@@ -914,7 +977,6 @@ def calculate_arc_map_known_time(pix_ts, times_signals, *,
 def plot_arc_map(pix_ts, td_data, iczt_time, img_roi, save_str, *, title='',
                  n_ant_pos=72, threshold=0.5e-11, tar_x=0, tar_y=0,
                  tar_rad=0, transparent=True, arc_map=None):
-
     if arc_map is None:
         arc_map = calculate_arc_map(pix_ts, td_data, iczt_time,
                                     n_ant_pos=n_ant_pos, threshold=threshold)
@@ -950,9 +1012,10 @@ def plot_arc_map(pix_ts, td_data, iczt_time, img_roi, save_str, *, title='',
 def plot_known_arc_map(arc_map, img_roi, save_str, *,
                        title='', tar_x=0, tar_y=0, tar_rad=0,
                        transparent=True):
-
     plt.imshow(arc_map, cmap='inferno', aspect='equal',
                extent=[-img_roi, img_roi, -img_roi, img_roi])
+
+    plt.rc('font', family='Times New Roman')
 
     angles = np.deg2rad(np.linspace(0, 360, 150))
 

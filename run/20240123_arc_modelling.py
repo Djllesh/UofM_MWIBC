@@ -77,8 +77,8 @@ def load_data():
     """
     return load_pickle(os.path.join(__DATA_DIR,
                                     __FD_NAME)), \
-           load_pickle(os.path.join(__DATA_DIR,
-                                    __MD_NAME))
+        load_pickle(os.path.join(__DATA_DIR,
+                                 __MD_NAME))
 
 
 if __name__ == '__main__':
@@ -161,7 +161,9 @@ if __name__ == '__main__':
             adi_rad = __PHANTOM_RAD
 
             # Obtain the true rho of the phase center of the antenna
-            ant_rad = to_phase_center(meas_rho=scan_rad)
+            # ant_rad = to_phase_center(meas_rho=scan_rad)
+
+            ant_rad = apply_ant_t_delay(scan_rad=scan_rad, new_ant=True)
 
             # Define the radius of the region of interest
             roi_rad = adi_rad + 0.01
@@ -202,12 +204,11 @@ if __name__ == '__main__':
             arc_map = calculate_arc_map_known_time(pix_ts,
                                                    times_signals=times_signals)
 
-            plot_arc_map(pix_ts=None, td_data=None, iczt_time=None,
-                         img_roi=roi_rad * 100,
-                         save_str=os.path.join(out_dir,
-                                               f'theoretical_arc_homog_'
-                                               f'{expt}.png'),
-                         arc_map=arc_map)
+            plot_known_arc_map(img_roi=roi_rad * 100,
+                               save_str=os.path.join(out_dir,
+                                                     f'theoretical_arc_homog_'
+                                                     f'{expt}.png'),
+                               arc_map=arc_map)
 
             # find the index for the tumor
             x_dists = np.linspace(-roi_rad, roi_rad, __M_SIZE)
@@ -216,7 +217,6 @@ if __name__ == '__main__':
             y_dists = np.linspace(-roi_rad, roi_rad, __M_SIZE)
             y_idx = np.argmax(np.isclose(y_dists, [tum_y for _ in range(
                 __M_SIZE)], atol=5e-4))
-
 
             # BINARY
 
@@ -241,12 +241,11 @@ if __name__ == '__main__':
             arc_map = calculate_arc_map_known_time(pix_ts,
                                                    times_signals=times_signals)
 
-            plot_arc_map(pix_ts=None, td_data=None, iczt_time=None,
-                         img_roi=roi_rad * 100,
-                         save_str=os.path.join(out_dir,
-                                               f'theoretical_arc_bin_'
-                                               f'{expt}.png'),
-                         arc_map=arc_map)
+            plot_known_arc_map(img_roi=roi_rad * 100,
+                               save_str=os.path.join(out_dir,
+                                                     f'theoretical_arc_bin_'
+                                                     f'{expt}.png'),
+                               arc_map=arc_map)
 
             # # FREQUENCY-DEPENDENT
             logger.info('\tFrequency DAS...')
@@ -256,7 +255,6 @@ if __name__ == '__main__':
             breast_speed = np.average(velocities)
 
             for ff in range(scan_fs.size):
-
                 pix_ts, _, _, _, _ = get_pix_ts(ant_rad=ant_rad,
                                                 m_size=__M_SIZE,
                                                 roi_rad=roi_rad,
@@ -280,9 +278,8 @@ if __name__ == '__main__':
                 arc_map += calculate_arc_map_known_time(
                     pix_ts, times_signals=times_signals)
 
-            plot_arc_map(pix_ts=None, td_data=None, iczt_time=None,
-                         img_roi=roi_rad * 100,
-                         save_str=os.path.join(out_dir,
-                                               f'theoretical_arc_freq_dep_'
-                                               f'{expt}.png'),
-                         arc_map=arc_map)
+            plot_known_arc_map(img_roi=roi_rad * 100,
+                               save_str=os.path.join(out_dir,
+                                                     f'theoretical_arc_freq_dep_'
+                                                     f'{expt}.png'),
+                               arc_map=arc_map)
