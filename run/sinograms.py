@@ -36,8 +36,8 @@ __DATA_DIR = os.path.join(get_proj_path(), 'data/umbmid/cyl_phantom/'
 __OUT_DIR = os.path.join(get_proj_path(), 'output/cyl_phantom/')
 verify_path(__OUT_DIR)
 
-__FD_NAME = 's11_small_data.pickle'
-__MD_NAME = '20240731_metadata.pickle'
+__FD_NAME = '20240813_s11_data.pickle'
+__MD_NAME = '20240813_metadata.pickle'
 
 # The frequency parameters from the scan
 __INI_F = 2e9
@@ -127,7 +127,7 @@ if __name__ == "__main__":
 
     # The output dir, where the reconstructions will be stored
     out_dir = os.path.join(__OUT_DIR, 'recons/Immediate reference/Speed '
-                                      'paper/small_target/')
+                                      'paper/20240813/')
     verify_path(out_dir)
 
     for ii in range(n_expts):
@@ -153,7 +153,8 @@ if __name__ == "__main__":
             adi_cal_cropped_emp = (tar_fd - adi_fd_emp)
             adi_cal_cropped = (tar_fd - adi_fd)
 
-            plt_sino(fd=tar_fd, title='',
+            plt_sino(fd=adi_cal_cropped, title='',
                      save_str='sinogram_%d.png' % ii,
-                     close=True, out_dir=out_dir, transparent=False)
+                     close=True, out_dir=out_dir, transparent=False,
+                     slices=True)
 

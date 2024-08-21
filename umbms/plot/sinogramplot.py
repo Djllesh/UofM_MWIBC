@@ -8,7 +8,7 @@ import os
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib import pyplot as plt
-
+from umbms import verify_path
 from umbms.beamform.iczt import iczt
 
 # matplotlib.use('Agg')
@@ -173,7 +173,7 @@ def plot_sino(td_data, ini_t, fin_t, title='',
 
 
 def plt_sino(fd, title, save_str, out_dir, cbar_fmt='%.2e',
-             transparent=True, close=True):
+             transparent=True, close=True, slices=False):
 
     # Find the minimum retained frequency
     scan_fs = np.linspace(1e9, 9e9, 1001)  # Frequencies used in scan
@@ -189,6 +189,21 @@ def plt_sino(fd, title, save_str, out_dir, cbar_fmt='%.2e',
     # Conert to the time-domain
     td = iczt(fd, ini_t=0.5e-9, fin_t=5.5e-9, n_time_pts=700,
               ini_f=min_retain_f, fin_f=9e9)
+
+    if slices:
+        for ant_idx in range(np.size(td, axis=1)):
+           # take away the .png at the end
+           slice_dir = save_str[:-4] + '_slices/'
+           to_save_dir = os.path.join(out_dir, slice_dir)
+           verify_path(to_save_dir)
+           plt.plot(ts, np.abs(td[:, ant_idx]), 'k-', linewidth=1.6)
+           plt.title('Antenna index #%d' % ant_idx, fontsize=15)
+           plt.grid('--')
+           plt.xlabel('Time of response (s)')
+           plt.ylabel('Intensity')
+           plt.tight_layout()
+           plt.savefig(os.path.join(to_save_dir, 'slice_%d.png' % ant_idx))
+           plt.close()
 
     show_sinogram(data=td, aspect_ratio=plt_aspect_ratio,
                   extent=plt_extent, title=title, out_dir=out_dir,
@@ -247,8 +262,6 @@ def plt_fd_sino(fd, title, save_str, out_dir, cbar_fmt='%.2e',
     plt.tight_layout()
     plt.savefig(os.path.join(out_dir, '%s' % save_str),
                 dpi=300, transparent=transparent)
-    # TODO:
-    # Add slices to sinograms
     if close:
         plt.close()
 
