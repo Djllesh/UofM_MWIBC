@@ -936,7 +936,7 @@ def calculate_arc_map_window(pix_ts, td_data, iczt_time, *,
         The array of nested arcs
     """
 
-    arc_map = np.zeros_like(pix_ts)
+    arc_map = np.zeros_like(pix_ts, dtype=complex)
     # Define the window
     w_min, w_max = np.min(pix_ts * 2), np.max(pix_ts * 2)
     time_indices = np.logical_and(iczt_time >= w_min, iczt_time <= w_max)
@@ -944,7 +944,7 @@ def calculate_arc_map_window(pix_ts, td_data, iczt_time, *,
 
     for ant_pos in range(n_ant_pos):
         # Time delay and intensity values within the given window
-        values = np.abs(td_data[time_indices, ant_pos])
+        values = td_data[time_indices, ant_pos]
         for value, time in zip(values, times):
 
             mask = np.isclose(pix_ts[ant_pos] * 2, time, atol=threshold,
@@ -953,7 +953,7 @@ def calculate_arc_map_window(pix_ts, td_data, iczt_time, *,
             arc_map[ant_pos][mask] += value
 
     arc_map = np.sum(arc_map, axis=0)
-    return arc_map
+    return np.abs(arc_map)
 
 
 def calculate_arc_map_known_time(pix_ts, times_signals, *,

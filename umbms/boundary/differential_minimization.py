@@ -39,19 +39,19 @@ def MSE(shift, cs_left, cs_right):
 
     Assumption: left breast is fixed, right breast is moving
 
-    Parameters
+    parameters
     ----------
     shift : array_like 1x2
         x- and y-shift values as a 1-dimensional array
-    cs_left : PPoly
-        Cubic spline of the boundary of the left breast
-    cs_right : PPoly
-        Cubic spline of the boundary of the right breast
+    cs_left : ppoly
+        cubic spline of the boundary of the left breast
+    cs_right : ppoly
+        cubic spline of the boundary of the right breast
 
-    Returns
+    returns
     ---------
     mse_value : float
-        Mean square error value
+        mean square error value
     """
 
     # Obtain polar coordinates

@@ -20,7 +20,7 @@ def fd_dmas(fd_data, pix_ts, freqs):
     img : array_like, KxK
         Reconstructed image, K pixels by K pixels
     """
-    n_ant_pos = np.zise(fd_data, axis=1)
+    n_ant_pos = np.size(fd_data, axis=1)
 
     # Init array for storing the individual back-projections, from
     # each antenna position

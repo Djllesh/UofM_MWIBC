@@ -29,7 +29,7 @@ from umbms.plot.imgplots import plot_fd_img, plot_arc_map, calculate_arc_map, \
 
 __CPU_COUNT = mp.cpu_count()
 
-# SPECIFY CORRECT DATA AND OUTPUT PATHS
+# SPECIFy CORRECT DATA AND OUTPUT PATHS
 ########################################################################
 
 __DATA_DIR = os.path.join(get_proj_path(), 'data/umbmid/cyl_phantom/')
@@ -40,7 +40,7 @@ __FD_NAME = '20240123_s11_data.pickle'
 
 ########################################################################
 
-# SPECIFY CORRECT SCAN PARAMETERS
+# SPECIFy CORRECT SCAN PARAMETERS
 ########################################################################
 
 # The frequency parameters from the scan
@@ -148,6 +148,7 @@ if __name__ == '__main__':
                                    phase_fac=phase_fac,
                                    freqs=scan_fs,
                                    worker_pool=worker_pool)
+
 
         plot_fd_img(img=np.abs(das_regular_recon),
                     ant_rad=ant_rad, roi_rad=roi_rad, tum_rad=0.025,

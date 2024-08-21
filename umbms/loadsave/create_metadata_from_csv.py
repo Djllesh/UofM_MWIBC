@@ -3,9 +3,9 @@ import pandas as pd
 import os
 from umbms.loadsave import save_pickle
 
-__DATA_DIR = 'C:/Users/prikh/Desktop/Exp data/20240109/'
+__DATA_DIR = 'C:/Users/prikh/Desktop/Exp data/20240819/'
 
-df = pd.read_csv(os.path.join(__DATA_DIR, '20240109_metadata.csv'),
+df = pd.read_csv(os.path.join(__DATA_DIR, '20240819_small_ball.csv'),
                  delimiter=',')
 size = len(df['id'].values)
 
@@ -21,7 +21,7 @@ tar_dict = \
         'adi_ref_id2': np.nan,
         'rod_ref_id': np.nan,
         'emp_ref_id': np.nan,
-        'date': '20231129',
+        'date': '20240819',
         'ant_rad': 21.0,
         'type': None
     }
@@ -46,4 +46,4 @@ for i in range(size):
             md[i][key] = df[key][i]
 
 
-save_pickle(md, os.path.join(__DATA_DIR, '20240109_metadata.pickle'))
+save_pickle(md, os.path.join(__DATA_DIR, '20240819_metadata.pickle'))

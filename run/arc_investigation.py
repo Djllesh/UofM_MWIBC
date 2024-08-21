@@ -20,28 +20,30 @@ from umbms.loadsave import load_pickle, save_pickle
 from umbms.hardware.antenna import apply_ant_pix_delay, to_phase_center
 from umbms.beamform.das import fd_das, fd_das_freq_dep
 from umbms.beamform.time_delay import get_pix_ts, get_pix_ts_old
-from umbms.beamform.utility import apply_ant_t_delay, get_fd_phase_factor
+from umbms.beamform.utility import apply_ant_t_delay, get_fd_phase_factor, \
+    get_ant_scan_xys
 from umbms.boundary.boundary_detection import get_boundary_iczt, \
     get_binary_mask
 from umbms.beamform.propspeed import estimate_speed, get_breast_speed_freq
 from umbms.boundary.raytrace import find_boundary_rt
 from umbms.plot.imgplots import plot_fd_img, plot_arc_map, calculate_arc_map, \
     plot_known_arc_map
-from umbms.plot.sinogramplot import plt_fd_sino
+from umbms.plot.sinogramplot import plt_fd_sino, plt_sino, show_sinogram
 
 __CPU_COUNT = mp.cpu_count()
 
 # SPECIFY CORRECT DATA AND OUTPUT PATHS
 ########################################################################
 
-__DATA_DIR = os.path.join(get_proj_path(), 'data/umbmid/cyl_phantom/')
+__DATA_DIR = os.path.join(get_proj_path(),
+                          'data/umbmid/cyl_phantom/speed_paper/')
 __OUT_DIR = os.path.join(get_proj_path(), 'output/cyl_phantom/')
 verify_path(__OUT_DIR)
 __DIEL_DATA_DIR = os.path.join(get_proj_path(), 'data/freq_data/')
 
-__FD_NAME = '20240109_s11_data.pickle'
-__MD_NAME = '20240109_metadata.pickle'
-__DIEL_NAME = '20240109_DGBE90.csv'
+__FD_NAME = '20240819_s11_data.pickle'
+__MD_NAME = '20240819_metadata.pickle'
+__DIEL_NAME = '20240813_DGBE90.csv'
 
 ########################################################################
 
@@ -107,16 +109,19 @@ if __name__ == "__main__":
     iczt_time = np.linspace(__INI_T, __FIN_T, __N_TS)
 
     # Read .csv file of permittivity and conductivity values
-    df = pandas.read_csv(os.path.join(__DIEL_DATA_DIR, __DIEL_NAME))
-
+    df = pandas.read_csv(os.path.join(__DIEL_DATA_DIR, __DIEL_NAME),
+                         delimiter=';', decimal=',', skiprows=9)
+    diel_data_arr = df.values
     # Calculate velocity array
-    freqs = np.array(df["Freqs"].values, dtype=float) * 1e6
-    permittivities = np.array(df["Permittivity"].values)
-    conductivities = np.array(df["Conductivity"].values)
+    freqs = np.array(diel_data_arr[:, 0], dtype=float) * 1e6
+    permittivities = np.array(diel_data_arr[:, 1])
+    conductivities = np.array(diel_data_arr[:, 3])
     zero_conductivities = np.zeros_like(conductivities)
     velocities_zero_cond = get_breast_speed_freq(freqs, permittivities,
                                                  zero_conductivities)
     velocities = get_breast_speed_freq(freqs, permittivities, conductivities)
+
+
     # plt.rc('font', family='Times New Roman')
     # fig = plt.figure()
     # ax = plt.axes()
@@ -135,7 +140,7 @@ if __name__ == "__main__":
     # plt.show()
     # The output dir, where the reconstructions will be stored
     out_dir = os.path.join(__OUT_DIR, 'recons/Immediate reference/'
-                                      '20240109_glass_rod/arc_investigation/')
+                                      'Speed paper/arc_investigation/')
     verify_path(out_dir)
 
     for expt in range(n_expts):  # for all scans
@@ -199,13 +204,31 @@ if __name__ == "__main__":
             # Get the adipose-only and empty reference data
             # for this scan
             adi_fd_emp = fd_data[expt_ids.index(tar_md['emp_ref_id']), :, :]
-            adi_fd = fd_data[expt_ids.index(tar_md['rod_ref_id']), :, :]
+            adi_fd = fd_data[expt_ids.index(tar_md['adi_ref_id2']), :, :]
             adi_cal_cropped_emp = (tar_fd - adi_fd_emp)
             adi_cal_cropped = (tar_fd - adi_fd)
 
             td_data = iczt(fd_data=adi_cal_cropped, ini_t=__INI_T,
                            fin_t=__FIN_T,
                            n_time_pts=__N_TS, ini_f=__INI_F, fin_f=__FIN_F)
+
+            # ant_xs, ant_ys = get_ant_scan_xys(ant_rad = 21.0e-2 + 0.03618 +
+            #                                         0.0449,
+            #                  n_ant_pos=72)
+            #
+            # surface_times = ((np.sqrt(
+            #     (ant_xs - tum_x) ** 2 + (ant_ys - tum_y) ** 2) -
+            #                   tum_rad) * 2 / 3e8) * 1e9
+            #
+            # ts = np.linspace(0.5, 5.5, 700)
+            # plt_extent = [0, 355, ts[-1], ts[0]]
+            # plt_aspect_ratio = 355 / ts[-1]
+            #
+            # show_sinogram(data=td_data, aspect_ratio=plt_aspect_ratio, ts=ts,
+            #               extent=plt_extent, title='', out_dir=out_dir,
+            #               save_str=f'sino_surface_{expt}.png',
+            #               bound_angles=np.linspace(0, 355, 72),
+            #               bound_times=surface_times)
 
             # 5 DIFFERENT RECONSTRUCTIONS
             ############################################################

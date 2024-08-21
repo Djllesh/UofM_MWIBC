@@ -348,7 +348,6 @@ def intersections_per_ray(binary_mask, intersected_x_idxs, intersected_y_idxs,
             # (if they aren't already assigned)
             int_b_x = (pix_xs[intersected_x_idxs[inside_idxs[-1]]] +
                        pix_xs[intersected_x_idxs[inside_idxs[-1]] + 1]) / 2
-
             int_b_y = (pix_ys[intersected_y_idxs[inside_idxs[-1]]] +
                        pix_ys[intersected_y_idxs[inside_idxs[-1]] + 1]) / 2
 

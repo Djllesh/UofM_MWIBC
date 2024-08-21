@@ -30,13 +30,14 @@ from umbms.beamform.optimfuncs import td_velocity_deriv
 
 ###############################################################################
 
-__DATA_DIR = os.path.join(get_proj_path(), 'data/umbmid/cylinder/')
+__DATA_DIR = os.path.join(get_proj_path(), 'data/umbmid/cyl_phantom/'
+                                           'speed_paper/')
 
-__OUT_DIR = os.path.join(get_proj_path(), 'output/cylinder/')
+__OUT_DIR = os.path.join(get_proj_path(), 'output/cyl_phantom/')
 verify_path(__OUT_DIR)
 
-__FD_NAME = 'fd_data_gen_three_s11.pickle'
-__MD_NAME = 'metadata_gen_three.pickle'
+__FD_NAME = 's11_small_data.pickle'
+__MD_NAME = '20240731_metadata.pickle'
 
 # The frequency parameters from the scan
 __INI_F = 2e9
@@ -84,14 +85,14 @@ __SPHERE_POS = [(np.nan, np.nan),
                 (np.nan, np.nan)]
 
 __MID_BREAST_RADS = {
-    'A1': (0.053, 0.034),
-    'A2': (0.055, 0.051),
-    'A3': (0.07, 0.049),
+    'A1' : (0.053, 0.034),
+    'A2' : (0.055, 0.051),
+    'A3' : (0.07 , 0.049),
     'A11': (0.062, 0.038),
     'A12': (0.051, 0.049),
     'A13': (0.065, 0.042),
     'A14': (0.061, 0.051),
-    'A15': (0.06, 0.058),
+    'A15': (0.06 , 0.058),
     'A16': (0.073, 0.05),
 }
 
@@ -120,13 +121,13 @@ if __name__ == "__main__":
     logger = get_script_logger(__file__)
 
     # Load the frequency domain data and metadata
-
-    fd_data = load_pickle(os.path.join(__DATA_DIR, 's11_fd.pickle'))
+    fd_data, metadata = load_data()
 
     n_expts = np.size(fd_data, axis=0)  # The number of individual scans
 
     # The output dir, where the reconstructions will be stored
-    out_dir = os.path.join(__OUT_DIR, 'recons/')
+    out_dir = os.path.join(__OUT_DIR, 'recons/Immediate reference/Speed '
+                                      'paper/small_target/')
     verify_path(out_dir)
 
     for ii in range(n_expts):
@@ -136,7 +137,23 @@ if __name__ == "__main__":
         # Get the frequency domain data and metadata of this experiment
         tar_fd = fd_data[ii, :, :]
 
-        plt_sino(fd=tar_fd, title="Experimental Data. ID: %d" % (ii + 1),
-                 save_str='experimental_data_id_%d.png' % ii,
-                 close=True, out_dir=out_dir, transparent=False)
+        # Get the unique ID of each experiment / scan
+        expt_ids = [md['id'] for md in metadata]
+
+        tar_md = metadata[ii]
+
+        # if the scan has both empty and adipose references
+        if ~np.isnan(tar_md['emp_ref_id']) and \
+                ~np.isnan(tar_md['adi_ref_id2']):
+
+            # Get the adipose-only and empty reference data
+            # for this scan
+            adi_fd_emp = fd_data[expt_ids.index(tar_md['emp_ref_id']), :, :]
+            adi_fd = fd_data[expt_ids.index(tar_md['adi_ref_id2']), :, :]
+            adi_cal_cropped_emp = (tar_fd - adi_fd_emp)
+            adi_cal_cropped = (tar_fd - adi_fd)
+
+            plt_sino(fd=tar_fd, title='',
+                     save_str='sinogram_%d.png' % ii,
+                     close=True, out_dir=out_dir, transparent=False)
 
