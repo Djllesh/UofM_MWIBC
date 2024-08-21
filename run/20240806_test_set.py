@@ -1,12 +1,9 @@
-"""
-Illia Prykhodko
+"""Illia Prykhodko
 
-Univerity of Manitoba,
-May 31st, 2023
+University of Manitoba,
+August 6th, 2024
 """
 
-# This script is a layout of all the novel algorithms developed during
-# GRI-GRA internships
 import matplotlib.pyplot as plt
 import os
 import numpy as np
@@ -15,11 +12,12 @@ from time import perf_counter
 import multiprocessing as mp
 import scipy.constants
 
+
 from umbms import get_proj_path, verify_path, get_script_logger
+from umbms.beamform.iczt import iczt
 from umbms.loadsave import load_pickle, save_pickle
 from umbms.hardware.antenna import apply_ant_pix_delay, to_phase_center
 from umbms.beamform.das import fd_das, fd_das_freq_dep
-from umbms.beamform.dmas import fd_dmas
 from umbms.beamform.time_delay import get_pix_ts, get_pix_ts_old
 from umbms.beamform.utility import apply_ant_t_delay, get_fd_phase_factor
 from umbms.boundary.boundary_detection import get_boundary_iczt, \
@@ -27,53 +25,84 @@ from umbms.boundary.boundary_detection import get_boundary_iczt, \
 from umbms.beamform.propspeed import estimate_speed, get_breast_speed_freq
 from umbms.boundary.raytrace import find_boundary_rt
 from umbms.plot.imgplots import plot_fd_img
-from umbms.plot.sinogramplot import plt_fd_sino
+
 
 __CPU_COUNT = mp.cpu_count()
 
-# SPECIFY CORRECT DATA AND OUTPUT PATHS
+# specify correct data and output paths
 ########################################################################
 
-__DATA_DIR = os.path.join(get_proj_path(), 'data/umbmid/cyl_phantom/')
+__DATA_DIR = os.path.join(get_proj_path(),
+                          'data/umbmid/cyl_phantom/speed_paper/')
 __OUT_DIR = os.path.join(get_proj_path(), 'output/cyl_phantom/')
 verify_path(__OUT_DIR)
 __DIEL_DATA_DIR = os.path.join(get_proj_path(), 'data/freq_data/')
 
-__FD_NAME = '20240109_s11_data.pickle'
-__MD_NAME = '20240109_metadata.pickle'
-__DIEL_NAME = '20240109_DGBE90.csv'
+__FD_NAME = '20240813_s11_data.pickle'
+__MD_NAME = '20240813_metadata.pickle'
+__DIEL_NAME = '20240813_DGBE90.csv'
 
 ########################################################################
 
-# SPECIFY CORRECT SCAN PARAMETERS
+# specify correct scan parameters
 ########################################################################
 
-# The frequency parameters from the scan
+# the frequency parameters from the sca
 __INI_F = 2e9
 __FIN_F = 9e9
 __N_FS = 1001
 
-# The time-domain conversion parameters
+# the time-domain conversion parameters
 __INI_T = 0.5e-9
 __FIN_T = 5.5e-9
 __N_TS = 700
 
-# The size of the reconstructed image along one dimension
+# the size of the reconstructed image along one dimension
 __M_SIZE = 150
-# Number of antenna positions
+# number of antenna positions
 __N_ANT_POS = 72
-
+__SAMPLING = 12
 ########################################################################
 
-# Define propagation speed in vacuum
+# define propagation speed in vacuum
 __VAC_SPEED = scipy.constants.speed_of_light
 __PHANTOM_RAD = 0.0555
 
 
-def load_data():
-    """Loads both fd_data and metadata
+def interp_perms(data_fs, perms, conds, tar_fs):
+    """interpolate measured permittivity to a set of target freqs
+    parameters
+    ----------
+    data_fs : array_like
+        frequencies at which measured perms/conds are defined
+    perms : array_like
+        measured real part of the relative permittivity
+    conds : array_like
+        measured conductivity, [s/m]
+    tar_fs : array_like
+        target frequencies
+    returns
+    -------
+    interp_perms : array_like
+        interpolated permittivities
+    interp_conds : array_like
+        interpolated conductivities, in [s/m]
+    """
 
-    Returns:
+    interp_perms = np.interp(x=tar_fs,
+                            xp=data_fs,
+                            fp=perms)
+    interp_conds = np.interp(x=tar_fs,
+                             xp=data_fs,
+                             fp=conds)
+
+    return interp_perms, interp_conds
+
+
+def load_data():
+    """loads both fd_data and metadata
+
+    returns:
     --------
     tuple of two loaded variables
     """
@@ -82,18 +111,62 @@ def load_data():
         load_pickle(os.path.join(__DATA_DIR,
                                  __MD_NAME))
 
-
-# For multiprocessing purposes
-if __name__ == "__main__":
+if __name__ == '__main__':
 
     # initialize shared worker pool for raytrace/analytical shape
     # time-delay calculations and for reconstruction
     worker_pool = mp.Pool(__CPU_COUNT - 1)
 
     logger = get_script_logger(__file__)
-
+    # metadata = [{
+    #     'n_expt': 0,
+    #     'id': 0,
+    #     'tum_diam': np.nan,
+    #     'tum_shape': None,
+    #     'tum_x': np.nan,
+    #     'tum_y': np.nan,
+    #     'adi_ref_id': np.nan,
+    #     'adi_ref_id2': np.nan,
+    #     'rod_ref_id': np.nan,
+    #     'emp_ref_id': np.nan,
+    #     'date': '20240806',
+    #     'ant_rad': 21.0,
+    #     'type': None
+    # },{
+    #     'n_expt': 1,
+    #     'id': 1,
+    #     'tum_diam': np.nan,
+    #     'tum_shape': None,
+    #     'tum_x': np.nan,
+    #     'tum_y': np.nan,
+    #     'adi_ref_id': np.nan,
+    #     'adi_ref_id2': np.nan,
+    #     'rod_ref_id': np.nan,
+    #     'emp_ref_id': 0,
+    #     'date': '20240806',
+    #     'ant_rad': 21.0,
+    #     'type': None
+    # },{
+    #     'n_expt': 2,
+    #     'id': 2,
+    #     'tum_diam': 1.867,
+    #     'tum_shape': 'sphere',
+    #     'tum_x': -0.5,
+    #     'tum_y': 0.5,
+    #     'adi_ref_id': np.nan,
+    #     'adi_ref_id2': 1,
+    #     'rod_ref_id': np.nan,
+    #     'emp_ref_id': 0,
+    #     'date': '20240806',
+    #     'ant_rad': 21.0,
+    #     'type': 'target'
+    # }]
     # Load the frequency domain data and metadata
     fd_data, metadata = load_data()
+    # fd_data = load_pickle(os.path.join(__DATA_DIR, __FD_NAME))
+
+    # Downsample for computational benefit
+    fd_data = fd_data[:, ::__SAMPLING, :]
 
     n_expts = np.size(fd_data, axis=0)  # The number of individual scans
 
@@ -103,39 +176,80 @@ if __name__ == "__main__":
     # Scan freqs and target freqs
     scan_fs = np.linspace(__INI_F, __FIN_F, __N_FS)
 
-    # Read .csv file of permittivity and conductivity values
-    df = pandas.read_csv(os.path.join(__DIEL_DATA_DIR, __DIEL_NAME))
+    # DOWNsample the frequencies
+    recon_fs = scan_fs[::__SAMPLING]
 
+    # Read .csv file of permittivity and conductivity values
+    df = pandas.read_csv(os.path.join(__DIEL_DATA_DIR, __DIEL_NAME),
+                         delimiter=';', decimal=',', skiprows=9)
+    diel_data_arr = df.values
     # Calculate velocity array
-    freqs = np.array(df["Freqs"].values, dtype=float) * 1e6
-    permittivities = np.array(df["Permittivity"].values)
-    conductivities = np.array(df["Conductivity"].values)
+    freqs = np.array(diel_data_arr[:, 0], dtype=float) * 1e6
+    permittivities = np.array(diel_data_arr[:, 1])
+    conductivities = np.array(diel_data_arr[:, 3])
     zero_conductivities = np.zeros_like(conductivities)
     velocities_zero_cond = get_breast_speed_freq(freqs, permittivities,
                                                  zero_conductivities)
     velocities = get_breast_speed_freq(freqs, permittivities, conductivities)
-    # plt.rc('font', family='Times New Roman')
-    # fig = plt.figure()
-    # ax = plt.axes()
-    # plt.plot(freqs * 1e-9, velocities * 1e-8)
-    # plt.xlim(freqs[0] * 1e-9, freqs[-1] * 1e-9)
-    # plt.ylim(velocities[0] * 1e-8, velocities[-1] * 1e-8)
-    # x_ticks_nums = np.arange(2, 10)
-    # y_ticks_nums = velocities[::142] * 1e-8
-    # y_ticks = [r'%.2f $\cdot$ 10$^8$' % y_ticks_nums[i] for i in range(8)]
-    # ax.set_xticks(x_ticks_nums)
-    # ax.set_yticks(y_ticks_nums)
-    # ax.set_yticklabels(y_ticks)
-    # plt.xlabel('Frequency (GHz)', fontsize=16)
-    # plt.ylabel('Propagation speed m/s', fontsize=16)
-    # plt.grid()
-    # plt.show()
-    # The output dir, where the reconstructions will be stored
-    out_dir = os.path.join(__OUT_DIR, 'recons/Immediate '
-                                      'reference/20240109_glass_rod/ft_das/')
+
+
+    # Calculate the time delay for a target according to different enhs.
+    # Assume signal attenuates with 1/r^2
+    # Plot
+    out_dir = os.path.join(__OUT_DIR, 'recons/Immediate reference/Speed '
+                                      'paper/20240813/')
     verify_path(out_dir)
 
-    for expt in range(n_expts):  # for all scans
+    # Get metadata for plotting
+    scan_rad = 0.21
+
+    # Obtain the true rho of the phase center of the antenna
+    ant_rad = to_phase_center(meas_rho=scan_rad)
+
+    adi_rad = __PHANTOM_RAD
+
+    # Define the radius of the region of interest
+    roi_rad = adi_rad + 0.01
+
+    # Get the area of each pixel in the image domain
+    dv = ((2 * roi_rad) ** 2) / (__M_SIZE ** 2)
+
+    # Estimate the average speed for the whole imaging domain
+    # Assume homogeneous media and straight line propagation
+    speed = estimate_speed(adi_rad=adi_rad, ant_rad=scan_rad,
+                           new_ant=True)
+    # Homogeneous
+    logger.info('\tTime-delay calculation...')
+    time_delay_tp_start = perf_counter()
+    pix_ts = get_pix_ts_old(ant_rad=ant_rad, m_size=__M_SIZE,
+                            roi_rad=roi_rad, speed=speed)
+    time_delay_tp_end = perf_counter()
+    logger.info('\t\tTime: %.3f s' %
+                (time_delay_tp_end - time_delay_tp_start))
+    # Account for antenna time delay
+    pix_ts = apply_ant_pix_delay(pix_ts=pix_ts)
+
+    phase_fac = get_fd_phase_factor(pix_ts=pix_ts)
+
+    # Binary
+    breast_speed = np.average(velocities)
+    logger.info('\tTime-delay calculation (binary)...')
+    time_delay_tp_start = perf_counter()
+    pix_ts_bin, int_f_xs, int_f_ys, int_b_xs, int_b_ys = \
+        get_pix_ts(ant_rad=ant_rad, m_size=__M_SIZE,
+                   roi_rad=roi_rad, air_speed=__VAC_SPEED,
+                   breast_speed=breast_speed, adi_rad=adi_rad,
+                   worker_pool=worker_pool)
+
+    # Account for antenna time delay
+    pix_ts_bin = apply_ant_pix_delay(pix_ts=pix_ts_bin)
+    time_delay_tp_end = perf_counter()
+    logger.info('\t\tTime: %.3f s' %
+                (time_delay_tp_end - time_delay_tp_start))
+    phase_fac_bin = get_fd_phase_factor(pix_ts=pix_ts_bin)
+
+    for expt in range(n_expts):
+    # for expt in [96]:
 
         logger.info('Scan [%3d / %3d]...' % (expt + 1, n_expts))
 
@@ -162,41 +276,26 @@ if __name__ == "__main__":
             verify_path(pickle_dir)
 
             # Get metadata for plotting
-            scan_rad = tar_md['ant_rad'] / 100
             tum_x = tar_md['tum_x'] / 100
             tum_y = tar_md['tum_y'] / 100
             tum_rad = 0.5 * (tar_md['tum_diam'] / 100)
-            # Cylindrical phantom metadata doesn't have such a field,
-            # its radius is hard-coded in the scan parameters section
-            # adi_rad = tar_md['adi_rad']
-            adi_rad = __PHANTOM_RAD
-
-            # Correct for how the scan radius is measured (from a
-            # point on the antenna stand, not at the SMA connection
-            # point)
-            # scan_rad += 0.03618
-
-            # Obtain the true rho of the phase center of the antenna
-            ant_rad = to_phase_center(meas_rho=scan_rad)
-
-            # Define the radius of the region of interest
-            roi_rad = adi_rad + 0.01
-
-            # Get the area of each pixel in the image domain
-            dv = ((2 * roi_rad) ** 2) / (__M_SIZE ** 2)
-
-            # Correct for the antenna time delay
-            # NOTE: Only the new antenna was used in UM-BMID Gen-3
-            # ant_rad = apply_ant_t_delay(scan_rad=scan_rad, new_ant=True)
 
             # Get the adipose-only and empty reference data
             # for this scan
             adi_fd_emp = fd_data[expt_ids.index(tar_md['emp_ref_id']), :, :]
-            adi_fd = fd_data[expt_ids.index(tar_md['rod_ref_id']), :, :]
+            adi_fd = fd_data[expt_ids.index(tar_md['adi_ref_id2']), :, :]
             adi_cal_cropped_emp = (tar_fd - adi_fd_emp)
             adi_cal_cropped = (tar_fd - adi_fd)
 
+            pos_1_tar = tar_fd[:, 0]
+            pos_1_ref = adi_fd[:, 0]
 
+            # plt.plot(np.abs(pos_1_tar))
+            # # plt.plot(np.phase(pos_1_tar))
+            # plt.plot(np.abs(pos_1_ref))
+            # # plt.plot(np.phase(pos_1_ref))
+            # plt.figsave("")
+            #
             # 5 DIFFERENT RECONSTRUCTIONS
             ############################################################
 
@@ -204,36 +303,15 @@ if __name__ == "__main__":
 
             plt_str_regular_das = 'Homogeneous DAS\n%s' % plt_str
 
-            logger.info('\tHomogeneous DAS...')
-            # To time the method
-            reg_das_start = perf_counter()
+            logger.info('\tHomogeneous Reconstruction...')
 
-            # Estimate the average speed for the whole imaging domain
-            # Assume homogeneous media and straight line propagation
-            speed = estimate_speed(adi_rad=adi_rad, ant_rad=scan_rad,
-                                   new_ant=True)
-
-            logger.info('\ttime-delay calculation...')
-
-            # Timing time-delay calculation
-            time_delay_tp_start = perf_counter()
-            pix_ts = get_pix_ts_old(ant_rad=ant_rad, m_size=__M_SIZE,
-                                    roi_rad=roi_rad, speed=speed)
-
-            # Account for antenna time delay
-            pix_ts = apply_ant_pix_delay(pix_ts=pix_ts)
-            time_delay_tp_end = perf_counter()
-            logger.info('\t\tTime: %.3f s' %
-                        (time_delay_tp_end - time_delay_tp_start))
             phase_fac = get_fd_phase_factor(pix_ts=pix_ts)
-
-            logger.info('\tReconstruction...')
 
             # Time the reconstruction
             recon_start = perf_counter()
             das_regular_recon = fd_das(fd_data=adi_cal_cropped,
                                        phase_fac=phase_fac,
-                                       freqs=scan_fs,
+                                       freqs=recon_fs,
                                        worker_pool=worker_pool)
             recon_end = perf_counter()
             logger.info('\t\tTime: %.3f s' %
@@ -241,68 +319,25 @@ if __name__ == "__main__":
 
             save_pickle(das_regular_recon,
                         path=os.path.join(pickle_dir,
-                                          'id%d_regular.pickle' % expt))
+                                          'id%d_hom.pickle' % expt))
 
             plot_fd_img(img=np.abs(das_regular_recon), tum_x=tum_x,
-                        tum_y=tum_y, tum_rad=tum_rad, adi_rad=adi_rad,
-                        ant_rad=ant_rad, roi_rad=roi_rad,
-                        img_rad=roi_rad, title=plt_str_regular_das,
-                        save_fig=True,
-                        save_str=os.path.join(out_dir,
-                                              'id_%d_das_regular.png'
-                                              % expt), save_close=True)
-
-            reg_das_end = perf_counter()
-
-            logger.info('\tThe whole reconstruction time: %.3f s' %
-                        (reg_das_end - reg_das_start))
-
-            logger.info('\tReconstruction (DMAS)...')
-
-            das_binary_recon = fd_dmas(fd_data=adi_cal_cropped,
-                                           pix_ts=pix_ts, freqs=freqs)
-
-            plot_fd_img(img=np.abs(das_binary_recon), tum_x=tum_x,
                         tum_y=tum_y, tum_rad=tum_rad, adi_rad=adi_rad,
                         ant_rad=ant_rad, roi_rad=roi_rad,
                         img_rad=roi_rad, title='',
                         save_fig=True,
                         save_str=os.path.join(out_dir,
-                                              'id_%d_dmas_binary.png'
+                                              'id_%d_das_hom.png'
                                               % expt), save_close=True)
 
             ############################################################
             # 2. Binary DAS (domain partitioning)
 
-            plt_str_binary_das = 'Binary DAS\n%s' % plt_str
-
-            logger.info('\tBinary DAS...')
-            bin_das_start = perf_counter()
-            # Assume average propagation through the adipose layer
-            breast_speed = np.average(velocities)
-
-            logger.info('\tTime-delay calculation...')
-            time_delay_tp_start = perf_counter()
-            pix_ts, int_f_xs, int_f_ys, int_b_xs, int_b_ys = \
-                get_pix_ts(ant_rad=ant_rad, m_size=__M_SIZE,
-                           roi_rad=roi_rad, air_speed=__VAC_SPEED,
-                           breast_speed=breast_speed, adi_rad=adi_rad,
-                           worker_pool=worker_pool)
-
-            # Account for antenna time delay
-            pix_ts = apply_ant_pix_delay(pix_ts=pix_ts)
-            time_delay_tp_end = perf_counter()
-            logger.info('\t\tTime: %.3f s' %
-                        (time_delay_tp_end - time_delay_tp_start))
-
-            phase_fac = get_fd_phase_factor(pix_ts=pix_ts)
-
-            logger.info('\tReconstruction...')
-
+            logger.info('\tBinary Reconstruction...')
             recon_start = perf_counter()
             das_binary_recon = fd_das(fd_data=adi_cal_cropped,
-                                      phase_fac=phase_fac,
-                                      freqs=scan_fs,
+                                      phase_fac=phase_fac_bin,
+                                      freqs=recon_fs,
                                       worker_pool=worker_pool)
             recon_end = perf_counter()
             logger.info('\t\tTime: %.3f' % (recon_end - recon_start))
@@ -314,18 +349,11 @@ if __name__ == "__main__":
             plot_fd_img(img=np.abs(das_binary_recon), tum_x=tum_x,
                         tum_y=tum_y, tum_rad=tum_rad, adi_rad=adi_rad,
                         ant_rad=ant_rad, roi_rad=roi_rad,
-                        img_rad=roi_rad, title=plt_str_binary_das,
+                        img_rad=roi_rad, title='',
                         save_fig=True,
                         save_str=os.path.join(out_dir,
                                               'id_%d_das_binary.png'
                                               % expt), save_close=True)
-
-            bin_das_end = perf_counter()
-
-            logger.info('\tThe whole reconstruction time: %.3f s' %
-                        (bin_das_end - bin_das_start))
-
-
             ############################################################
             # 3. Frequency-dependent DAS (zero cond, short - FDNC)
 
@@ -345,7 +373,7 @@ if __name__ == "__main__":
                 int_b_xs=int_b_xs,
                 int_b_ys=int_b_ys,
                 velocities=velocities_zero_cond, ant_rad=ant_rad,
-                freqs=scan_fs, adi_rad=adi_rad, m_size=__M_SIZE,
+                freqs=recon_fs, adi_rad=adi_rad, m_size=__M_SIZE,
                 roi_rad=roi_rad, air_speed=__VAC_SPEED,
                 worker_pool=worker_pool)
             recon_end = perf_counter()
@@ -359,7 +387,7 @@ if __name__ == "__main__":
             plot_fd_img(img=np.abs(das_freq_dep_zero_cond_recon), tum_x=tum_x,
                         tum_y=tum_y, tum_rad=tum_rad, adi_rad=adi_rad,
                         ant_rad=ant_rad, roi_rad=roi_rad,
-                        img_rad=roi_rad, title=plt_str_fdnc_das, save_fig=True,
+                        img_rad=roi_rad, title='', save_fig=True,
                         save_str=os.path.join(out_dir,
                                               'id_%d_das'
                                               '_freq_dep_zero_cond.png'
@@ -387,7 +415,7 @@ if __name__ == "__main__":
                 int_b_xs=int_b_xs,
                 int_b_ys=int_b_ys,
                 velocities=velocities, ant_rad=ant_rad,
-                freqs=scan_fs, adi_rad=adi_rad, m_size=__M_SIZE,
+                freqs=recon_fs, adi_rad=adi_rad, m_size=__M_SIZE,
                 roi_rad=roi_rad, air_speed=__VAC_SPEED,
                 worker_pool=worker_pool)
             recon_end = perf_counter()
@@ -401,7 +429,7 @@ if __name__ == "__main__":
             plot_fd_img(img=np.abs(das_freq_dep_zero_cond_recon), tum_x=tum_x,
                         tum_y=tum_y, tum_rad=tum_rad, adi_rad=adi_rad,
                         ant_rad=ant_rad, roi_rad=roi_rad,
-                        img_rad=roi_rad, title=plt_str_fd_das, save_fig=True,
+                        img_rad=roi_rad, title='', save_fig=True,
                         save_str=os.path.join(out_dir,
                                               'id_%d_das_freq_dep.png' % expt),
                         save_close=True)
@@ -414,7 +442,7 @@ if __name__ == "__main__":
             # 5. Ray-tracing
 
             plt_str_rt_das = 'DAS with raytracing, frequency-dependent\n' \
-                               '%s' % plt_str
+                             '%s' % plt_str
 
             logger.info('\tDAS with raytracing...')
 
@@ -424,8 +452,9 @@ if __name__ == "__main__":
             # In order to account for straight-line antenna time-delay
             # apply the old correction
 
-            scan_rad += 0.03618
-            ant_rad_bound = apply_ant_t_delay(scan_rad=scan_rad, new_ant=True)
+            scan_rad_for_rt = scan_rad + 0.03618
+            ant_rad_bound = apply_ant_t_delay(scan_rad=scan_rad_for_rt,
+                                              new_ant=True)
 
             # Routine start: extract the boundary from the sinogram
             cs, x_cm, y_cm = \
@@ -454,7 +483,7 @@ if __name__ == "__main__":
                                            int_b_ys=int_b_ys,
                                            velocities=velocities,
                                            ant_rad=ant_rad,
-                                           freqs=scan_fs,
+                                           freqs=recon_fs,
                                            adi_rad=adi_rad,
                                            m_size=__M_SIZE, roi_rad=roi_rad,
                                            air_speed=__VAC_SPEED,
@@ -471,7 +500,7 @@ if __name__ == "__main__":
             plot_fd_img(img=np.abs(das_rt_recon), cs=cs, tum_x=tum_x,
                         tum_y=tum_y, tum_rad=tum_rad, adi_rad=adi_rad, ox=x_cm,
                         oy=y_cm, ant_rad=ant_rad, roi_rad=roi_rad,
-                        img_rad=roi_rad, title=plt_str_rt_das, save_fig=True,
+                        img_rad=roi_rad, title='', save_fig=True,
                         save_str=os.path.join(out_dir,
                                               'id_%d_das_rt.png'
                                               % expt), save_close=True)

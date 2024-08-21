@@ -411,7 +411,7 @@ def find_centre_of_mass_from_cs(cs, n_points=200):
 
 
 def prepare_fd_data(adi_emp_cropped, ini_t, fin_t, n_time_pts, ini_f, fin_f,
-                    temp=False):
+                    ant_rad, adi_rad):
     """Prepares unorganized data for boundary detection"""
 
     # convert frequency-domain data to time-domain
@@ -419,12 +419,18 @@ def prepare_fd_data(adi_emp_cropped, ini_t, fin_t, n_time_pts, ini_f, fin_f,
               ini_f=ini_f, fin_f=fin_f)
     # time response data
     ts = np.linspace(ini_t, fin_t, n_time_pts)
+    # Time gating the data to strip away the early noise
+    if adi_rad != 0:
+        tor_min = ((ant_rad + 0.01 - adi_rad) * 2) / __VAC_SPEED
+        td_mask = td >= tor_min
+        td = td[td_mask]
+        ts = ts[td_mask]
     # find the kernel
     kernel = time_aligned_kernel(td)
     return td, ts, kernel
 
 
-def get_boundary_iczt(adi_emp_cropped, ant_rad, *, n_ant_pos=72,
+def get_boundary_iczt(adi_emp_cropped, ant_rad, *, adi_rad=0, n_ant_pos=72,
                       ini_ant_ang=-136.0, ini_t=0.5e-9, fin_t=5.5e-9,
                       n_time_pts=700, ini_f=2e9, fin_f=9e9, peak_threshold=10,
                       plt_slices=False, plot_sino=False, out_dir='',
@@ -472,8 +478,8 @@ def get_boundary_iczt(adi_emp_cropped, ant_rad, *, n_ant_pos=72,
     td, ts, kernel = prepare_fd_data(adi_emp_cropped=adi_emp_cropped,
                                      ini_t=ini_t, fin_t=fin_t,
                                      n_time_pts=n_time_pts, ini_f=ini_f,
-                                     fin_f=fin_f)
-
+                                     fin_f=fin_f, ant_rad=ant_rad,
+                                     adi_rad=adi_rad)
     # find all rho and ToR (time-of-response) values
     # on each antenna position
     rho, ToR = rho_ToR_from_td(td=td, ts=ts, kernel=kernel, ant_rad=ant_rad,

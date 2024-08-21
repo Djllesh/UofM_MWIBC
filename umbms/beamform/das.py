@@ -7,7 +7,7 @@ from umbms.beamform.utility import get_fd_phase_factor
 from umbms.hardware.antenna import apply_ant_pix_delay
 
 
-def fd_das(fd_data, phase_fac, freqs, worker_pool, partial_ant_idx=None):
+def fd_das(fd_data, phase_fac, freqs, worker_pool=None, partial_ant_idx=None):
     """Compute frequency-domain DAS reconstruction
 
     Parameters
@@ -34,29 +34,39 @@ def fd_das(fd_data, phase_fac, freqs, worker_pool, partial_ant_idx=None):
 
     n_fs = np.size(freqs)  # Find number of frequencies used
 
-    # Correct for to/from propagation
-    new_phase_fac = phase_fac ** (-2)
+    if worker_pool is None:  # If *not* doing parallel computation
 
-    if partial_ant_idx is None:
-        # Create func for parallel computation
-        parallel_func = partial(_parallel_fd_das_func, fd_data, new_phase_fac,
-                                freqs)
+        # Reconstruct the image
+        img = np.sum(
+            fd_data[:, :, None, None]
+            * np.power(phase_fac[None, :, :, :],
+                       -2 * freqs[:, None, None, None]),
+            axis=(0,1))
+
     else:
-        parallel_func = partial(_parallel_fd_das_func_part_ant, fd_data,
-                                new_phase_fac, partial_ant_idx, freqs)
+        # Correct for to/from propagation
+        new_phase_fac = phase_fac ** (-2)
 
-    iterable_idxs = range(n_fs)  # Indices to iterate over
+        if partial_ant_idx is None:
+            # Create func for parallel computation
+            parallel_func = partial(_parallel_fd_das_func, fd_data, new_phase_fac,
+                                    freqs)
+        else:
+            parallel_func = partial(_parallel_fd_das_func_part_ant, fd_data,
+                                    new_phase_fac, partial_ant_idx, freqs)
 
-    # Store projections from parallel processing
-    back_projections = np.array(worker_pool.map(parallel_func, iterable_idxs))
+        iterable_idxs = range(n_fs)  # Indices to iterate over
 
-    # Reshape
-    back_projections = np.reshape(back_projections,
-                                  [n_fs, np.size(phase_fac, axis=1),
-                                   np.size(phase_fac, axis=2)])
+        # Store projections from parallel processing
+        back_projections = np.array(worker_pool.map(parallel_func, iterable_idxs))
 
-    # Sum over all frequencies
-    img = np.sum(back_projections, axis=0)
+        # Reshape
+        back_projections = np.reshape(back_projections,
+                                      [n_fs, np.size(phase_fac, axis=1),
+                                       np.size(phase_fac, axis=2)])
+
+        # Sum over all frequencies
+        img = np.sum(back_projections, axis=0)
 
     return img
 
@@ -82,6 +92,7 @@ def _parallel_fd_das_func(fd_data, new_phase_fac, freqs, ff):
     """
 
     # Get phase factor for this frequency
+    # this_phase_fac = new_phase_fac * np.exp(-1j * np.pi * freqs[ff])
     this_phase_fac = new_phase_fac ** freqs[ff]
 
     # Sum over antenna positions

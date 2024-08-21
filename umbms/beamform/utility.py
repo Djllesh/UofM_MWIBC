@@ -255,6 +255,7 @@ def get_freqs(ini_t, fin_t, n_times):
     # Find the incremental time step-size
     time_step = times[1] - times[0]
 
+
     # Convert to the incremental frequency step-size
     freq_step = 1 / (n_times * time_step)
 

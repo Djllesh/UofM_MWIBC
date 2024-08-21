@@ -247,6 +247,8 @@ def plt_fd_sino(fd, title, save_str, out_dir, cbar_fmt='%.2e',
     plt.tight_layout()
     plt.savefig(os.path.join(out_dir, '%s' % save_str),
                 dpi=300, transparent=transparent)
+    # TODO:
+    # Add slices to sinograms
     if close:
         plt.close()
 
