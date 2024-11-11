@@ -19,6 +19,7 @@ from umbms.beamform.propspeed import estimate_speed, get_breast_speed_freq
 M_SIZE = 150
 
 if __name__ == "__main__":
+
     a = [[0.5, 0.3], [0.5, 0.3]]
     b = [[0.7, 0.1], [0.8, 0.05]]
 
