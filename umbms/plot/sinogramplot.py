@@ -19,6 +19,7 @@ import numpy as np
 # Conversion factor from [GHz] to [Hz]
 __GHz_to_Hz = 1e9
 
+
 ###############################################################################
 
 
@@ -107,7 +108,6 @@ def plot_sino(td_data, ini_t, fin_t, title='',
         # If the normalize value is default, indicating to normalize to
         # the maximum value in the reconstruction
         if normalize_values == (0, 1):
-
             # Map values in reconstructed image to be over range (0, 1)
             td_data_to_plt -= np.min(td_data_to_plt)
             td_data_to_plt /= np.max(td_data_to_plt)
@@ -174,6 +174,27 @@ def plot_sino(td_data, ini_t, fin_t, title='',
 
 def plt_sino(fd, title, save_str, out_dir, cbar_fmt='%.2e',
              transparent=True, close=True, slices=False):
+    """Plots a time-domain sinogram
+
+    Parameters:
+    ----------------
+    fd : array_like
+       Frequency-domain data
+    title : sting
+        Plot title
+    save_str : string
+        Name of the figure
+    out_dir : string
+        Directory for saving
+    cbar_fmt : string
+        Colorbar format
+    transparent : bool
+        Transparent background
+    close : bool
+        Close figure flag
+    slices : bool
+        Slices flag
+     """
 
     # Find the minimum retained frequency
     scan_fs = np.linspace(1e9, 9e9, 1001)  # Frequencies used in scan
@@ -190,54 +211,40 @@ def plt_sino(fd, title, save_str, out_dir, cbar_fmt='%.2e',
     td = iczt(fd, ini_t=0.5e-9, fin_t=5.5e-9, n_time_pts=700,
               ini_f=min_retain_f, fin_f=9e9)
 
+    # If the user wants to plot separate slices of the sinogram
+    # (individual antenna positions)
     if slices:
+        # Iterating over antenna positions
         for ant_idx in range(np.size(td, axis=1)):
-           # take away the .png at the end
-           slice_dir = save_str[:-4] + '_slices/'
-           to_save_dir = os.path.join(out_dir, slice_dir)
-           verify_path(to_save_dir)
-           plt.plot(ts, np.abs(td[:, ant_idx]), 'k-', linewidth=1.6)
-           plt.title('Antenna index #%d' % ant_idx, fontsize=15)
-           plt.grid('--')
-           plt.xlabel('Time of response (s)')
-           plt.ylabel('Intensity')
-           plt.tight_layout()
-           plt.savefig(os.path.join(to_save_dir, 'slice_%d.png' % ant_idx))
-           plt.close()
+
+            # Create a separate folder for the slices
+            # take away the .png at the end
+            slice_dir = save_str[:-4] + '_slices/'
+            to_save_dir = os.path.join(out_dir, slice_dir)
+            verify_path(to_save_dir)
+
+            # Plotting
+            plt.plot(ts, np.abs(td[:, ant_idx]), 'k-', linewidth=1.6)
+            plt.title('Antenna index #%d' % ant_idx, fontsize=15)
+            plt.grid('--')
+            plt.xlabel('Time of response (s)')
+            plt.ylabel('Intensity')
+
+            # Saving
+            plt.tight_layout()
+            plt.savefig(os.path.join(to_save_dir, 'slice_%d.png' % ant_idx))
+            plt.close()
 
     show_sinogram(data=td, aspect_ratio=plt_aspect_ratio,
                   extent=plt_extent, title=title, out_dir=out_dir,
                   save_str=save_str, ts=ts, cbar_fmt=cbar_fmt,
                   transparent=transparent, close=close)
-    #
-    # # Plot primary scatter forward projection only
-    # plt.figure()
-    # plt.rc('font', family='Times New Roman')
-    # plt.imshow(np.abs(td), aspect=plt_aspect_ratio, cmap='inferno',
-    #            extent=plt_extent)
-    # plt.colorbar(format=cbar_fmt).ax.tick_params(labelsize=16)
-    # plt.gca().set_yticks([round(ii, 2)
-    #                       for ii in ts[::700 // 8]])
-    # plt.gca().set_xticks([round(ii)
-    #                       for ii in np.linspace(0, 355, 355)[::75]])
-    # plt.title('%s' % title, fontsize=20)
-    # plt.xlabel('Polar Angle of Antenna Position ('
-    #            + r'$^\circ$' + ')',
-    #            fontsize=16)
-    # plt.ylabel('Time of Response (ns)', fontsize=16)
-    # plt.tight_layout()
-    # plt.savefig(os.path.join(out_dir, '%s' % save_str),
-    #             dpi=300, transparent=transparent)
-    # if close:
-    #     plt.close()
 
 
 def plt_fd_sino(fd, title, save_str, out_dir, cbar_fmt='%.2e',
                 transparent=True, close=True):
-
     # Find the minimum retained frequency
     scan_fs = np.linspace(2e9, 9e9, 1001)  # Frequencies used in scan
-
 
     # Create variables for plotting
     fs = scan_fs
@@ -303,7 +310,6 @@ def show_sinogram(data, aspect_ratio, extent, title, out_dir, save_str,
         Flag to close the plot after exiting the function
     """
 
-
     # Plot primary scatter forward projection only
     plt.figure()
     plt.rc('font', family='Times New Roman')
@@ -337,4 +343,3 @@ def show_sinogram(data, aspect_ratio, extent, title, out_dir, save_str,
 
     if close:
         plt.close()
-
