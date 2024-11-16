@@ -1,3 +1,8 @@
+"""
+Prykhodko Illia
+University of Manitoba
+November 24, 2023
+"""
 import numpy as np
 import pandas as pd
 import os

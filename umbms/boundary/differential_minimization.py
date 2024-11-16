@@ -1,3 +1,8 @@
+"""
+Prykhodko Illia
+University of Manitoba
+July 6, 2023
+"""
 from scipy import optimize
 import numpy as np
 

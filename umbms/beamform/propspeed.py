@@ -15,8 +15,8 @@ from umbms.beamform.utility import get_xy_arrs, get_pixdist_ratio, \
 
 # Define propagation speed in vacuum
 __VAC_SPEED = scipy.constants.speed_of_light
-__VAC_PERMITTIVITY = 8.85e-12
-__VAC_PERMEABILITY = 1.25e-6
+__VAC_PERMITTIVITY = scipy.constants.epsilon_0
+__VAC_PERMEABILITY = scipy.constants.mu_0
 
 # Permittivity of the breast tissue analogs used in the lab at the
 # central frequency (glycerin for fat, 30% Triton X-100 solution for
@@ -139,3 +139,119 @@ def get_breast_speed_freq(freqs, permittivities, conductivities):
                                                                     ** 2) + 1))
 
     return 2 * np.pi * freqs / beta
+
+
+def cole_cole(freq, e_h, e_s, tau, alpha):
+    """ Returns the complex permittivity modelled according to the
+    Cole-Cole model : https://en.wikipedia.org/wiki/Cole%E2%80%93Cole_equation
+
+    Parameters:
+    -----------------------
+    freq : array_like
+        Frequencies
+    e_h : float
+        'Infinite frequency' dielectric constant
+    e_s : float
+        'Static frequency' dielectric constant
+    tau : float
+        Dielectric relaxation time constant
+    alpha : float
+        Exponent parameter
+
+    Returns:
+    ----------------------
+    epsilon : array_like
+        Complex permittivity
+    """
+    return e_h + (e_s - e_h)/(1 + (2j * np.pi * freq * tau * 1e-12)**
+                              (1 - alpha))
+
+
+def phase_shape(freq, length, epsilon, shift):
+    """ Returns the unwrapped shape of the phase based on the complex
+    permittivity
+
+    Parameters:
+    ------------------
+    freq : array_like
+        Frequencies
+    length : float (m)
+        Separation between the antennas
+    epsilon : array_like
+        Complex permittivity
+    shift : float (rad)
+        Vertical shift of the phase
+
+    Returns:
+    phase : array_like
+        The unwrapped phase
+    """
+
+    a = np.sqrt(1 + (np.imag(epsilon)/np.real(epsilon))**2) + 1
+    b = np.sqrt(__VAC_PERMEABILITY * __VAC_PERMITTIVITY / 2 *
+                np.real(epsilon) * a)
+    return - 2 * np.pi * freq * length * b - shift
+
+
+def phase_shape_wrapped(freq, length, epsilon, shift):
+    """ Returns the wrapped shape of the phase based on the complex
+    permittivity
+
+    Parameters:
+    ------------------
+    freq : array_like
+        Frequencies
+    length : float (m)
+        Separation between the antennas
+    epsilon : array_like
+        Complex permittivity
+    shift : float (rad)
+        Vertical shift of the phase
+
+    Returns:
+    --------------------
+    phase : array_like
+        The wrapped phase
+    """
+
+    a = np.sqrt(1 + (np.imag(epsilon)/np.real(epsilon))**2) + 1
+    b = np.sqrt(__VAC_PERMEABILITY * __VAC_PERMITTIVITY / 2 *
+                np.real(epsilon) * a)
+
+    shape = - 2 * np.pi * freq * length * b - shift
+    # Wrap
+    shape = (np.pi + shape) % (2 * np.pi) - np.pi
+    return shape
+
+
+def phase_diff_MSE(x, exp_phase, freq, length, wrapped=False):
+    """ Returns the MSE between the experimental phase
+    and the derived shape
+
+    Parameters:
+    ----------------
+    x : array-like
+        An array of parameters for the Cole-Cole model
+    exp_phase :  array-like
+        Extracted phase (rad)
+    freq : array-like
+        Frequencies used in the experiment (Hz)
+    length : float
+        The transmission distance (separation between the antennas)
+
+    Returns:
+    ----------------
+    mse : float
+        Mean square error
+    """
+
+    (e_h, e_s, tau, alpha, shift) = x
+    epsilon = cole_cole(freq, e_h, e_s, tau, alpha)
+    # Introducing the shift to not change the shape
+    if wrapped:
+        shape = phase_shape_wrapped(freq, length, epsilon, shift)
+    else:
+        shape = phase_shape(freq, length, epsilon, shift)
+
+    mse = (1/np.size(exp_phase)) * (np.sum((exp_phase - shape)**2))
+    return mse

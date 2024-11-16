@@ -1,3 +1,8 @@
+"""
+Prykhodko Illia
+University of Manitoba
+October 6, 2024
+"""
 import matplotlib.pyplot as plt
 import os
 import numpy as np

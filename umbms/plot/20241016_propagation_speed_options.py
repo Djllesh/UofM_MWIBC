@@ -1,3 +1,9 @@
+"""
+Illia Prykhodko
+University of Manitoba
+October 16th 2024
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 import noise
