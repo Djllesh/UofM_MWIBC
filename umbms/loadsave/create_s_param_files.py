@@ -1,3 +1,8 @@
+"""
+Prykhodko Illia
+University of Manitoba
+June 6, 2023
+"""
 from umbms import get_proj_path, verify_path, get_script_logger
 from umbms.loadsave import save_pickle, load_birrs_txt
 
