@@ -35,7 +35,7 @@ if __name__ == "__main__":
 
     # Create a figure
     fig, ax = plt.subplots(2, 2, sharex=True, sharey='row',
-                           **dict(figsize=(1080 / __MY_DPI, 720 / __MY_DPI),
+                           **dict(figsize=(1920 / __MY_DPI, 1080 / __MY_DPI),
                                   dpi=__MY_DPI))
 
     # Create a mask for extrapolation
@@ -71,13 +71,13 @@ if __name__ == "__main__":
                                                          alpha5), shift=shift5)
 
         axis.plot(freqs, target_phase_unwrapped6, 'k-', linewidth=1.5,
-                 label=r'Experimental phase $6\pi$ shift')
+                 label=r'Experimental phase $6\cdot 2pi$ shift')
         axis.plot(freqs, target_phase_unwrapped5, 'r-', linewidth=1.5,
-                 label=r'Experimental phase $5\pi$ shift')
+                 label=r'Experimental phase $5\cdot 2pi$ shift')
         axis.plot(freqs, extracted_shape6, 'k--', linewidth=0.7,
-                 label=r'Extracted shape $6\pi$ shift')
+                 label=r'Extracted shape $6\cdot 2pi$ shift')
         axis.plot(freqs, extracted_shape5, 'r--', linewidth=0.7,
-                 label=r'Extracted shape $5\pi$ shift')
+                 label=r'Extracted shape $5\cdot 2pi$ shift')
 
     # Bottom row - speed
     for idx, axis in enumerate(ax[1]):
@@ -102,13 +102,13 @@ if __name__ == "__main__":
                                exp_vals6)
 
         axis.plot(freqs, experimental_speed6,
-                      'k-', linewidth=1.5, label='Experimental speed $6\pi$ shift')
+                      'k-', linewidth=1.5, label='Experimental speed $6\cdot 2pi$ shift')
         axis.plot(freqs, -2 * np.pi * length * freqs / extracted_shape6,
-                      'k--', linewidth=.7, label='Theoretical speed $6\pi$ shift')
+                      'k--', linewidth=.7, label='Theoretical speed $6\cdot 2pi$ shift')
         axis.plot(freqs, experimental_speed5,
-                      'r-', linewidth=1.5, label='Experimental speed $5\pi$ shift')
+                      'r-', linewidth=1.5, label='Experimental speed $5\cdot 2pi$ shift')
         axis.plot(freqs, -2 * np.pi * length * freqs / extracted_shape5,
-                      'r--', linewidth=.7, label='Theoretical speed $5\pi$ shift')
+                      'r--', linewidth=.7, label='Theoretical speed $5\cdot 2pi$ shift')
 
     plt.xlabel('Frequency, (Hz)')
     ax[0, 0].set_ylabel('Phase, (rad)')
@@ -122,5 +122,7 @@ if __name__ == "__main__":
         axis.legend()
 
     plt.tight_layout()
-    plt.show()
-
+    # plt.show()
+    fig.savefig(os.path.join(get_proj_path(),
+                             'output/cyl_phantom/unwrap_speed.png'),
+                transparent=True)
