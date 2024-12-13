@@ -91,8 +91,8 @@ if __name__ == "__main__":
             phantom_width / (length / phase_speed_6pi -
                              (length - phantom_width) / 3e8))
 
-    speed_creeping = phantom_width / (length / second_average -
-                         (length - phantom_width) / 3e8)
+    # speed_creeping = phantom_width / (length / second_average -
+    #                      (length - phantom_width) / 3e8)
 
     experimental_speed = get_breast_speed_freq(freqs=freqs,
                                                permittivities=perms,
@@ -125,7 +125,7 @@ if __name__ == "__main__":
             label=r'Estimated speed inside, shift = $-2 \cdot 6\pi$',
             linewidth=1.3)
 
-    ax.plot(freqs, speed_creeping, 'g-', label='Creeping wave')
+    # ax.plot(freqs, speed_creeping, 'g-', label='Creeping wave')
 
     ax.grid()
     ax.legend(prop={'size': 8})
