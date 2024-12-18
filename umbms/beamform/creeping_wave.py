@@ -26,6 +26,7 @@ __FIN_F = 9e9
 __N_FS = 1001
 __MY_DPI = 120
 
+# Process data
 data = load_pickle(os.path.join(__DATA_DIR, __FD_NAME))
 freqs = np.linspace(__INI_F, __FIN_F, __N_FS)
 phase = np.angle(data)
