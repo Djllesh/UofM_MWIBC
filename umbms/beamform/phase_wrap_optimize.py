@@ -243,6 +243,6 @@ if __name__ == "__main__":
     lines_labels = [ax.get_legend_handles_labels() for ax in [ax[0, 0]]]
     lines, labels = [sum(lol, []) for lol in zip(*lines_labels)]
     fig.legend(lines, labels, loc='outside lower center', ncols=2)
-    # plt.tight_layout()
-    # plt.show()
-    fig.savefig(os.path.join(__FIG_DIR, 'big_fig.png'), transparent=True)
+    plt.tight_layout()
+    plt.show()
+    # fig.savefig(os.path.join(__FIG_DIR, 'big_fig.png'), transparent=True)
