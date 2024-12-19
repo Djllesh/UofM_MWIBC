@@ -136,11 +136,9 @@ def dv_eprime(v, e_prime, e_2prime):
     -------
 
     """
-    mu_0 = __VAC_PERMEABILITY
-    eps_0 = __VAC_PERMITTIVITY
-    return - 1 / 4 * v**3 * (mu_0 * eps_0 * ((np.sqrt(1 + (e_prime /
-            e_2prime)**2) + 1) + (e_prime / e_2prime)**2*(np.sqrt(1 + (
-        e_prime / e_2prime)**2))**(-1)))
+    # mu_0 = __VAC_PERMEABILITY
+    # eps_0 = __VAC_PERMITTIVITY
+    return - 1/v * 1/(2 * e_prime * np.sqrt(1 + (e_2prime / e_prime)**2))
 
 def dv_e2prime(v, e_prime, e_2prime):
     """Returns the derivative of the propagation speed with respect to
@@ -151,8 +149,8 @@ def dv_e2prime(v, e_prime, e_2prime):
     """
     mu_0 = __VAC_PERMEABILITY
     eps_0 = __VAC_PERMITTIVITY
-    return  1 / 4 * mu_0 * eps_0 / 2 * (np.sqrt(1 + (e_prime /
-             e_2prime)**2))**(-1)*e_prime**3/e_2prime**2
+    return (- mu_0 * eps_0/2 * e_2prime / e_prime
+            * 1/np.sqrt(1 + (e_2prime / e_prime)**2) * 1/v**3)
 
 
 def deps_prime(freqs, e_h, e_s, tau, alpha, d_e_h, d_e_s, d_tau, d_alpha,
