@@ -9,7 +9,7 @@ from umbms.loadsave import save_pickle, load_birrs_txt
 import os
 import numpy as np
 
-__DATA_DIR = 'C:/Users/prikh/Desktop/Exp data/20240819/'
+__DATA_DIR = 'C:/Users/Tyson/Desktop/Exp data/20250115/'
 
 fs_in_dir = os.listdir(__DATA_DIR)
 
@@ -41,5 +41,5 @@ for file in fs_in_dir:
         s11_scan_data = load_birrs_txt(os.path.join(__DATA_DIR, file))
         s11_data[idx, :, :] = s11_scan_data
 
-save_pickle(s11_data, os.path.join(__DATA_DIR, '20240819_s11_data.pickle'))
-save_pickle(s21_data, os.path.join(__DATA_DIR, '20240819_s21_data.pickle'))
+save_pickle(s11_data, os.path.join(__DATA_DIR, '20250115_s11_data.pickle'))
+save_pickle(s21_data, os.path.join(__DATA_DIR, '20250115_s21_data.pickle'))

@@ -300,7 +300,13 @@ def phase_diff_MSE(x, exp_phase, freq, length, wrapped=False):
     else:
         shape = phase_shape(freq, length, epsilon, shift)
 
-    mse = (1/np.size(exp_phase)) * (np.sum((exp_phase - shape)**2))
+    if exp_phase.ndim == 1:
+        mse = (1/np.size(exp_phase)) * (np.sum((exp_phase - shape)**2))
+    else:
+        mse = ((1 / np.size(exp_phase)) *
+               (np.sum((exp_phase - shape.reshape(np.size(exp_phase,
+                                                          axis=0), 1)) ** 2)))
+
     return mse
 
 
