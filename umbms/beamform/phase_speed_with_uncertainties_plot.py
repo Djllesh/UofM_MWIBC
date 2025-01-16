@@ -91,17 +91,17 @@ if __name__ == "__main__":
             phantom_width / (length / phase_speed_6pi -
                              (length - phantom_width) / 3e8))
 
-    dv_avg_5_pi = dv(v=phase_speed_5pi,
-                     e_prime=np.real(epsilon), e_2prime=np.imag(epsilon),
+    dv_avg_5_pi = dv_avg(v=phase_speed_5pi, phi=shape_unwrapped-2*5*np.pi,
+                     e_prime=np.real(epsilon), e_2prime=np.abs(np.imag(epsilon)),
                      freqs=freqs, e_h=e_h, e_s=e_s, tau=tau, alpha=alpha,
                      d_e_h=err_e_h, d_e_s=err_e_s, d_tau=err_tau,
-                     d_alpha=err_alpha, d_shift=err_shift)
+                     d_alpha=err_alpha, d_shift=err_shift, L=length)
 
-    dv_avg_6_pi = dv(v=phase_speed_6pi,
-                     e_prime=np.real(epsilon), e_2prime=np.imag(epsilon),
+    dv_avg_6_pi = dv_avg(v=phase_speed_6pi, phi=shape_unwrapped-2*6*np.pi,
+                     e_prime=np.real(epsilon), e_2prime=np.abs(np.imag(epsilon)),
                      freqs=freqs, e_h=e_h, e_s=e_s, tau=tau, alpha=alpha,
                      d_e_h=err_e_h, d_e_s=err_e_s, d_tau=err_tau,
-                     d_alpha=err_alpha, d_shift=err_shift)
+                     d_alpha=err_alpha, d_shift=err_shift, L=length)
 
     # speed_creeping = phantom_width / (length / second_average -
     #                      (length - phantom_width) / 3e8)
