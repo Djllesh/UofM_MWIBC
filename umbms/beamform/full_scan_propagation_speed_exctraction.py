@@ -23,6 +23,7 @@ __DIEL_DIR = os.path.join(get_proj_path(),
 __FIG_DIR = os.path.join(get_proj_path(),
                          'output/cyl_phantom/')
 __FD_NAME = '20250115_s21_data.pickle'
+__DIEL_NAME = '20250115_DGBE70.csv'
 
 # __DATA_DIR = os.path.join(get_proj_path(),
 #                           'data/umbmid/cyl_phantom/speed_paper/')
@@ -31,7 +32,6 @@ __FD_NAME = '20250115_s21_data.pickle'
 # __FIG_DIR = os.path.join(get_proj_path(),
 #                          'output/cyl_phantom/')
 # __FD_NAME = '20240819_s21_data.pickle'
-__DIEL_NAME = '20250115_DGBE70.csv'
 
 # the frequency parameters from the scan
 __INI_F = 2e9
@@ -44,7 +44,7 @@ freqs = np.linspace(__INI_F, __FIN_F, __N_FS)
 phase = np.angle(data)
 # Include all the antenna positions
 target_phase = phase[1, :, :]
-target_phase_unwrapped = np.unwrap(phase[1, :, :], axis=0, discont=np.pi/2)
+target_phase_unwrapped = np.unwrap(phase[1, :, :], axis=0)
 length = 0.42
 phantom_width = 0.11
 

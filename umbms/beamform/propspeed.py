@@ -378,7 +378,7 @@ def fit_bootstrap_minimize(p0, datax, datay, length, function, resfunc,
 
     # 100 random data sets are generated and fitted
     ps = []
-    for i in range(100):
+    for i in range(10):
 
         randomDelta = np.random.normal(0., sigma_err_total, len(datay))
         randomdataY = datay + randomDelta

@@ -5,6 +5,7 @@ November 26th, 2024
 """
 import pandas
 from scipy.optimize import minimize
+from scipy.stats import pearsonr
 import numpy as np
 import matplotlib.pyplot as plt
 import os
@@ -13,15 +14,35 @@ from umbms.loadsave import load_pickle
 from umbms.beamform.propspeed import (cole_cole, phase_shape, phase_diff_MSE,
                                       phase_shape_wrapped,
                                       get_breast_speed_freq)
+from umbms.analysis.stats import ccc
+
+#
+# __DATA_DIR = os.path.join(get_proj_path(),
+#                           'data/umbmid/cyl_phantom/speed_paper/')
+# __DIEL_DIR = os.path.join(get_proj_path(),
+#                           'data/freq_data/')
+# __FIG_DIR = os.path.join(get_proj_path(),
+#                          'output/cyl_phantom/')
+# __FD_NAME = '20240819_s21_data.pickle'
+# __DIEL_NAME = '20240813_DGBE90.csv'
 
 __DATA_DIR = os.path.join(get_proj_path(),
-                          'data/umbmid/cyl_phantom/speed_paper/')
+                          'data/umbmid/cyl_phantom/ursi_data/')
 __DIEL_DIR = os.path.join(get_proj_path(),
                           'data/freq_data/')
 __FIG_DIR = os.path.join(get_proj_path(),
                          'output/cyl_phantom/')
-__FD_NAME = '20240819_s21_data.pickle'
-__DIEL_NAME = '20240813_DGBE90.csv'
+
+__FD_NAME = '20250115_s21_data.pickle'
+# __FD_NAME = '20241219_s21_data.pickle'
+
+__DIEL_NAME = '20250115_DGBE70.csv'
+
+# __DIEL_NAME = '20241219_DGBE90.csv'
+
+# __DIEL_NAME = '20241219_DGBE95.csv'
+
+# __DIEL_NAME = '20241219_glycerin.csv'
 
 # the frequency parameters from the scan
 __INI_F = 2e9
@@ -36,7 +57,10 @@ target_phase = phase[1, :, 0]
 target_phase_unwrapped = np.unwrap(phase[1, :, 0])
 length = 0.42
 phantom_width = 0.11
-
+plt.plot(freqs, target_phase, 'r--')
+plt.plot(freqs, target_phase_unwrapped, 'r-')
+plt.show()
+plt.close()
 if __name__ == "__main__":
 
     # Read .csv file of permittivity and conductivity values
@@ -126,6 +150,10 @@ if __name__ == "__main__":
             linewidth=1.3)
 
     # ax.plot(freqs, speed_creeping, 'g-', label='Creeping wave')
+
+    cor = pearsonr(phase_speed_6pi_in, experimental_speed)[0]
+
+    print(ccc(phase_speed_6pi_in, experimental_speed))
 
     ax.grid()
     ax.legend(prop={'size': 8})

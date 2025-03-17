@@ -127,13 +127,7 @@ if __name__ == "__main__":
     #                                              r'$-2 \cdot 6\pi$',
     #         linewidth=1.2)
 
-    ax.errorbar(freqs, phase_speed_5pi, yerr=dv_avg_5_pi, fmt='r--',
-                linewidth=1.2, label=r'Extracted speed, shift = $-2 \cdot '
-                                     r'5\pi$')
 
-    ax.errorbar(freqs, phase_speed_6pi, yerr=dv_avg_6_pi, fmt='b--',
-                linewidth=1.2, label=r'Extracted speed, shift = $-2 \cdot '
-                                     r'6\pi$')
 
     ax.plot(freqs, experimental_speed, 'k-', label='Experimental speed',
             linewidth=1.3)

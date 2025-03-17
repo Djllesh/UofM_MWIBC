@@ -1,5 +1,5 @@
 """
-Prykhodko Illia
+Illia Prykhodko
 University of Manitoba
 October 6, 2024
 """
