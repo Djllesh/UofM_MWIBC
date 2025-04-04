@@ -6,6 +6,7 @@ November 8th, 2018
 
 import numpy as np
 import scipy.constants
+
 from umbms.beamform.utility import get_xy_arrs
 
 ###############################################################################
@@ -57,10 +58,26 @@ def get_roi(roi_rho, m_size, arr_rho):
     return roi
 
 
-def get_breast(*, m_size=500, ant_rad=0.21, adi_rad=0.00, adi_x=0.0, adi_y=0.0,
-               fib_rad=0.0, fib_x=0.0, fib_y=0.0, tum_rad=0.0, tum_x=0.0375,
-               tum_y=0.0375, skin_thickness=0.0, adi_perm=6.4, fib_perm=42.2,
-               tum_perm=75.4, skin_perm=40, air_perm=1.0):
+def get_breast(
+    *,
+    m_size=500,
+    ant_rad=0.21,
+    adi_rad=0.00,
+    adi_x=0.0,
+    adi_y=0.0,
+    fib_rad=0.0,
+    fib_x=0.0,
+    fib_y=0.0,
+    tum_rad=0.0,
+    tum_x=0.0375,
+    tum_y=0.0375,
+    skin_thickness=0.0,
+    adi_perm=6.4,
+    fib_perm=42.2,
+    tum_perm=75.4,
+    skin_perm=40,
+    air_perm=1.0,
+):
     """Returns a 2D breast model
 
     Returns a breast model containing selected tissue components.
@@ -123,9 +140,9 @@ def get_breast(*, m_size=500, ant_rad=0.21, adi_rad=0.00, adi_x=0.0, adi_y=0.0,
 
     # Compute the pixel distances from the center of each tissue
     # component (excluding skin)
-    pix_dist_from_adi = np.sqrt((pix_xs - adi_x)**2 + (pix_ys - adi_y)**2)
-    pix_dist_from_fib = np.sqrt((pix_xs - fib_x)**2 + (pix_ys - fib_y)**2)
-    pix_dist_from_tum = np.sqrt((pix_xs - tum_x)**2 + (pix_ys - tum_y)**2)
+    pix_dist_from_adi = np.sqrt((pix_xs - adi_x) ** 2 + (pix_ys - adi_y) ** 2)
+    pix_dist_from_fib = np.sqrt((pix_xs - fib_x) ** 2 + (pix_ys - fib_y) ** 2)
+    pix_dist_from_tum = np.sqrt((pix_xs - tum_x) ** 2 + (pix_ys - tum_y) ** 2)
 
     # Initialize breast model to be uniform background medium
     breast_model = air_perm * np.ones([m_size, m_size])

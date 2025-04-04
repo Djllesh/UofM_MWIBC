@@ -4,12 +4,12 @@ University of Manitoba
 June 3rd, 2019
 """
 
-import numpy as np
-import multiprocessing as mp
 from functools import partial
+
+import numpy as np
+
 from umbms.beamform.time_delay import get_pix_ts
 from umbms.beamform.utility import get_fd_phase_factor
-
 
 ###############################################################################
 
@@ -44,8 +44,7 @@ def fd_fwd_proj(model, phase_fac, dv, freqs, worker_pool):
     n_fs = np.size(freqs)
 
     # Create function for parallel processing
-    parallel_func = partial(_parallel_fd_fwd_proj, freqs,
-                            phase_fac, model, dv)
+    parallel_func = partial(_parallel_fd_fwd_proj, freqs, phase_fac, model, dv)
 
     iterable_idxs = range(n_fs)  # Get indices to iterate over
 
@@ -57,10 +56,25 @@ def fd_fwd_proj(model, phase_fac, dv, freqs, worker_pool):
     return fwds
 
 
-def fd_fwd_proj_vel_freq(model, int_f_xs, int_f_ys, int_b_xs, int_b_ys,
-                         velocities, ant_rad, m_size, roi_rad, air_speed, dv,
-                         freqs, *, adi_rad=0, mid_breast_max=0.0,
-                         mid_breast_min=0.0, worker_pool=None):
+def fd_fwd_proj_vel_freq(
+    model,
+    int_f_xs,
+    int_f_ys,
+    int_b_xs,
+    int_b_ys,
+    velocities,
+    ant_rad,
+    m_size,
+    roi_rad,
+    air_speed,
+    dv,
+    freqs,
+    *,
+    adi_rad=0,
+    mid_breast_max=0.0,
+    mid_breast_min=0.0,
+    worker_pool=None,
+):
     """Forward project in the frequency domain
 
     Parameters
@@ -111,10 +125,24 @@ def fd_fwd_proj_vel_freq(model, int_f_xs, int_f_ys, int_b_xs, int_b_ys,
     n_fs = np.size(freqs)
 
     # Create function for parallel processing
-    parallel_func = partial(_parallel_fd_fwd_proj_vel_freq, freqs,
-                            int_f_xs, int_f_ys, int_b_xs, int_b_ys, velocities,
-                            ant_rad, m_size, roi_rad, air_speed, adi_rad,
-                            mid_breast_max, mid_breast_min, model, dv)
+    parallel_func = partial(
+        _parallel_fd_fwd_proj_vel_freq,
+        freqs,
+        int_f_xs,
+        int_f_ys,
+        int_b_xs,
+        int_b_ys,
+        velocities,
+        ant_rad,
+        m_size,
+        roi_rad,
+        air_speed,
+        adi_rad,
+        mid_breast_max,
+        mid_breast_min,
+        model,
+        dv,
+    )
 
     iterable_idxs = range(n_fs)  # Get indices to iterate over
 
@@ -159,10 +187,24 @@ def _parallel_fd_fwd_proj(freqs, phase_fac, model, dv, ff):
     return p_resp
 
 
-def _parallel_fd_fwd_proj_vel_freq(freqs, int_f_xs, int_f_ys, int_b_xs,
-                                   int_b_ys, velocities, ant_rad, m_size,
-                                   roi_rad, air_speed, adi_rad, mid_breast_max,
-                                   mid_breast_min, model, dv, ff):
+def _parallel_fd_fwd_proj_vel_freq(
+    freqs,
+    int_f_xs,
+    int_f_ys,
+    int_b_xs,
+    int_b_ys,
+    velocities,
+    ant_rad,
+    m_size,
+    roi_rad,
+    air_speed,
+    adi_rad,
+    mid_breast_max,
+    mid_breast_min,
+    model,
+    dv,
+    ff,
+):
     """Parallel processing function to compute projection at freq ff
 
     Parameters
@@ -206,13 +248,20 @@ def _parallel_fd_fwd_proj_vel_freq(freqs, int_f_xs, int_f_ys, int_b_xs,
         Forward projection at frequency ff
     """
 
-    pix_ts, _, _, _, _ = get_pix_ts(ant_rad=ant_rad, m_size=m_size,
-                                roi_rad=roi_rad, air_speed=air_speed,
-                                breast_speed=velocities[ff], adi_rad=adi_rad,
-                                mid_breast_max=mid_breast_max,
-                                mid_breast_min=mid_breast_min,
-                                int_f_xs=int_f_xs, int_f_ys=int_f_ys,
-                                int_b_xs=int_b_xs, int_b_ys=int_b_ys)
+    pix_ts, _, _, _, _ = get_pix_ts(
+        ant_rad=ant_rad,
+        m_size=m_size,
+        roi_rad=roi_rad,
+        air_speed=air_speed,
+        breast_speed=velocities[ff],
+        adi_rad=adi_rad,
+        mid_breast_max=mid_breast_max,
+        mid_breast_min=mid_breast_min,
+        int_f_xs=int_f_xs,
+        int_f_ys=int_f_ys,
+        int_b_xs=int_b_xs,
+        int_b_ys=int_b_ys,
+    )
 
     phase_fac = get_fd_phase_factor(pix_ts)
 

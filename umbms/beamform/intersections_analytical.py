@@ -48,7 +48,8 @@ def find_xy_ant_bound_circle(ant_xs, ant_ys, n_ant_pos, pix_xs, pix_ys,
 
     # initializing arrays for storing intersection coordinates
     # front intersection - closer to antenna
-    int_f_xs = np.empty([len(ant_xs), len(pix_xs), len(pix_ys)], dtype=float)
+    int_f_xs = np.empty([len(ant_xs), len(pix_xs), len(pix_ys)],
+                        dtype=float)
     int_f_ys = np.empty_like(int_f_xs)
 
     # back intersection - farther from antenna

@@ -5,8 +5,8 @@ November 7, 2018
 """
 
 import numpy as np
-from umbms.beamform.utility import get_scan_times
 
+from umbms.beamform.utility import get_scan_times
 
 ###############################################################################
 
@@ -50,21 +50,19 @@ def iczt(fd_data, ini_t, fin_t, n_time_pts, ini_f, fin_f, axis=0):
     n_dimensions = len(np.shape(fd_data))
 
     # Assert fd_data is 1D or 2D
-    assert n_dimensions in [1, 2], 'Error: fd_data not 1D or 2D array'
+    assert n_dimensions in [1, 2], "Error: fd_data not 1D or 2D array"
 
     if n_dimensions == 2:
-
-        iczt_data = _iczt_two_dimension(fd_data, ini_t, fin_t, n_time_pts,
-                                        ini_f, fin_f, axis=axis)
+        iczt_data = _iczt_two_dimension(
+            fd_data, ini_t, fin_t, n_time_pts, ini_f, fin_f, axis=axis
+        )
     else:
-
         # Find the number of frequencies use
         n_freqs = np.size(fd_data)
 
         # Find the conversion factor to convert from time-of-response to
         # angle around the unit circle
-        time_to_angle = (2 * np.pi) / np.max(get_scan_times(ini_f, fin_f,
-                                                            n_freqs))
+        time_to_angle = (2 * np.pi) / np.max(get_scan_times(ini_f, fin_f, n_freqs))
 
         # Find the parameters for computing the ICZT over the specified
         # time window
@@ -81,7 +79,7 @@ def iczt(fd_data, ini_t, fin_t, n_time_pts, ini_f, fin_f, axis=0):
         time_pts = np.arange(n_time_pts)  # Get time-index vector
 
         # Find the z-value matrix, to facilitate vectorized computation
-        z_vals = exp_theta_naught * exp_phi_naught ** time_pts
+        z_vals = exp_theta_naught * exp_phi_naught**time_pts
         zs_power = np.power(z_vals[None, :], dummy_vec[:, None])
 
         # Compute the 1D ICZT, converting this frequency domain data
@@ -89,8 +87,9 @@ def iczt(fd_data, ini_t, fin_t, n_time_pts, ini_f, fin_f, axis=0):
         iczt_data = _iczt_one_dimension(fd_data[:], zs_power, n_freqs)
 
     # Apply phase compensation
-    iczt_data = phase_compensate(iczt_data, ini_f=ini_f, ini_t=ini_t,
-                                 fin_t=fin_t, n_time_pts=n_time_pts)
+    iczt_data = phase_compensate(
+        iczt_data, ini_f=ini_f, ini_t=ini_t, fin_t=fin_t, n_time_pts=n_time_pts
+    )
 
     return iczt_data
 
@@ -98,8 +97,7 @@ def iczt(fd_data, ini_t, fin_t, n_time_pts, ini_f, fin_f, axis=0):
 ###############################################################################
 
 
-def _iczt_two_dimension(fd_data, ini_t, fin_t, n_time_pts, ini_f, fin_f,
-                        axis=0):
+def _iczt_two_dimension(fd_data, ini_t, fin_t, n_time_pts, ini_f, fin_f, axis=0):
     """Computes the ICZT of a 2D-array
 
     Computes the inverse chirp z-transform (ICZT) on a 2D array in the
@@ -135,7 +133,7 @@ def _iczt_two_dimension(fd_data, ini_t, fin_t, n_time_pts, ini_f, fin_f,
     """
 
     # Assert that this is only for 2D arrays
-    assert axis in [0, 1], 'Axis error: axis must be in [0, 1]'
+    assert axis in [0, 1], "Axis error: axis must be in [0, 1]"
 
     # Find the number of frequencies use
     n_freqs = np.size(fd_data, axis=0)
@@ -164,30 +162,23 @@ def _iczt_two_dimension(fd_data, ini_t, fin_t, n_time_pts, ini_f, fin_f,
 
     # If wanting to compute the transform along the 0th axis
     if axis == 0:
-
         # Init return arr
-        iczt_data = np.zeros([n_time_pts, np.size(fd_data, axis=1)],
-                             dtype=np.complex64)
+        iczt_data = np.zeros([n_time_pts, np.size(fd_data, axis=1)], dtype=np.complex64)
 
         # For every point along the other dimension
         for ii in range(np.size(fd_data, axis=1)):
-
             # Compute the 1D ICZT, converting this frequency domain data
             # to the time domain
-            iczt_data[:, ii] = _iczt_one_dimension(fd_data[:, ii], zs_power,
-                                                   n_freqs)
+            iczt_data[:, ii] = _iczt_one_dimension(fd_data[:, ii], zs_power, n_freqs)
 
     else:  # If wanting to compute along the 1st axis
-        iczt_data = np.zeros([np.size(fd_data, axis=0), n_time_pts],
-                             dtype=np.complex64)
+        iczt_data = np.zeros([np.size(fd_data, axis=0), n_time_pts], dtype=np.complex64)
 
         # For every point along the other dimension
         for ii in range(np.size(fd_data, axis=0)):
-
             # Compute the 1D ICZT, converting this frequency domain data
             # to the time domain
-            iczt_data[ii, :] = _iczt_one_dimension(fd_data[ii, :], zs_power,
-                                                   n_freqs)
+            iczt_data[ii, :] = _iczt_one_dimension(fd_data[ii, :], zs_power, n_freqs)
 
     return iczt_data
 
@@ -256,11 +247,9 @@ def phase_compensate(td_data, ini_f, ini_t, fin_t, n_time_pts):
     phase_fac = np.exp(1j * 2 * np.pi * ini_f * time_vec)
 
     if n_dim == 1:  # If td_data was 1D arr
-
         compensated_td_data = td_data * phase_fac  # Apply to measured data
 
     else:  # If td_data was 2D arr
-
         compensated_td_data = td_data * phase_fac[:, None]
 
     return compensated_td_data
