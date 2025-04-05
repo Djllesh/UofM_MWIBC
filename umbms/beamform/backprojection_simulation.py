@@ -242,20 +242,28 @@ if __name__ == "__main__":
     fan_rotation_increment = 360 / len(x_ants)
     fan_sensor_spacing = fan_rotation_increment / 2
 
-    # image = eng.ifanbeam(ant_speed.T, D, 'FanRotationIncrement',
-    #                      fan_rotation_increment, 'FanSensorSpacing',
-    #                      fan_sensor_spacing, 'OutputSize', 150., 'Filter',
-    #                      'Hamming')
+    image = eng.ifanbeam(
+        ant_speed.T,
+        D,
+        "FanRotationIncrement",
+        fan_rotation_increment,
+        "FanSensorSpacing",
+        fan_sensor_spacing,
+        "OutputSize",
+        150.0,
+        "Filter",
+        "Hamming",
+    )
 
-    image = eng.iradon(ant_speed.T, fan_sensor_spacing * 2)
+    # image = eng.iradon(ant_speed.T, fan_sensor_spacing * 2)
 
     a = 3 / (np.max(image) - np.min(image))
     b = -a * np.min(image)
     image = a * image + b
 
-    # img = plt.imshow(image)
-    #
-    # plt.colorbar(img)
+    img = plt.imshow(image)
+
+    plt.colorbar(img)
 
     # plt.plot(np.linspace(-1, 1, len(image[0])),
     #          image[np.size(image, axis=0)//2, :])

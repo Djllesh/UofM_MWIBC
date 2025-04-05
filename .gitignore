@@ -2,6 +2,7 @@
 *__pycache__*
 *.png
 *.tex
+*.csv
 .stfolder
 .stignore
 *sync-conflict*
