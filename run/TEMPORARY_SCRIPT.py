@@ -195,4 +195,3 @@ if __name__ == "__main__":
     plt.plot(freqs, np.abs(rec_fd), "r--", label="recovered")
     plt.legend()
     plt.show()
-
