@@ -3,6 +3,7 @@ Illia Prykhodko
 University of Manitoba
 November 17, 2022
 """
+
 import os
 import numpy as np
 from scipy import ndimage
@@ -31,8 +32,9 @@ def rot(theta):
     rot_matr : array_like 2x2
         Rotation matrix
     """
-    return np.array([[np.cos(theta), -np.sin(theta)],
-                     [np.sin(theta), np.cos(theta)]])
+    return np.array(
+        [[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]]
+    )
 
 
 def find_boundary(img, roi_rad, n_slices=50, threshold=0.005):
@@ -67,8 +69,9 @@ def find_boundary(img, roi_rad, n_slices=50, threshold=0.005):
 
     for i in range(n_slices):
         # create a temporary rotated image
-        img_to_slice = ndimage.rotate(img, i * theta,
-                                      reshape=False, prefilter=False)
+        img_to_slice = ndimage.rotate(
+            img, i * theta, reshape=False, prefilter=False
+        )
 
         # take a slice right in the middle that corresponds to y = 0
         slice = img_to_slice[np.size(img, axis=0) // 2, :]
@@ -89,13 +92,16 @@ def find_boundary(img, roi_rad, n_slices=50, threshold=0.005):
         to_store = np.matmul(rot(np.deg2rad(-theta * i)), to_rot)
 
         if i != 0:
-            distance = np.sqrt((to_store[0, 0] - bound_x[i - 1]) ** 2 +
-                               (to_store[1, 0] - bound_y[i - 1]) ** 2)
+            distance = np.sqrt(
+                (to_store[0, 0] - bound_x[i - 1]) ** 2
+                + (to_store[1, 0] - bound_y[i - 1]) ** 2
+            )
 
             if distance > threshold:
                 prev_peak = np.array([[bound_x[i - 1]], [bound_y[i - 1]]])
-                new_idx = find_peak_threshold(slice, -i * theta, dx, prev_peak,
-                                              threshold=threshold)
+                new_idx = find_peak_threshold(
+                    slice, -i * theta, dx, prev_peak, threshold=threshold
+                )
 
                 x = (new_idx - 74) * dx
                 to_store = np.matmul(rot(np.deg2rad(-i * theta)), [[x], [0]])
@@ -138,14 +144,15 @@ def find_peak_threshold(slice, theta, dx, prev_peak, threshold):
     under_threshold = np.array([], dtype=int)
 
     for peak_idx in peaks:  # for each index
-
         # find x_coordinate in spacial units
         x = (peak_idx - 74) * dx
         # find coordinates of the current peak with rotation
         peak_xy = np.matmul(rot(np.deg2rad(theta)), [[x], [0]])
 
-        current_distance = np.sqrt((peak_xy[0, 0] - prev_peak[0, 0]) ** 2 +
-                                   (peak_xy[1, 0] - prev_peak[1, 0]) ** 2)
+        current_distance = np.sqrt(
+            (peak_xy[0, 0] - prev_peak[0, 0]) ** 2
+            + (peak_xy[1, 0] - prev_peak[1, 0]) ** 2
+        )
 
         # append to a list of peaks that satisfy threshold
         if current_distance < threshold:
@@ -161,8 +168,10 @@ def find_peak_threshold(slice, theta, dx, prev_peak, threshold):
     # iterate over all found indices
     for idx in under_threshold:
         peak_xy = np.matmul(rot(np.deg2rad(theta)), [[slice[idx]], [0]])
-        current_distance = np.sqrt((peak_xy[0, 0] - prev_peak[0, 0]) ** 2 +
-                                   (peak_xy[1, 0] - prev_peak[1, 0]) ** 2)
+        current_distance = np.sqrt(
+            (peak_xy[0, 0] - prev_peak[0, 0]) ** 2
+            + (peak_xy[1, 0] - prev_peak[1, 0]) ** 2
+        )
 
         if current_distance < min_dist:  # update minimal distance index
             min_dist = current_distance
@@ -185,7 +194,7 @@ def cart_to_polar(x_coords, y_coords):
     ----------
     """
 
-    rho = np.sqrt(x_coords ** 2 + y_coords ** 2)
+    rho = np.sqrt(x_coords**2 + y_coords**2)
     phi = np.arctan2(y_coords, x_coords)
     negative = phi < 0
     phi[negative] = 2 * np.pi + phi[negative]
@@ -211,13 +220,13 @@ def sort_polar_angle(rho, phi):
     """
 
     list_of_tuples = []
-    for (rh, ph) in zip(rho, phi):
+    for rh, ph in zip(rho, phi):
         list_of_tuples.append((rh, ph))
 
-    dtype = [('rho', float), ('phi', float)]
+    dtype = [("rho", float), ("phi", float)]
     ndarray_of_tuples = np.array(list_of_tuples, dtype=dtype)
 
-    ndarray_of_tuples = np.sort(ndarray_of_tuples, order='phi')
+    ndarray_of_tuples = np.sort(ndarray_of_tuples, order="phi")
 
     for i in range(np.size(rho)):
         rho[i] = ndarray_of_tuples[i][0]
@@ -289,10 +298,9 @@ def shift_rot_cs(cs, delta_x, delta_y, delta_phi):
     xs = rhos * np.cos(angs)
     ys = rhos * np.sin(angs)
 
-    xs_shift_rot, ys_shift_rot = shift_and_rotate(xs=xs, ys=ys,
-                                                  delta_x=delta_x,
-                                                  delta_y=delta_y,
-                                                  delta_phi=delta_phi)
+    xs_shift_rot, ys_shift_rot = shift_and_rotate(
+        xs=xs, ys=ys, delta_x=delta_x, delta_y=delta_y, delta_phi=delta_phi
+    )
 
     rho_shift_rot, phi_shift_rot = cart_to_polar(xs_shift_rot, ys_shift_rot)
     cs_shifted = polar_fit_cs(rho_shift_rot, phi_shift_rot)
@@ -319,9 +327,10 @@ def get_binary_mask(cs, m_size, roi_rad, precision_scaling_factor=1):
     mask : array_like
         Binary mask
     """
-    pix_xs, pix_ys = get_xy_arrs(m_size=m_size * precision_scaling_factor,
-                                 roi_rad=roi_rad)
-    rho = np.sqrt(pix_xs ** 2 + pix_ys ** 2)
+    pix_xs, pix_ys = get_xy_arrs(
+        m_size=m_size * precision_scaling_factor, roi_rad=roi_rad
+    )
+    rho = np.sqrt(pix_xs**2 + pix_ys**2)
     phi = np.arctan2(pix_ys, pix_xs)
     negative = phi < 0
     phi[negative] = 2 * np.pi + phi[negative]
@@ -410,13 +419,20 @@ def find_centre_of_mass_from_cs(cs, n_points=200):
     return x_cm, y_cm
 
 
-def prepare_fd_data(adi_emp_cropped, ini_t, fin_t, n_time_pts, ini_f, fin_f,
-                    ant_rad, adi_rad):
+def prepare_fd_data(
+    adi_emp_cropped, ini_t, fin_t, n_time_pts, ini_f, fin_f, ant_rad, adi_rad
+):
     """Prepares unorganized data for boundary detection"""
 
     # convert frequency-domain data to time-domain
-    td = iczt(adi_emp_cropped, ini_t=ini_t, fin_t=fin_t, n_time_pts=n_time_pts,
-              ini_f=ini_f, fin_f=fin_f)
+    td = iczt(
+        adi_emp_cropped,
+        ini_t=ini_t,
+        fin_t=fin_t,
+        n_time_pts=n_time_pts,
+        ini_f=ini_f,
+        fin_f=fin_f,
+    )
     # time response data
     ts = np.linspace(ini_t, fin_t, n_time_pts)
     # Time gating the data to strip away the early noise
@@ -430,12 +446,25 @@ def prepare_fd_data(adi_emp_cropped, ini_t, fin_t, n_time_pts, ini_f, fin_f,
     return td, ts, kernel
 
 
-def get_boundary_iczt(adi_emp_cropped, ant_rad, *, adi_rad=0, n_ant_pos=72,
-                      ini_ant_ang=-136.0, ini_t=0.5e-9, fin_t=5.5e-9,
-                      n_time_pts=700, ini_f=2e9, fin_f=9e9, peak_threshold=10,
-                      plt_slices=False, plot_sino=False, out_dir='',
-                      cs_shift=None):
-    """ Returns a CubicSpline interpolation
+def get_boundary_iczt(
+    adi_emp_cropped,
+    ant_rad,
+    *,
+    adi_rad=0,
+    n_ant_pos=72,
+    ini_ant_ang=-136.0,
+    ini_t=0.5e-9,
+    fin_t=5.5e-9,
+    n_time_pts=700,
+    ini_f=2e9,
+    fin_f=9e9,
+    peak_threshold=10,
+    plt_slices=False,
+    plot_sino=False,
+    out_dir="",
+    cs_shift=None,
+):
+    """Returns a CubicSpline interpolation
     function that approximates phantom boundary from a time-domain
     converted data
 
@@ -475,20 +504,32 @@ def get_boundary_iczt(adi_emp_cropped, ant_rad, *, adi_rad=0, n_ant_pos=72,
 
     # Prepare the data to obtain time-domain scan data, time points and time
     # aligned kernel for cross-correlation
-    td, ts, kernel = prepare_fd_data(adi_emp_cropped=adi_emp_cropped,
-                                     ini_t=ini_t, fin_t=fin_t,
-                                     n_time_pts=n_time_pts, ini_f=ini_f,
-                                     fin_f=fin_f, ant_rad=ant_rad,
-                                     adi_rad=adi_rad)
+    td, ts, kernel = prepare_fd_data(
+        adi_emp_cropped=adi_emp_cropped,
+        ini_t=ini_t,
+        fin_t=fin_t,
+        n_time_pts=n_time_pts,
+        ini_f=ini_f,
+        fin_f=fin_f,
+        ant_rad=ant_rad,
+        adi_rad=adi_rad,
+    )
     # find all rho and ToR (time-of-response) values
     # on each antenna position
-    rho, ToR = rho_ToR_from_td(td=td, ts=ts, kernel=kernel, ant_rad=ant_rad,
-                               peak_threshold=peak_threshold,
-                               plt_slices=plt_slices, out_dir=out_dir)
+    rho, ToR = rho_ToR_from_td(
+        td=td,
+        ts=ts,
+        kernel=kernel,
+        ant_rad=ant_rad,
+        peak_threshold=peak_threshold,
+        plt_slices=plt_slices,
+        out_dir=out_dir,
+    )
 
     # polar angle data
-    angles = np.linspace(0, np.deg2rad(355), n_ant_pos) \
-             + np.deg2rad(ini_ant_ang)
+    angles = np.linspace(0, np.deg2rad(355), n_ant_pos) + np.deg2rad(
+        ini_ant_ang
+    )
     # CubicSpline interpolation on a given set of data
     cs = polar_fit_cs(rho, angles)
 
@@ -504,12 +545,19 @@ def get_boundary_iczt(adi_emp_cropped, ant_rad, *, adi_rad=0, n_ant_pos=72,
         plt_extent = [0, 355, ts_plt[-1], ts_plt[0]]
         plt_aspect_ratio = 355 / ts_plt[-1]
 
-        show_sinogram(data=td_plt, aspect_ratio=plt_aspect_ratio,
-                      extent=plt_extent, title='Boundary check',
-                      out_dir=out_dir,
-                      save_str='boundary_vs_sino_no_shift.png',
-                      ts=ts_plt, transparent=False, bound_angles=plt_angles,
-                      bound_times=ToR, bound_color='r')
+        show_sinogram(
+            data=td_plt,
+            aspect_ratio=plt_aspect_ratio,
+            extent=plt_extent,
+            title="Boundary check",
+            out_dir=out_dir,
+            save_str="boundary_vs_sino_no_shift.png",
+            ts=ts_plt,
+            transparent=False,
+            bound_angles=plt_angles,
+            bound_times=ToR,
+            bound_color="r",
+        )
 
         if cs_shift is not None:
             xs_shifted = rho * np.cos(angles) + cs_shift[0]
@@ -517,13 +565,19 @@ def get_boundary_iczt(adi_emp_cropped, ant_rad, *, adi_rad=0, n_ant_pos=72,
             rho_shifted, phi_shifted = cart_to_polar(xs_shifted, ys_shifted)
             tr_shifted = (2 / __VAC_SPEED) * (ant_rad - rho_shifted) * 1e9
 
-            show_sinogram(data=td_plt, aspect_ratio=plt_aspect_ratio,
-                          extent=plt_extent, title='Boundary check',
-                          out_dir=out_dir,
-                          save_str='boundary_vs_sino_shift.png',
-                          ts=ts_plt, transparent=False,
-                          bound_angles=plt_angles,
-                          bound_times=tr_shifted, bound_color='b')
+            show_sinogram(
+                data=td_plt,
+                aspect_ratio=plt_aspect_ratio,
+                extent=plt_extent,
+                title="Boundary check",
+                out_dir=out_dir,
+                save_str="boundary_vs_sino_shift.png",
+                ts=ts_plt,
+                transparent=False,
+                bound_angles=plt_angles,
+                bound_times=tr_shifted,
+                bound_color="b",
+            )
 
     # x = rho * np.cos(angles)
     # y = rho * np.sin(angles)
@@ -576,39 +630,42 @@ def time_aligned_kernel(td):
     # Aligning wrt to the first antenna position
     time_aligned_signals[:, 0] = np.abs(td[:, 0])
     # Find the time of response for the first antenna position
-    first_peak, _ = find_peaks(time_aligned_signals[:, 0],
-                               height=np.max(
-                                   time_aligned_signals[:, 0]) - 1e-9)
+    first_peak, _ = find_peaks(
+        time_aligned_signals[:, 0],
+        height=np.max(time_aligned_signals[:, 0]) - 1e-9,
+    )
 
     # for each antenna position
     for ant_pos in range(1, np.size(td, axis=1), 1):
         # find the max intensity ToR
-        signal_peak, _ = find_peaks(np.abs(td[:, ant_pos]),
-                                    np.max(np.abs(td[:, ant_pos])) - 1e-9)
+        signal_peak, _ = find_peaks(
+            np.abs(td[:, ant_pos]), np.max(np.abs(td[:, ant_pos])) - 1e-9
+        )
         # if the ToR is later
         if signal_peak > first_peak:
             shift = signal_peak - first_peak
             # then on this position fill from the start of the array to
             # the position *shift* units back from the end
-            time_aligned_signals[:np.size(time_aligned_signals, axis=0)
-                                  - shift[0], ant_pos] = \
-                np.abs(td[shift[0]:, ant_pos])
+            time_aligned_signals[
+                : np.size(time_aligned_signals, axis=0) - shift[0], ant_pos
+            ] = np.abs(td[shift[0] :, ant_pos])
         # if the ToR is earlier
         else:
             shift = first_peak - signal_peak
             # then on this position fill from the *shift* index to the
             # end of the array
-            time_aligned_signals[shift[0]:, ant_pos] = \
-                np.abs(td[:np.size(time_aligned_signals, axis=0) - shift[0],
-                       ant_pos])
+            time_aligned_signals[shift[0] :, ant_pos] = np.abs(
+                td[: np.size(time_aligned_signals, axis=0) - shift[0], ant_pos]
+            )
 
     # obtain the kernel by averaging
     kernel = np.average(time_aligned_signals, axis=1)
     return kernel
 
 
-def rho_ToR_from_td(td, ts, kernel, ant_rad, peak_threshold,
-                    plt_slices, out_dir):
+def rho_ToR_from_td(
+    td, ts, kernel, ant_rad, peak_threshold, plt_slices, out_dir
+):
     """Completes the CMPPS routine, returns the breast phantom boundary
     as an array of rho and time responses
 
@@ -649,16 +706,15 @@ def rho_ToR_from_td(td, ts, kernel, ant_rad, peak_threshold,
     previous_peak_idx = 0
 
     for ant_pos in range(np.size(td, axis=1)):
-
         # -------PEAK SEARCH--------- #
 
         # corresponding intensities
         position = np.abs(td[:, ant_pos])
         # correlation
-        corr = correlate(position, kernel, 'same')
+        corr = correlate(position, kernel, "same")
         # resizing correlation back corresponding to the
         # antenna position array length
-        lags = correlation_lags(len(position), len(kernel), 'same')
+        lags = correlation_lags(len(position), len(kernel), "same")
         max_corr = np.max(corr)
         corr_peaks, _ = find_peaks(corr, height=max_corr - 1e-9)
 
@@ -674,8 +730,10 @@ def rho_ToR_from_td(td, ts, kernel, ant_rad, peak_threshold,
         peaks, _ = find_peaks(position)
         peak = peaks[np.argmin(np.abs(peaks - approx_peak_idx))]
         # Correlation-matching peak proximity selection (CMPPS)
-        if previous_peak_idx == 0 or np.abs(peak - previous_peak_idx) > \
-                peak_threshold:
+        if (
+            previous_peak_idx == 0
+            or np.abs(peak - previous_peak_idx) > peak_threshold
+        ):
             peak = approx_peak_idx
 
         # --------POLAR RADIUS------- #
@@ -690,9 +748,20 @@ def rho_ToR_from_td(td, ts, kernel, ant_rad, peak_threshold,
         rho = np.append(rho, rad)
 
         if plt_slices:
-            plot_slices(position, peaks, peak, approx_peak_idx, kernel,
-                        avg_peak, lags, corr, corr_peaks, indx_lag, ant_pos,
-                        out_dir)
+            plot_slices(
+                position,
+                peaks,
+                peak,
+                approx_peak_idx,
+                kernel,
+                avg_peak,
+                lags,
+                corr,
+                corr_peaks,
+                indx_lag,
+                ant_pos,
+                out_dir,
+            )
 
         # for next iteration
         previous_peak_idx = peak
@@ -703,8 +772,20 @@ def rho_ToR_from_td(td, ts, kernel, ant_rad, peak_threshold,
     return rho, ToR
 
 
-def plot_slices(position, peaks, peak, approx_peak_idx, kernel, avg_peak, lags,
-                corr, corr_peaks, indx_lag, ant_pos, out_dir):
+def plot_slices(
+    position,
+    peaks,
+    peak,
+    approx_peak_idx,
+    kernel,
+    avg_peak,
+    lags,
+    corr,
+    corr_peaks,
+    indx_lag,
+    ant_pos,
+    out_dir,
+):
     """Produces the plot of the antenna position slice with a kernel and
     a result of correlation
 
@@ -712,25 +793,35 @@ def plot_slices(position, peaks, peak, approx_peak_idx, kernel, avg_peak, lags,
 
     fig, (ax1, ax2, ax3) = plt.subplots(3, figsize=(9, 10), dpi=100)
 
-    ax1.plot(np.abs(position), 'b-')
-    ax1.plot(peaks, np.abs(position[peaks]), 'rx', label='Peaks')
-    ax1.plot(peak, np.abs(position[peak]), 'yx', label='Chosen peak')
-    ax1.plot(approx_peak_idx, np.abs(position[approx_peak_idx]), 'mx',
-             label='Approximation '
-                   'response')
-    ax1.set_title('Antenna position slice')
-    ax2.plot(np.abs(kernel), 'r-')
-    ax2.plot(avg_peak, np.abs(kernel[avg_peak]), 'kx',
-             label='Average signal peak = %d' %
-                   avg_peak)
-    ax2.set_title('Average signal for all positions')
-    ax3.plot(lags, np.abs(corr), 'g-')
-    ax3.plot(indx_lag, np.abs(corr[corr_peaks]), 'cx',
-             label='Correlation peak = %d\nCMPPS: %d\nApproximation: %d'
-                   % (indx_lag, peak, approx_peak_idx))
-    ax3.set_title('Correlation of both signals')
+    ax1.plot(np.abs(position), "b-")
+    ax1.plot(peaks, np.abs(position[peaks]), "rx", label="Peaks")
+    ax1.plot(peak, np.abs(position[peak]), "yx", label="Chosen peak")
+    ax1.plot(
+        approx_peak_idx,
+        np.abs(position[approx_peak_idx]),
+        "mx",
+        label="Approximation response",
+    )
+    ax1.set_title("Antenna position slice")
+    ax2.plot(np.abs(kernel), "r-")
+    ax2.plot(
+        avg_peak,
+        np.abs(kernel[avg_peak]),
+        "kx",
+        label="Average signal peak = %d" % avg_peak,
+    )
+    ax2.set_title("Average signal for all positions")
+    ax3.plot(lags, np.abs(corr), "g-")
+    ax3.plot(
+        indx_lag,
+        np.abs(corr[corr_peaks]),
+        "cx",
+        label="Correlation peak = %d\nCMPPS: %d\nApproximation: %d"
+        % (indx_lag, peak, approx_peak_idx),
+    )
+    ax3.set_title("Correlation of both signals")
     fig.legend()
-    plt.savefig(os.path.join(out_dir, 'slice_%d.png' % ant_pos))
+    plt.savefig(os.path.join(out_dir, "slice_%d.png" % ant_pos))
     plt.close(fig)
 
 
@@ -799,10 +890,20 @@ def phase_shift(fd, delta_t, freqs):
     return shifted_fd
 
 
-def fd_differential_align(fd_emp_ref_left, fd_emp_ref_right, ant_rad=0.0,
-                          ini_t=0.5e-9, fin_t=5.5e-9, n_time_pts=700,
-                          ini_f=2e9, fin_f=9e9, peak_threshold=10,
-                          scan_ini_f=1e9, scan_fin_f=9e9, n_fs=1001):
+def fd_differential_align(
+    fd_emp_ref_left,
+    fd_emp_ref_right,
+    ant_rad=0.0,
+    ini_t=0.5e-9,
+    fin_t=5.5e-9,
+    n_time_pts=700,
+    ini_f=2e9,
+    fin_f=9e9,
+    peak_threshold=10,
+    scan_ini_f=1e9,
+    scan_fin_f=9e9,
+    n_fs=1001,
+):
     """Converts aligned time-responses into frequency domain
 
     https://en.wikipedia.org/wiki/Fourier_transform
@@ -850,14 +951,30 @@ def fd_differential_align(fd_emp_ref_left, fd_emp_ref_right, ant_rad=0.0,
     # Number of antenna positions
     n_ant_pos = np.size(fd_emp_ref_left, axis=1)
     # Get frequencies for phase shifting
-    freqs = retain_and_tile_freqs(scan_ini_f=scan_ini_f,
-                                  scan_fin_f=scan_fin_f, ini_f=ini_f,
-                                  n_fs=n_fs, n_ant_pos=n_ant_pos)
+    freqs = retain_and_tile_freqs(
+        scan_ini_f=scan_ini_f,
+        scan_fin_f=scan_fin_f,
+        ini_f=ini_f,
+        n_fs=n_fs,
+        n_ant_pos=n_ant_pos,
+    )
     # convert FD to TD
-    td_left = iczt(fd_emp_ref_left, ini_t=ini_t, fin_t=fin_t,
-                   n_time_pts=n_time_pts, ini_f=ini_f, fin_f=fin_f)
-    td_right = iczt(fd_emp_ref_right, ini_t=ini_t, fin_t=fin_t,
-                    n_time_pts=n_time_pts, ini_f=ini_f, fin_f=fin_f)
+    td_left = iczt(
+        fd_emp_ref_left,
+        ini_t=ini_t,
+        fin_t=fin_t,
+        n_time_pts=n_time_pts,
+        ini_f=ini_f,
+        fin_f=fin_f,
+    )
+    td_right = iczt(
+        fd_emp_ref_right,
+        ini_t=ini_t,
+        fin_t=fin_t,
+        n_time_pts=n_time_pts,
+        ini_f=ini_f,
+        fin_f=fin_f,
+    )
 
     # time response data
     ts = np.linspace(ini_t, fin_t, n_time_pts)
@@ -867,30 +984,42 @@ def fd_differential_align(fd_emp_ref_left, fd_emp_ref_right, ant_rad=0.0,
     kernel_right = time_aligned_kernel(td_right)
 
     # find all ToR values on each antenna position
-    _, ToR_left = rho_ToR_from_td(td=td_left, ts=ts, kernel=kernel_left,
-                                  ant_rad=ant_rad,
-                                  peak_threshold=peak_threshold,
-                                  plt_slices=False, out_dir='')
-    _, ToR_right = rho_ToR_from_td(td=td_right, ts=ts, kernel=kernel_right,
-                                   ant_rad=ant_rad,
-                                   peak_threshold=peak_threshold,
-                                   plt_slices=False, out_dir='')
+    _, ToR_left = rho_ToR_from_td(
+        td=td_left,
+        ts=ts,
+        kernel=kernel_left,
+        ant_rad=ant_rad,
+        peak_threshold=peak_threshold,
+        plt_slices=False,
+        out_dir="",
+    )
+    _, ToR_right = rho_ToR_from_td(
+        td=td_right,
+        ts=ts,
+        kernel=kernel_right,
+        ant_rad=ant_rad,
+        peak_threshold=peak_threshold,
+        plt_slices=False,
+        out_dir="",
+    )
     # time shifts
-    delta_t = (ToR_left - ToR_right)
+    delta_t = ToR_left - ToR_right
 
     # delta1 = delta_t[:36]
     # delta2 = delta_t[36:]
     # diff = np.abs(delta1 - delta2)
 
     # Phase shift
-    s11_aligned_right = phase_shift(fd=fd_emp_ref_right, delta_t=delta_t,
-                                    freqs=freqs)
+    s11_aligned_right = phase_shift(
+        fd=fd_emp_ref_right, delta_t=delta_t, freqs=freqs
+    )
 
     return s11_aligned_right
 
 
-def extract_delta_t_from_boundary(tor_right, cs_right_shifted, ant_rad,
-                                  n_ant_pos=72, ini_ant_ang=-136.):
+def extract_delta_t_from_boundary(
+    tor_right, cs_right_shifted, ant_rad, n_ant_pos=72, ini_ant_ang=-136.0
+):
     """
 
     Parameters
@@ -909,8 +1038,9 @@ def extract_delta_t_from_boundary(tor_right, cs_right_shifted, ant_rad,
     """
 
     # angles - real angles of antenna
-    ant_angs = np.linspace(0, np.deg2rad(355), n_ant_pos) + \
-               np.deg2rad(ini_ant_ang)
+    ant_angs = np.linspace(0, np.deg2rad(355), n_ant_pos) + np.deg2rad(
+        ini_ant_ang
+    )
     ant_angs = np.flip(ant_angs)
 
     cs_angs = np.linspace(0, np.deg2rad(360), 1000)
@@ -925,8 +1055,9 @@ def extract_delta_t_from_boundary(tor_right, cs_right_shifted, ant_rad,
     breast_ys = rhos * np.sin(cs_angs)
 
     # distances from antennas to the phantom
-    distances = np.sqrt((ant_xs[:, None] - breast_xs) ** 2 +
-                        (ant_ys[:, None] - breast_ys) ** 2)
+    distances = np.sqrt(
+        (ant_xs[:, None] - breast_xs) ** 2 + (ant_ys[:, None] - breast_ys) ** 2
+    )
 
     min_dists = np.min(distances, axis=-1)
     # convert distances to time of flight
@@ -936,9 +1067,19 @@ def extract_delta_t_from_boundary(tor_right, cs_right_shifted, ant_rad,
     return delta_t
 
 
-def phase_shift_aligned_boundaries(fd_emp_ref_right, ant_rad, cs_right_shifted,
-                                   ini_t, fin_t, n_time_pts, ini_f, fin_f,
-                                   n_fs, scan_ini_f, scan_fin_f):
+def phase_shift_aligned_boundaries(
+    fd_emp_ref_right,
+    ant_rad,
+    cs_right_shifted,
+    ini_t,
+    fin_t,
+    n_time_pts,
+    ini_f,
+    fin_f,
+    n_fs,
+    scan_ini_f,
+    scan_fin_f,
+):
     """Performs phase shifting procedure based on the spatial shift
     of the boundary
 
@@ -986,38 +1127,62 @@ def phase_shift_aligned_boundaries(fd_emp_ref_right, ant_rad, cs_right_shifted,
     #
     td, ts, kernel = prepare_fd_data(
         adi_emp_cropped=fd_emp_ref_right,
-        ini_t=ini_t, fin_t=fin_t, n_time_pts=n_time_pts,
-        ini_f=ini_f, fin_f=fin_f)
+        ini_t=ini_t,
+        fin_t=fin_t,
+        n_time_pts=n_time_pts,
+        ini_f=ini_f,
+        fin_f=fin_f,
+    )
 
     # Prepare the data to obtain time-domain scan data, time points and
     # time aligned kernel for cross-correlation
-    _, tor_right = rho_ToR_from_td(td, ts, kernel,
-                                   ant_rad=ant_rad, peak_threshold=10,
-                                   plt_slices=False, out_dir='')
+    _, tor_right = rho_ToR_from_td(
+        td,
+        ts,
+        kernel,
+        ant_rad=ant_rad,
+        peak_threshold=10,
+        plt_slices=False,
+        out_dir="",
+    )
 
     # Get frequencies for phase shifting
-    freqs = retain_and_tile_freqs(scan_ini_f=scan_ini_f,
-                                  scan_fin_f=scan_fin_f,
-                                  n_fs=n_fs, ini_f=ini_f,
-                                  n_ant_pos=n_ant_pos)
+    freqs = retain_and_tile_freqs(
+        scan_ini_f=scan_ini_f,
+        scan_fin_f=scan_fin_f,
+        n_fs=n_fs,
+        ini_f=ini_f,
+        n_ant_pos=n_ant_pos,
+    )
 
     # Find delta_t values that correspond to a spatial shift
     # of the boundary
-    delta_t = extract_delta_t_from_boundary(tor_right=tor_right,
-                                            cs_right_shifted=cs_right_shifted,
-                                            ant_rad=ant_rad)
+    delta_t = extract_delta_t_from_boundary(
+        tor_right=tor_right, cs_right_shifted=cs_right_shifted, ant_rad=ant_rad
+    )
 
     # Phase shift
-    s11_aligned_right = phase_shift(fd=fd_emp_ref_right, delta_t=delta_t,
-                                    freqs=freqs)
+    s11_aligned_right = phase_shift(
+        fd=fd_emp_ref_right, delta_t=delta_t, freqs=freqs
+    )
 
     return s11_aligned_right
 
 
-def window_skin_alignment(fd_emp_ref_right, fd_emp_ref_left, ant_rad=0.0,
-                          ini_t=0.5e-9, fin_t=5.5e-9, n_time_pts=700,
-                          ini_f=2e9, fin_f=9e9, peak_threshold=10,
-                          scan_ini_f=1e9, scan_fin_f=9e9, n_fs=1001):
+def window_skin_alignment(
+    fd_emp_ref_right,
+    fd_emp_ref_left,
+    ant_rad=0.0,
+    ini_t=0.5e-9,
+    fin_t=5.5e-9,
+    n_time_pts=700,
+    ini_f=2e9,
+    fin_f=9e9,
+    peak_threshold=10,
+    scan_ini_f=1e9,
+    scan_fin_f=9e9,
+    n_fs=1001,
+):
     """Shifts the skin response in a thin window defined by the earliest
     and latest skin signals
 
@@ -1055,10 +1220,22 @@ def window_skin_alignment(fd_emp_ref_right, fd_emp_ref_left, ant_rad=0.0,
     """
 
     # convert FD to TD
-    td_left = iczt(fd_emp_ref_left, ini_t=ini_t, fin_t=fin_t,
-                   n_time_pts=n_time_pts, ini_f=ini_f, fin_f=fin_f)
-    td_right = iczt(fd_emp_ref_right, ini_t=ini_t, fin_t=fin_t,
-                    n_time_pts=n_time_pts, ini_f=ini_f, fin_f=fin_f)
+    td_left = iczt(
+        fd_emp_ref_left,
+        ini_t=ini_t,
+        fin_t=fin_t,
+        n_time_pts=n_time_pts,
+        ini_f=ini_f,
+        fin_f=fin_f,
+    )
+    td_right = iczt(
+        fd_emp_ref_right,
+        ini_t=ini_t,
+        fin_t=fin_t,
+        n_time_pts=n_time_pts,
+        ini_f=ini_f,
+        fin_f=fin_f,
+    )
 
     # time response data
     ts = np.linspace(ini_t, fin_t, n_time_pts)
@@ -1068,14 +1245,24 @@ def window_skin_alignment(fd_emp_ref_right, fd_emp_ref_left, ant_rad=0.0,
     kernel_right = time_aligned_kernel(td_right)
 
     # find all ToR values on each antenna position
-    _, ToR_left = rho_ToR_from_td(td=td_left, ts=ts, kernel=kernel_left,
-                                  ant_rad=ant_rad,
-                                  peak_threshold=peak_threshold,
-                                  plt_slices=False, out_dir='')
-    _, ToR_right = rho_ToR_from_td(td=td_right, ts=ts, kernel=kernel_right,
-                                   ant_rad=ant_rad,
-                                   peak_threshold=peak_threshold,
-                                   plt_slices=False, out_dir='')
+    _, ToR_left = rho_ToR_from_td(
+        td=td_left,
+        ts=ts,
+        kernel=kernel_left,
+        ant_rad=ant_rad,
+        peak_threshold=peak_threshold,
+        plt_slices=False,
+        out_dir="",
+    )
+    _, ToR_right = rho_ToR_from_td(
+        td=td_right,
+        ts=ts,
+        kernel=kernel_right,
+        ant_rad=ant_rad,
+        peak_threshold=peak_threshold,
+        plt_slices=False,
+        out_dir="",
+    )
 
     # Find time shifts for the skin
     delta_t = ToR_left - ToR_right
@@ -1087,7 +1274,7 @@ def window_skin_alignment(fd_emp_ref_right, fd_emp_ref_left, ant_rad=0.0,
 
     # find a frequency that is the closest positive to zero
     # with a step size = df
-    f_0 = freqs[0] - df * (freqs[0]//df)
+    f_0 = freqs[0] - df * (freqs[0] // df)
 
     # Arrange an array of the size *7000* (a very large array)
     freqs_to_convolve = np.arange(f_0 - 3500 * df, f_0 + 3500 * df, df)
@@ -1100,7 +1287,6 @@ def window_skin_alignment(fd_emp_ref_right, fd_emp_ref_left, ant_rad=0.0,
     new_right_breast_fd = np.empty_like(fd_emp_ref_right, dtype=complex)
 
     for ii in range(np.size(fd_emp_ref_right, axis=1)):  # for each antenna pos
-
         # ================ EXTRACTING THE SKIN WINDOW ================ #
         signal_td = np.abs(td_right[:, ii])
         # Searching for the peaks of the vertically flipped signal
@@ -1118,50 +1304,69 @@ def window_skin_alignment(fd_emp_ref_right, fd_emp_ref_left, ant_rad=0.0,
         # ============= PREPARE DATA FOR THE CONVOLUTION ============= #
         # Zero-pad the signal, so it can be easily extracted from the
         # result of the convolution
-        original_signal_zero_padded = np.zeros_like(freqs_to_convolve,
-                                                    dtype=complex)
+        original_signal_zero_padded = np.zeros_like(
+            freqs_to_convolve, dtype=complex
+        )
         # Start at the index that corresponds to frequency ini_f in
         # a large array of frequencies
-        start_freq_for_padding = int(np.size(freqs_to_convolve) // 2 - 1 +\
-                                 freqs[0] // df)
+        start_freq_for_padding = int(
+            np.size(freqs_to_convolve) // 2 - 1 + freqs[0] // df
+        )
         # Assign the signal to this region
-        original_signal_zero_padded[start_freq_for_padding:
-                                    start_freq_for_padding+np.size(
-                                        fd_emp_ref_right, axis=0)] = \
-            fd_emp_ref_right[:, ii]
+        original_signal_zero_padded[
+            start_freq_for_padding : start_freq_for_padding
+            + np.size(fd_emp_ref_right, axis=0)
+        ] = fd_emp_ref_right[:, ii]
 
         # ============= APPLY THE FOURIER TRANSFORM RULES ============ #
         # S11 * sinc for the pre-skin region
         pre_skin_sinc_conv = np.convolve(
-            original_signal_zero_padded, (t_start - t_0) * np.sinc(
-                freqs_to_convolve * (t_start - t_0)) * np.exp(-2j * np.pi *
-                    freqs_to_convolve * (t_0 + (t_start - t_0)/2)), mode='same')
+            original_signal_zero_padded,
+            (t_start - t_0)
+            * np.sinc(freqs_to_convolve * (t_start - t_0))
+            * np.exp(
+                -2j * np.pi * freqs_to_convolve * (t_0 + (t_start - t_0) / 2)
+            ),
+            mode="same",
+        )
 
         # S11 * sinc for the skin region * phase shift based on the
         # delta_t value for a given antenna position
         skin_sinc_conv = np.convolve(
-            original_signal_zero_padded, (t_end - t_start) * np.sinc(
-                freqs_to_convolve * (t_end - t_start)) * np.exp(-2j * np.pi *
-                    freqs_to_convolve * (t_start + (t_end - t_start) / 2)),
-            mode='same') * np.exp(-2j * np.pi * freqs_to_convolve * delta_t[
-            ii])
+            original_signal_zero_padded,
+            (t_end - t_start)
+            * np.sinc(freqs_to_convolve * (t_end - t_start))
+            * np.exp(
+                -2j
+                * np.pi
+                * freqs_to_convolve
+                * (t_start + (t_end - t_start) / 2)
+            ),
+            mode="same",
+        ) * np.exp(-2j * np.pi * freqs_to_convolve * delta_t[ii])
 
         # S11 * sinc for after the skin region
         post_skin_sinc_conv = np.convolve(
-            original_signal_zero_padded, (t_fin - t_end) * np.sinc(
-                freqs_to_convolve * (t_fin - t_end)) * np.exp(-2j * np.pi *
-                    freqs_to_convolve * (t_end + (t_fin - t_end) / 2)),
-            mode='same')
+            original_signal_zero_padded,
+            (t_fin - t_end)
+            * np.sinc(freqs_to_convolve * (t_fin - t_end))
+            * np.exp(
+                -2j * np.pi * freqs_to_convolve * (t_end + (t_fin - t_end) / 2)
+            ),
+            mode="same",
+        )
 
         # Times df due to a large step size and a discrepancy between a
         # discrete and continuous convolution
-        signal_composed = (pre_skin_sinc_conv + skin_sinc_conv + \
-                                      post_skin_sinc_conv) * df
+        signal_composed = (
+            pre_skin_sinc_conv + skin_sinc_conv + post_skin_sinc_conv
+        ) * df
 
         new_right_breast_fd[:, ii] = signal_composed[
-                                     start_freq_for_padding + 1:
-                                     start_freq_for_padding + np.size(
-                                        fd_emp_ref_right, axis=0) + 1]
+            start_freq_for_padding + 1 : start_freq_for_padding
+            + np.size(fd_emp_ref_right, axis=0)
+            + 1
+        ]
 
         # Uncomment below to compare the left and right breast signals
         # at every antenna position

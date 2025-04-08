@@ -10,34 +10,21 @@ import scipy.constants
 
 from umbms import get_proj_path, verify_path, get_script_logger
 
-from umbms.loadsave import load_pickle, save_pickle
+from umbms.loadsave import load_pickle
 
-from umbms.plot.imgplots import plot_fd_img, plot_fd_img_with_intersections
-from umbms.plot.sinogramplot import plt_sino, plt_fd_sino
-
-from umbms.beamform.orr import orr_recon
-from umbms.beamform.dmas import fd_dmas
-from umbms.beamform.das import fd_das
-from umbms.beamform.time_delay import (get_pix_ts,
-                                       find_xy_ant_bound_circle, get_pix_ts_old,
-                                       find_xy_ant_bound_ellipse)
-from umbms.beamform.utility import get_xy_arrs, apply_ant_t_delay, \
-    get_ant_scan_xys, get_fd_phase_factor
-
-from umbms.beamform.propspeed import estimate_speed, get_breast_speed,\
-                                     get_speed_from_perm
-from umbms.beamform.optimfuncs import td_velocity_deriv
+from umbms.plot.sinogramplot import plt_sino
 
 ###############################################################################
 
-__DATA_DIR = os.path.join(get_proj_path(), 'data/umbmid/cyl_phantom/'
-                                           'speed_paper/')
+__DATA_DIR = os.path.join(
+    get_proj_path(), "data/umbmid/cyl_phantom/speed_paper/"
+)
 
-__OUT_DIR = os.path.join(get_proj_path(), 'output/cyl_phantom/')
+__OUT_DIR = os.path.join(get_proj_path(), "output/cyl_phantom/")
 verify_path(__OUT_DIR)
 
-__FD_NAME = '20240813_s11_data.pickle'
-__MD_NAME = '20240813_metadata.pickle'
+__FD_NAME = "20240813_s11_data.pickle"
+__MD_NAME = "20240813_metadata.pickle"
 
 # The frequency parameters from the scan
 __INI_F = 2e9
@@ -54,15 +41,15 @@ __M_SIZE = 150
 
 # The approximate radius of each adipose phantom in our array
 __ADI_RADS = {
-    'A1': 0.05,
-    'A2': 0.06,
-    'A3': 0.07,
-    'A11': 0.06,
-    'A12': 0.05,
-    'A13': 0.065,
-    'A14': 0.06,
-    'A15': 0.055,
-    'A16': 0.07
+    "A1": 0.05,
+    "A2": 0.06,
+    "A3": 0.07,
+    "A11": 0.06,
+    "A12": 0.05,
+    "A13": 0.065,
+    "A14": 0.06,
+    "A15": 0.055,
+    "A16": 0.07,
 }
 
 __GLASS_CYLINDER_RAD = 0.06
@@ -70,30 +57,32 @@ __GLASS_THIKNESS = 0.3 / 100
 __SPHERE_RAD = 0.0075
 __ANT_RAD = 0.21
 
-__SPHERE_POS = [(np.nan, np.nan),
-                (0.0, 5.3),
-                (0.0, 4.0),
-                (0.0, 3.0),
-                (0.0, 2.0),
-                (0.0, 1.0),
-                (0.0, 0.0),
-                (1.0, 0.0),
-                (2.0, 0.0),
-                (3.0, 0.0),
-                (4.0, 0.0),
-                (5.0, 0.0),
-                (np.nan, np.nan)]
+__SPHERE_POS = [
+    (np.nan, np.nan),
+    (0.0, 5.3),
+    (0.0, 4.0),
+    (0.0, 3.0),
+    (0.0, 2.0),
+    (0.0, 1.0),
+    (0.0, 0.0),
+    (1.0, 0.0),
+    (2.0, 0.0),
+    (3.0, 0.0),
+    (4.0, 0.0),
+    (5.0, 0.0),
+    (np.nan, np.nan),
+]
 
 __MID_BREAST_RADS = {
-    'A1' : (0.053, 0.034),
-    'A2' : (0.055, 0.051),
-    'A3' : (0.07 , 0.049),
-    'A11': (0.062, 0.038),
-    'A12': (0.051, 0.049),
-    'A13': (0.065, 0.042),
-    'A14': (0.061, 0.051),
-    'A15': (0.06 , 0.058),
-    'A16': (0.073, 0.05),
+    "A1": (0.053, 0.034),
+    "A2": (0.055, 0.051),
+    "A3": (0.07, 0.049),
+    "A11": (0.062, 0.038),
+    "A12": (0.051, 0.049),
+    "A13": (0.065, 0.042),
+    "A14": (0.061, 0.051),
+    "A15": (0.06, 0.058),
+    "A16": (0.073, 0.05),
 }
 
 __VAC_SPEED = scipy.constants.speed_of_light
@@ -107,17 +96,15 @@ def load_data():
     --------
     tuple of two loaded variables
     """
-    return load_pickle(os.path.join(__DATA_DIR,
-                                    __FD_NAME)), \
-           load_pickle(os.path.join(__DATA_DIR,
-                                    __MD_NAME))
+    return load_pickle(os.path.join(__DATA_DIR, __FD_NAME)), load_pickle(
+        os.path.join(__DATA_DIR, __MD_NAME)
+    )
 
 
 ###############################################################################
 
 
 if __name__ == "__main__":
-
     logger = get_script_logger(__file__)
 
     # Load the frequency domain data and metadata
@@ -126,35 +113,37 @@ if __name__ == "__main__":
     n_expts = np.size(fd_data, axis=0)  # The number of individual scans
 
     # The output dir, where the reconstructions will be stored
-    out_dir = os.path.join(__OUT_DIR, 'recons/Immediate reference/Speed '
-                                      'paper/20240813/')
+    out_dir = os.path.join(
+        __OUT_DIR, "recons/Immediate reference/Speed paper/20240813/"
+    )
     verify_path(out_dir)
 
     for ii in range(n_expts):
-
-        logger.info('Scan [%3d / %3d]...' % (ii + 1, n_expts))
+        logger.info("Scan [%3d / %3d]..." % (ii + 1, n_expts))
 
         # Get the frequency domain data and metadata of this experiment
         tar_fd = fd_data[ii, :, :]
 
         # Get the unique ID of each experiment / scan
-        expt_ids = [md['id'] for md in metadata]
+        expt_ids = [md["id"] for md in metadata]
 
         tar_md = metadata[ii]
 
         # if the scan has both empty and adipose references
-        if ~np.isnan(tar_md['emp_ref_id']) and \
-                ~np.isnan(tar_md['adi_ref_id2']):
-
+        if ~np.isnan(tar_md["emp_ref_id"]) and ~np.isnan(tar_md["adi_ref_id2"]):
             # Get the adipose-only and empty reference data
             # for this scan
-            adi_fd_emp = fd_data[expt_ids.index(tar_md['emp_ref_id']), :, :]
-            adi_fd = fd_data[expt_ids.index(tar_md['adi_ref_id2']), :, :]
-            adi_cal_cropped_emp = (tar_fd - adi_fd_emp)
-            adi_cal_cropped = (tar_fd - adi_fd)
+            adi_fd_emp = fd_data[expt_ids.index(tar_md["emp_ref_id"]), :, :]
+            adi_fd = fd_data[expt_ids.index(tar_md["adi_ref_id2"]), :, :]
+            adi_cal_cropped_emp = tar_fd - adi_fd_emp
+            adi_cal_cropped = tar_fd - adi_fd
 
-            plt_sino(fd=adi_cal_cropped, title='',
-                     save_str='sinogram_%d.png' % ii,
-                     close=True, out_dir=out_dir, transparent=False,
-                     slices=True)
-
+            plt_sino(
+                fd=adi_cal_cropped,
+                title="",
+                save_str="sinogram_%d.png" % ii,
+                close=True,
+                out_dir=out_dir,
+                transparent=False,
+                slices=True,
+            )

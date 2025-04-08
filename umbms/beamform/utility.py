@@ -26,8 +26,8 @@ def rect(t, t0, a):
     """
 
     rectangle = np.zeros_like(t)
-    rectangle[np.abs((t-t0)/a) < 1/2] = 1
-    rectangle[np.abs((t-t0)/a) == 1/2] = 1/2
+    rectangle[np.abs((t - t0) / a) < 1 / 2] = 1
+    rectangle[np.abs((t - t0) / a) == 1 / 2] = 1 / 2
 
     return rectangle
 
@@ -116,7 +116,6 @@ def get_scan_freqs(ini_f, fin_f, n_freqs):
     scan_freq_vector = np.linspace(ini_f, fin_f, n_freqs)
 
     return scan_freq_vector
-
 
 
 def apply_ant_t_delay(scan_rad, *, new_ant=False):
@@ -255,7 +254,6 @@ def get_freqs(ini_t, fin_t, n_times):
     # Find the incremental time step-size
     time_step = times[1] - times[0]
 
-
     # Convert to the incremental frequency step-size
     freq_step = 1 / (n_times * time_step)
 
@@ -293,7 +291,7 @@ def get_time_step(ini_f, fin_f, n_freqs):
     scan_time_vector = get_scan_times(ini_f, fin_f, n_freqs)
 
     # Find the incremental time step-size
-    dt = (scan_time_vector[1] - scan_time_vector[0])
+    dt = scan_time_vector[1] - scan_time_vector[0]
 
     return dt
 
@@ -327,8 +325,9 @@ def get_ant_scan_xys(ant_rad, n_ant_pos, *, ini_ant_ang=-136.0):
 
     # Find the polar angles of each of the antenna positions used in the
     # scan
-    ant_angles = (np.linspace(0, (355 / 360) * 2 * np.pi, n_ant_pos) +
-                  np.deg2rad(ini_ant_ang))
+    ant_angles = np.linspace(
+        0, (355 / 360) * 2 * np.pi, n_ant_pos
+    ) + np.deg2rad(ini_ant_ang)
     ant_angles = np.flip(ant_angles)
 
     ant_xs = np.cos(ant_angles) * ant_rad  # Find the x-positions
@@ -338,8 +337,7 @@ def get_ant_scan_xys(ant_rad, n_ant_pos, *, ini_ant_ang=-136.0):
     return ant_xs, ant_ys
 
 
-def get_ant_xy_idxs(ant_rad, roi_rad, n_ant_pos, m_size,
-                    *, ini_ant_ang=-136.0):
+def get_ant_xy_idxs(ant_rad, roi_rad, n_ant_pos, m_size, *, ini_ant_ang=-136.0):
     """Returns the x,y-pixel indices of each antenna position
 
     Returns two vectors, containing the x- and y-coordinates
@@ -373,8 +371,9 @@ def get_ant_xy_idxs(ant_rad, roi_rad, n_ant_pos, m_size,
     pixdist_ratio = get_pixdist_ratio(m_size, roi_rad)
 
     # Get the ant x/y positions
-    ant_xs, ant_ys = get_ant_scan_xys(ant_rad, n_ant_pos,
-                                      ini_ant_ang=ini_ant_ang)
+    ant_xs, ant_ys = get_ant_scan_xys(
+        ant_rad, n_ant_pos, ini_ant_ang=ini_ant_ang
+    )
 
     # Convert the antenna x,y positions to x,y coordinates, store as ints so
     # they can be used for indexing later
@@ -386,8 +385,9 @@ def get_ant_xy_idxs(ant_rad, roi_rad, n_ant_pos, m_size,
     return ant_x_idxs, ant_y_idxs
 
 
-def get_pix_dists_angs(m_size, n_ant_pos, ant_rad, roi_rad,
-                       *, ini_ant_ang=-136.0):
+def get_pix_dists_angs(
+    m_size, n_ant_pos, ant_rad, roi_rad, *, ini_ant_ang=-136.0
+):
     """Returns the distance and angle between each pixel and antenna
 
     Returns arrays in which each pixel is assigned its distance from the
@@ -422,8 +422,9 @@ def get_pix_dists_angs(m_size, n_ant_pos, ant_rad, roi_rad,
     """
 
     # Get the antenna x,y positions
-    ant_xs, ant_ys = get_ant_scan_xys(ant_rad, n_ant_pos,
-                                      ini_ant_ang=ini_ant_ang)
+    ant_xs, ant_ys = get_ant_scan_xys(
+        ant_rad, n_ant_pos, ini_ant_ang=ini_ant_ang
+    )
 
     # Initialize arrays
     pix_dists = np.ones([n_ant_pos, m_size, m_size])
@@ -440,13 +441,13 @@ def get_pix_dists_angs(m_size, n_ant_pos, ant_rad, roi_rad,
 
         # Convert these x,y-position differences into an absolute
         # geometric difference
-        pix_dists[ant_pos, :, :] = 2 * np.sqrt(x_diffs ** 2 + y_diffs ** 2)
+        pix_dists[ant_pos, :, :] = 2 * np.sqrt(x_diffs**2 + y_diffs**2)
 
         # Obtain the angles for these pixels
-        pix_angs[ant_pos, :, :] = -np.arctan2(ant_xs[ant_pos] * y_diffs
-                                              - ant_ys[ant_pos] * x_diffs,
-                                              ant_xs[ant_pos] * x_diffs
-                                              + ant_ys[ant_pos] * y_diffs)
+        pix_angs[ant_pos, :, :] = -np.arctan2(
+            ant_xs[ant_pos] * y_diffs - ant_ys[ant_pos] * x_diffs,
+            ant_xs[ant_pos] * x_diffs + ant_ys[ant_pos] * y_diffs,
+        )
 
     pix_angs = np.rad2deg(pix_angs)
 
@@ -489,8 +490,9 @@ def normalize_arr(arr):
     return normalized_arr
 
 
-def crop_fd(fd_data, *, ini_min_f=1e9, ini_max_f=8e9, tar_min_f=2e9,
-            tar_max_f=8e9):
+def crop_fd(
+    fd_data, *, ini_min_f=1e9, ini_max_f=8e9, tar_min_f=2e9, tar_max_f=8e9
+):
     """
 
     Parameters

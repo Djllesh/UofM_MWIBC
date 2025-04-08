@@ -11,7 +11,7 @@ import matplotlib
 
 from scipy.stats import spearmanr
 
-matplotlib.use('Qt5Agg')
+matplotlib.use("Qt5Agg")
 
 from umbms import get_proj_path, verify_path
 
@@ -20,9 +20,9 @@ from umbms.analysis.acc_size import get_img_max_xy, get_img_CoM
 
 ###############################################################################
 
-__D_DIR = os.path.join(get_proj_path(), 'data/tyson//')
+__D_DIR = os.path.join(get_proj_path(), "data/tyson//")
 
-__OUT_DIR = os.path.join(get_proj_path(), 'output/iqms-dec/sym/')
+__OUT_DIR = os.path.join(get_proj_path(), "output/iqms-dec/sym/")
 verify_path(__OUT_DIR)
 
 # Scan VNA parameters
@@ -48,11 +48,10 @@ __ROI_RAD = 0.08
 
 
 def init_plt():
-    """Init plot window
-    """
+    """Init plot window"""
 
     plt.figure(figsize=(12, 8))
-    plt.rc('font', family='Times New Roman')
+    plt.rc("font", family="Times New Roman")
     plt.tick_params(labelsize=16)
 
 
@@ -100,22 +99,25 @@ def measure_symmetry(img, img_rad, use_CoM=True, max_rho=2):
 
     integral_val = 0
     for ii in range(1, len(rings)):  # For each ring
-
         ring_rho = rings[ii]  # This ring
         ring_rho_min = rings[ii] - ring_width / 2  # Ring min rho
         ring_rho_max = rings[ii] + ring_width / 2  # Ring max rho
 
         # Find pixels within the ring
-        ring_roi = np.logical_and(np.sqrt(xs ** 2 + ys ** 2) > ring_rho_min,
-                                  np.sqrt(xs ** 2 + ys ** 2) <= ring_rho_max)
+        ring_roi = np.logical_and(
+            np.sqrt(xs**2 + ys**2) > ring_rho_min,
+            np.sqrt(xs**2 + ys**2) <= ring_rho_max,
+        )
 
-        dA_ring = (np.pi * (ring_rho_max ** 2 - ring_rho_min ** 2)
-                   / np.sum(ring_roi))
+        dA_ring = np.pi * (ring_rho_max**2 - ring_rho_min**2) / np.sum(ring_roi)
 
-        val_here = (dA_ring
-                    * np.sum(np.abs(img_to_use[ring_roi]
-                                    - np.mean(img_to_use[ring_roi])))
-                    / (2 * np.pi * ring_rho))
+        val_here = (
+            dA_ring
+            * np.sum(
+                np.abs(img_to_use[ring_roi] - np.mean(img_to_use[ring_roi]))
+            )
+            / (2 * np.pi * ring_rho)
+        )
 
         integral_val += val_here
 
@@ -126,8 +128,9 @@ def measure_symmetry(img, img_rad, use_CoM=True, max_rho=2):
     return sym_metric
 
 
-def do_symmetry_analysis(img_list, tar_coords, recon_algos, system_str, logger,
-                         use_CoM=True):
+def do_symmetry_analysis(
+    img_list, tar_coords, recon_algos, system_str, logger, use_CoM=True
+):
     """
 
     Parameters
@@ -139,28 +142,29 @@ def do_symmetry_analysis(img_list, tar_coords, recon_algos, system_str, logger,
 
     """
 
-    logger.info('\t%s system data...' % system_str)
+    logger.info("\t%s system data..." % system_str)
 
     sym_list = []  # Init list for return
 
     for ii in range(len(img_list)):  # For each *type* of reconstruction
-
         imgs = img_list[ii]  # Get the array of images here
 
-        sym_vals = np.zeros([np.size(imgs, axis=0), ])  # Init arr
+        sym_vals = np.zeros(
+            [
+                np.size(imgs, axis=0),
+            ]
+        )  # Init arr
 
         for jj in range(np.size(imgs, axis=0)):  # For each image
-
             # Get the value of the symmetry metric
-            sym_vals[jj] = measure_symmetry(img=imgs[jj],
-                                            img_rad=__ROI_RAD,
-                                            use_CoM=use_CoM,
-                                            max_rho=2)
+            sym_vals[jj] = measure_symmetry(
+                img=imgs[jj], img_rad=__ROI_RAD, use_CoM=use_CoM, max_rho=2
+            )
 
         sym_list.append(sym_vals)
 
     # Get target polar rho position
-    tar_rhos = np.sqrt(tar_coords[:, 0]**2 + tar_coords[:, 1]**2)
+    tar_rhos = np.sqrt(tar_coords[:, 0] ** 2 + tar_coords[:, 1] ** 2)
     colors = [
         [0, 0, 0],
         [100 / 255, 100 / 255, 100 / 255],
@@ -178,33 +182,46 @@ def do_symmetry_analysis(img_list, tar_coords, recon_algos, system_str, logger,
     # Do Spearman correlation to determine if the symmery score
     # depends on the rho
     for ii in range(len(img_list)):
-        corr, pval = spearmanr(a=tar_rhos, b=sym_list[ii],
-                               alternative='greater')
+        corr, pval = spearmanr(
+            a=tar_rhos, b=sym_list[ii], alternative="greater"
+        )
 
-        logger.info('\t\t%s: Spearman Correlation = %.3f'
-                    % (recon_algos[ii], corr))
-        logger.info('\t\t%s: p-value: %.3e' % (recon_algos[ii], pval))
+        logger.info(
+            "\t\t%s: Spearman Correlation = %.3f" % (recon_algos[ii], corr)
+        )
+        logger.info("\t\t%s: p-value: %.3e" % (recon_algos[ii], pval))
 
     # Make a plot...
     init_plt()
     for ii in range(len(img_list)):
         # plt.scatter(tar_rhos, sym_list[ii], label='%s' % recon_algos[ii],
         #             color=colors[ii], marker='o', )
-        plt.errorbar(unique_rhos, mean_rhos[ii][:, 0],
-                     yerr=mean_rhos[ii][:, 1],
-                     color=colors[ii], marker='o', capsize=5,
-                     label='%s' % recon_algos[ii],
-                     linestyle='')
-    plt.xlabel(r'Target $\mathdefault{\rho}}$ Position (cm)', fontsize=22)
-    plt.ylabel(r'Symmetry Measure, M$_{\mathregular{sym}}$',
-               fontsize=22)
+        plt.errorbar(
+            unique_rhos,
+            mean_rhos[ii][:, 0],
+            yerr=mean_rhos[ii][:, 1],
+            color=colors[ii],
+            marker="o",
+            capsize=5,
+            label="%s" % recon_algos[ii],
+            linestyle="",
+        )
+    plt.xlabel(r"Target $\mathdefault{\rho}}$ Position (cm)", fontsize=22)
+    plt.ylabel(r"Symmetry Measure, M$_{\mathregular{sym}}$", fontsize=22)
     plt.legend(fontsize=18)
     plt.tight_layout()
     plt.show()
-    plt.savefig(os.path.join(__OUT_DIR, '%s_symmetry.png' % system_str),
-                dpi=300, transparent=True)
-    plt.savefig(os.path.join(__OUT_DIR, 'NT_%s_symmetry.png' % system_str),
-                dpi=300, transparent=False)
+    plt.savefig(
+        os.path.join(__OUT_DIR, "%s_symmetry.png" % system_str),
+        dpi=300,
+        transparent=True,
+    )
+    plt.savefig(
+        os.path.join(__OUT_DIR, "NT_%s_symmetry.png" % system_str),
+        dpi=300,
+        transparent=False,
+    )
 
 
 ###############################################################################
+

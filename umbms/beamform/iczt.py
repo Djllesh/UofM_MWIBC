@@ -62,7 +62,9 @@ def iczt(fd_data, ini_t, fin_t, n_time_pts, ini_f, fin_f, axis=0):
 
         # Find the conversion factor to convert from time-of-response to
         # angle around the unit circle
-        time_to_angle = (2 * np.pi) / np.max(get_scan_times(ini_f, fin_f, n_freqs))
+        time_to_angle = (2 * np.pi) / np.max(
+            get_scan_times(ini_f, fin_f, n_freqs)
+        )
 
         # Find the parameters for computing the ICZT over the specified
         # time window
@@ -97,7 +99,9 @@ def iczt(fd_data, ini_t, fin_t, n_time_pts, ini_f, fin_f, axis=0):
 ###############################################################################
 
 
-def _iczt_two_dimension(fd_data, ini_t, fin_t, n_time_pts, ini_f, fin_f, axis=0):
+def _iczt_two_dimension(
+    fd_data, ini_t, fin_t, n_time_pts, ini_f, fin_f, axis=0
+):
     """Computes the ICZT of a 2D-array
 
     Computes the inverse chirp z-transform (ICZT) on a 2D array in the
@@ -163,22 +167,30 @@ def _iczt_two_dimension(fd_data, ini_t, fin_t, n_time_pts, ini_f, fin_f, axis=0)
     # If wanting to compute the transform along the 0th axis
     if axis == 0:
         # Init return arr
-        iczt_data = np.zeros([n_time_pts, np.size(fd_data, axis=1)], dtype=np.complex64)
+        iczt_data = np.zeros(
+            [n_time_pts, np.size(fd_data, axis=1)], dtype=np.complex64
+        )
 
         # For every point along the other dimension
         for ii in range(np.size(fd_data, axis=1)):
             # Compute the 1D ICZT, converting this frequency domain data
             # to the time domain
-            iczt_data[:, ii] = _iczt_one_dimension(fd_data[:, ii], zs_power, n_freqs)
+            iczt_data[:, ii] = _iczt_one_dimension(
+                fd_data[:, ii], zs_power, n_freqs
+            )
 
     else:  # If wanting to compute along the 1st axis
-        iczt_data = np.zeros([np.size(fd_data, axis=0), n_time_pts], dtype=np.complex64)
+        iczt_data = np.zeros(
+            [np.size(fd_data, axis=0), n_time_pts], dtype=np.complex64
+        )
 
         # For every point along the other dimension
         for ii in range(np.size(fd_data, axis=0)):
             # Compute the 1D ICZT, converting this frequency domain data
             # to the time domain
-            iczt_data[ii, :] = _iczt_one_dimension(fd_data[ii, :], zs_power, n_freqs)
+            iczt_data[ii, :] = _iczt_one_dimension(
+                fd_data[ii, :], zs_power, n_freqs
+            )
 
     return iczt_data
 

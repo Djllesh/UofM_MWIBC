@@ -40,11 +40,10 @@ __ROI_RAD = 0.08
 
 
 def init_plt():
-    """Init plot window
-    """
+    """Init plot window"""
 
     plt.figure(figsize=(12, 8))
-    plt.rc('font', family='Times New Roman')
+    plt.rc("font", family="Times New Roman")
     plt.tick_params(labelsize=16)
 
 
@@ -91,7 +90,7 @@ def get_img_CoM(img, img_rad):
     max_x /= 100
     max_y /= 100
 
-    roi = np.sqrt((max_x - xs)**2 + (max_y - ys)**2) < 0.012
+    roi = np.sqrt((max_x - xs) ** 2 + (max_y - ys) ** 2) < 0.012
 
     img_for_this[~roi] = 0
 
@@ -106,12 +105,17 @@ def get_img_CoM(img, img_rad):
     return x_cent_mass, y_cent_mass
 
 
-def do_size_analysis(img_here, dx, roi_rad, make_plts=False,
-                     save_dir='', save_str='', rotate_img=False):
-
+def do_size_analysis(
+    img_here,
+    dx,
+    roi_rad,
+    make_plts=False,
+    save_dir="",
+    save_str="",
+    rotate_img=False,
+):
     # Get center of mass position
-    com_x, com_y = get_img_CoM(img=img_here,
-                               img_rad=roi_rad)
+    com_x, com_y = get_img_CoM(img=img_here, img_rad=roi_rad)
 
     com_ang = np.arctan2(com_y, com_x)
     if com_ang > 0:
@@ -124,14 +128,16 @@ def do_size_analysis(img_here, dx, roi_rad, make_plts=False,
     rot_img = rotate(img_here, angle=np.rad2deg(angle), reshape=False)
 
     # Get pixel positions for rotated image
-    xs_rot = np.flip((np.size(rot_img, axis=0) / 2
-              - np.arange(np.size(rot_img, axis=0))) * dx)
+    xs_rot = np.flip(
+        (np.size(rot_img, axis=0) / 2 - np.arange(np.size(rot_img, axis=0)))
+        * dx
+    )
     xs_rot *= 100  # Convert from [m] to [cm]
 
     # Get the CoM position in the rotated image
-    rot_com_x, rot_com_y = \
-        get_img_CoM(img=rot_img,
-                    img_rad=np.max(np.abs(xs_rot)) / 100)
+    rot_com_x, rot_com_y = get_img_CoM(
+        img=rot_img, img_rad=np.max(np.abs(xs_rot)) / 100
+    )
 
     # Get the coordinates of the center of mass pixels
     rot_com_x_coord = np.argmin(np.abs(xs_rot - rot_com_x))
@@ -141,39 +147,50 @@ def do_size_analysis(img_here, dx, roi_rad, make_plts=False,
 
     # rot_img /= rot_img[rot_com_y_coord, rot_com_x_coord]
 
-
     # Get xs/ys for plotting, centered on CoM pixel
     plt_xs = xs_rot - rot_com_x
     plt_ys = xs_rot - rot_com_y
-
 
     rho_slice = rot_img[:, rot_com_x_coord]
     phi_slice = rot_img[rot_com_y_coord, :]
 
     if make_plts:
         init_plt()
-        plt.plot(plt_xs,
-                 rho_slice, 'k-',
-                 label=r'$\mathdefault{\hat{\rho}}$')
-        plt.plot(plt_ys,
-                 phi_slice, 'b--',
-                 label=r'$\mathdefault{\hat{\phi}}$')
-        plt.plot(np.linspace(-2.5, 2.5, 1000),
-                 0.05 * np.ones([1000, ]),
-                 'g--',
-                 label='5%')
-        plt.plot(np.linspace(-2.5, 2.5, 1000),
-                 0.1 * np.ones([1000, ]),
-                 'r--',
-                 label='10%')
-        plt.xlabel('Position (cm)', fontsize=22)
+        plt.plot(plt_xs, rho_slice, "k-", label=r"$\mathdefault{\hat{\rho}}$")
+        plt.plot(plt_ys, phi_slice, "b--", label=r"$\mathdefault{\hat{\phi}}$")
+        plt.plot(
+            np.linspace(-2.5, 2.5, 1000),
+            0.05
+            * np.ones(
+                [
+                    1000,
+                ]
+            ),
+            "g--",
+            label="5%",
+        )
+        plt.plot(
+            np.linspace(-2.5, 2.5, 1000),
+            0.1
+            * np.ones(
+                [
+                    1000,
+                ]
+            ),
+            "r--",
+            label="10%",
+        )
+        plt.xlabel("Position (cm)", fontsize=22)
         plt.ylabel("Image Intensity", fontsize=22)
         plt.xlim([-2.5, 2.5])
         plt.legend(fontsize=22)
         plt.show()
         plt.savefig(os.path.join(save_dir, save_str), transparent=True, dpi=150)
-        plt.savefig(os.path.join(save_dir, 'NT_%s' % save_str),
-                    transparent=False, dpi=150)
+        plt.savefig(
+            os.path.join(save_dir, "NT_%s" % save_str),
+            transparent=False,
+            dpi=150,
+        )
         plt.close()
 
     rho_roi = rho_slice >= 0.5

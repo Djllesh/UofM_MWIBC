@@ -21,5 +21,5 @@ def ccc(x, y):
     std_x = np.std(x)
     std_y = np.std(y)
 
-    return (2 * cor * std_y * std_x)/(var_y + var_x
-                                           + (mean_x - mean_y)**2)
+    return (2 * cor * std_y * std_x) / (var_y + var_x + (mean_x - mean_y) ** 2)
+

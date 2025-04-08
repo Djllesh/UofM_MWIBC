@@ -146,7 +146,13 @@ def get_breast_speed_freq(freqs, permittivities, conductivities):
                     1
                     + (
                         conductivities
-                        / (2 * np.pi * freqs * permittivities * __VAC_PERMITTIVITY)
+                        / (
+                            2
+                            * np.pi
+                            * freqs
+                            * permittivities
+                            * __VAC_PERMITTIVITY
+                        )
                     )
                     ** 2
                 )
@@ -174,7 +180,9 @@ def get_speed_from_epsilon(epsilon):
     """
 
     a = np.sqrt(1 + (np.imag(epsilon) / np.real(epsilon)) ** 2) + 1
-    v = 1 / np.sqrt(__VAC_PERMEABILITY * __VAC_PERMITTIVITY / 2 * np.real(epsilon) * a)
+    v = 1 / np.sqrt(
+        __VAC_PERMEABILITY * __VAC_PERMITTIVITY / 2 * np.real(epsilon) * a
+    )
 
     return v
 
@@ -201,7 +209,9 @@ def cole_cole(freq, e_h, e_s, tau, alpha):
     epsilon : array_like
         Complex permittivity
     """
-    return e_h + (e_s - e_h) / (1 + (2j * np.pi * freq * tau * 1e-12) ** (1 - alpha))
+    return e_h + (e_s - e_h) / (
+        1 + (2j * np.pi * freq * tau * 1e-12) ** (1 - alpha)
+    )
 
 
 def phase_shape(freq, length, epsilon, shift):
@@ -225,7 +235,9 @@ def phase_shape(freq, length, epsilon, shift):
     """
 
     a = np.sqrt(1 + (np.imag(epsilon) / np.real(epsilon)) ** 2) + 1
-    b = np.sqrt(__VAC_PERMEABILITY * __VAC_PERMITTIVITY / 2 * np.real(epsilon) * a)
+    b = np.sqrt(
+        __VAC_PERMEABILITY * __VAC_PERMITTIVITY / 2 * np.real(epsilon) * a
+    )
     return -2 * np.pi * freq * length * b - shift
 
 
@@ -251,7 +263,9 @@ def phase_shape_explicit(freq, length, e_h, e_s, tau, alpha, shift):
 
     epsilon = cole_cole(freq, e_h, e_s, tau, alpha)
     a = np.sqrt(1 + (np.imag(epsilon) / np.real(epsilon)) ** 2) + 1
-    b = np.sqrt(__VAC_PERMEABILITY * __VAC_PERMITTIVITY / 2 * np.real(epsilon) * a)
+    b = np.sqrt(
+        __VAC_PERMEABILITY * __VAC_PERMITTIVITY / 2 * np.real(epsilon) * a
+    )
     return -2 * np.pi * freq * length * b - shift
 
 
@@ -277,7 +291,9 @@ def phase_shape_wrapped(freq, length, epsilon, shift):
     """
 
     a = np.sqrt(1 + (np.imag(epsilon) / np.real(epsilon)) ** 2) + 1
-    b = np.sqrt(__VAC_PERMEABILITY * __VAC_PERMITTIVITY / 2 * np.real(epsilon) * a)
+    b = np.sqrt(
+        __VAC_PERMEABILITY * __VAC_PERMITTIVITY / 2 * np.real(epsilon) * a
+    )
 
     shape = -2 * np.pi * freq * length * b - shift
     # Wrap
@@ -318,7 +334,9 @@ def phase_diff_MSE(x, exp_phase, freq, length, wrapped=False):
         mse = (1 / np.size(exp_phase)) * (np.sum((exp_phase - shape) ** 2))
     else:
         mse = (1 / np.size(exp_phase)) * (
-            np.sum((exp_phase - shape.reshape(np.size(exp_phase, axis=0), 1)) ** 2)
+            np.sum(
+                (exp_phase - shape.reshape(np.size(exp_phase, axis=0), 1)) ** 2
+            )
         )
 
     return mse
@@ -328,7 +346,9 @@ def fit_bootstrap(p0, datax, datay, length, function, yerr_systematic=0.0):
     errfunc = lambda p, x, y, l: function(x, l, *p) - y
 
     # Fit first time
-    pfit = leastsq(errfunc, p0, args=(datax, datay, length), full_output=False)[0]
+    pfit = leastsq(errfunc, p0, args=(datax, datay, length), full_output=False)[
+        0
+    ]
 
     # pfit = res.x
     # perr = res.cov_x

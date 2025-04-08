@@ -15,7 +15,6 @@ from pathlib import Path
 
 
 class NullLogger:
-
     def critical(self, *args):
         pass
 
@@ -83,15 +82,16 @@ def get_script_logger(script_path, level=logging.DEBUG):
         Logger
     """
 
-    output_dir = os.path.join(get_proj_path(), 'output/')
+    output_dir = os.path.join(get_proj_path(), "output/")
 
-    assert os.path.isdir(output_dir), 'dir does not exist: %s' % output_dir
+    assert os.path.isdir(output_dir), "dir does not exist: %s" % output_dir
 
-    verify_path(os.path.join(get_proj_path(), 'output/logs/'))
+    verify_path(os.path.join(get_proj_path(), "output/logs/"))
 
     # Define the format for logging
-    log_format = '[%(asctime)-8s][%(levelname)s][%(filename)s:%(lineno)s]:' \
-                 '\t%(message)s'
+    log_format = (
+        "[%(asctime)-8s][%(levelname)s][%(filename)s:%(lineno)s]:\t%(message)s"
+    )
 
     # #############   #####
     # Logging Level - Value
@@ -106,13 +106,16 @@ def get_script_logger(script_path, level=logging.DEBUG):
     script_name = os.path.splitext(os.path.basename(script_path))[0]
 
     # Get the name of the .log file that will be written to
-    log_fname = "%s/output/logs/%s_%s.log" % (get_proj_path(), gethostname(),
-                                              script_name)
+    log_fname = "%s/output/logs/%s_%s.log" % (
+        get_proj_path(),
+        gethostname(),
+        script_name,
+    )
 
     # Define the file handler
-    file_handler = logging.handlers.RotatingFileHandler(log_fname,
-                                                        maxBytes=1024 * 1024,
-                                                        backupCount=100)
+    file_handler = logging.handlers.RotatingFileHandler(
+        log_fname, maxBytes=1024 * 1024, backupCount=100
+    )
     file_handler.setFormatter(logging.Formatter(log_format))
 
     # Define the stdout handler
@@ -123,7 +126,7 @@ def get_script_logger(script_path, level=logging.DEBUG):
     logger = logging.getLogger(script_name)
 
     # required if you don't want to exit the shell between 2 executions
-    del (logger.handlers[:])
+    del logger.handlers[:]
 
     logger.setLevel(level)
     logger.addHandler(file_handler)
@@ -145,9 +148,9 @@ def get_n_cores():
 
     pc_name = gethostname()  # Get pc name
 
-    if pc_name in ['tr-home']:  # If it's my home desktop
+    if pc_name in ["tr-home"]:  # If it's my home desktop
         n_cores = 8
-    elif pc_name in ['tr-laptop']:  # If it's my laptop
+    elif pc_name in ["tr-laptop"]:  # If it's my laptop
         n_cores = 6
     else:  # If it's a different PC, be safe and use 2 cores
         n_cores = 2

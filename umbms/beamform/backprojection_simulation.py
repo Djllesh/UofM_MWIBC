@@ -29,7 +29,9 @@ def create_antenna_array(ant_rad=0.2, n_ants=24):
     return x_ants, y_ants
 
 
-def find_xy_ant_bound_circle(ant_xs, ant_ys, n_ant_pos, adi_rad, *, ox=0.0, oy=0.0):
+def find_xy_ant_bound_circle(
+    ant_xs, ant_ys, n_ant_pos, adi_rad, *, ox=0.0, oy=0.0
+):
     """Finds breast boundary intersection coordinates
     with propagation trajectory from antenna position
     to corresponding pixel
@@ -192,8 +194,12 @@ def calculate_avg_speed(
         air_time_back = (
             np.sqrt(fin_ant_to_back_xs**2 + fin_ant_to_back_ys**2) / air_speed
         )
-        phantom_time = np.sqrt(back_to_front_xs**2 + back_to_front_ys**2) / breast_speed
-        air_time_front = np.sqrt(front_to_ant_xs**2 + front_to_ant_ys**2) / air_speed
+        phantom_time = (
+            np.sqrt(back_to_front_xs**2 + back_to_front_ys**2) / breast_speed
+        )
+        air_time_front = (
+            np.sqrt(front_to_ant_xs**2 + front_to_ant_ys**2) / air_speed
+        )
 
         total_time = air_time_front + phantom_time + air_time_back
 
@@ -242,20 +248,28 @@ if __name__ == "__main__":
     fan_rotation_increment = 360 / len(x_ants)
     fan_sensor_spacing = fan_rotation_increment / 2
 
-    # image = eng.ifanbeam(ant_speed.T, D, 'FanRotationIncrement',
-    #                      fan_rotation_increment, 'FanSensorSpacing',
-    #                      fan_sensor_spacing, 'OutputSize', 150., 'Filter',
-    #                      'Hamming')
+    image = eng.ifanbeam(
+        ant_speed.T,
+        D,
+        "FanRotationIncrement",
+        fan_rotation_increment,
+        "FanSensorSpacing",
+        fan_sensor_spacing,
+        "OutputSize",
+        150.0,
+        "Filter",
+        "Hamming",
+    )
 
-    image = eng.iradon(ant_speed.T, fan_sensor_spacing * 2)
+    # image = eng.iradon(ant_speed.T, fan_sensor_spacing * 2)
 
     a = 3 / (np.max(image) - np.min(image))
     b = -a * np.min(image)
     image = a * image + b
 
-    # img = plt.imshow(image)
-    #
-    # plt.colorbar(img)
+    img = plt.imshow(image)
+
+    plt.colorbar(img)
 
     # plt.plot(np.linspace(-1, 1, len(image[0])),
     #          image[np.size(image, axis=0)//2, :])

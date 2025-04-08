@@ -56,23 +56,36 @@ def get_scr(img, roi_rad, adi_rad, tum_rad, tum_x, tum_y):
     """
 
     # Rotate and flip image to facilitate use with indexing breast
-    img_for_iqm = np.abs(img)**2
+    img_for_iqm = np.abs(img) ** 2
 
     # Create a model of the reconstruction, segmented by the various
     # tissue types
-    indexing_breast = get_breast(m_size=np.size(img, 0), ant_rad=roi_rad,
-                                 adi_rad=adi_rad, adi_x=0, adi_y=0,
-                                 fib_rad=0, fib_x=0, fib_y=0,
-                                 tum_rad=tum_rad + _tum_rad_increase,
-                                 tum_x=tum_x, tum_y=tum_y, skin_thickness=0,
-                                 adi_perm=2, fib_perm=3, tum_perm=4,
-                                 skin_perm=1, air_perm=1)
+    indexing_breast = get_breast(
+        m_size=np.size(img, 0),
+        ant_rad=roi_rad,
+        adi_rad=adi_rad,
+        adi_x=0,
+        adi_y=0,
+        fib_rad=0,
+        fib_x=0,
+        fib_y=0,
+        tum_rad=tum_rad + _tum_rad_increase,
+        tum_x=tum_x,
+        tum_y=tum_y,
+        skin_thickness=0,
+        adi_perm=2,
+        fib_perm=3,
+        tum_perm=4,
+        skin_perm=1,
+        air_perm=1,
+    )
 
     # Determine the max values in the tumor region and the clutter
     # region
     sig_val = np.max(img_for_iqm[indexing_breast == 4])
-    max_clut_val = np.max(img_for_iqm[np.logical_and(indexing_breast != 4,
-                                                     indexing_breast != 1)])
+    max_clut_val = np.max(
+        img_for_iqm[np.logical_and(indexing_breast != 4, indexing_breast != 1)]
+    )
 
     # Compute the SCR value
     scr = 20 * np.log10(sig_val / max_clut_val)
@@ -82,14 +95,15 @@ def get_scr(img, roi_rad, adi_rad, tum_rad, tum_x, tum_y):
     _, clut_uncty = _get_top_percent_clut(img_for_iqm, indexing_breast)
 
     # Compute the estimated uncertainty in the SCR
-    scr_uncty = np.sqrt((20 * tum_uncty / (np.log(10) * sig_val))**2 +
-                        (20 * clut_uncty / (np.log(10) * max_clut_val))**2)
+    scr_uncty = np.sqrt(
+        (20 * tum_uncty / (np.log(10) * sig_val)) ** 2
+        + (20 * clut_uncty / (np.log(10) * max_clut_val)) ** 2
+    )
 
     return scr, scr_uncty
 
 
-def get_contrast_for_cyl(img, roi_rad, adi_rad, thickness, x_cm, y_cm,
-                          method):
+def get_contrast_for_cyl(img, roi_rad, adi_rad, thickness, x_cm, y_cm, method):
     """Returns the contrast of an image for a cylindrical fantom case
 
     Returns the signal-to-clutter/signal-to-mean/mean-to-mean ratio
@@ -120,20 +134,21 @@ def get_contrast_for_cyl(img, roi_rad, adi_rad, thickness, x_cm, y_cm,
     """
 
     # Rotate and flip image to facilitate use with indexing breast
-    img_for_iqm = np.abs(img)**2
+    img_for_iqm = np.abs(img) ** 2
 
     # Get the pixel x,y-positions
     pix_xs, pix_ys = get_xy_arrs(m_size=np.size(img, 0), roi_rad=roi_rad)
 
     # Compute the pixel distances from the center of each tissue
     # component (excluding skin)
-    pix_dist_from_adi = np.sqrt((pix_xs - x_cm)**2 + (pix_ys - y_cm)**2)
+    pix_dist_from_adi = np.sqrt((pix_xs - x_cm) ** 2 + (pix_ys - y_cm) ** 2)
 
-    rho_width, phi_width, rot_img = do_size_analysis(img_here=img_for_iqm,
-                                                     dx=np.abs(pix_xs[0, 1]
-                                                               - pix_xs[0, 0]),
-                                                     roi_rad=roi_rad,
-                                                     rotate_img=True)
+    rho_width, phi_width, rot_img = do_size_analysis(
+        img_here=img_for_iqm,
+        dx=np.abs(pix_xs[0, 1] - pix_xs[0, 0]),
+        roi_rad=roi_rad,
+        rotate_img=True,
+    )
 
     rot_com_x, rot_com_y = get_img_CoM(img=rot_img, img_rad=roi_rad)
 
@@ -142,9 +157,9 @@ def get_contrast_for_cyl(img, roi_rad, adi_rad, thickness, x_cm, y_cm,
     rot_com_x /= 100
     rot_com_y /= 100
 
-    pix_dist_from_tum = ((pix_xs - rot_com_x)**2 / ((phi_width + 0.0025)/2)**2
-                         +
-                         (pix_ys - rot_com_y)**2 / ((rho_width + 0.0025)/2)**2)
+    pix_dist_from_tum = (pix_xs - rot_com_x) ** 2 / (
+        (phi_width + 0.0025) / 2
+    ) ** 2 + (pix_ys - rot_com_y) ** 2 / ((rho_width + 0.0025) / 2) ** 2
 
     indexing_breast = np.ones([np.size(rot_img, 0), np.size(rot_img, 0)])
     indexing_breast[pix_dist_from_adi < adi_rad + thickness] = 1
@@ -153,18 +168,25 @@ def get_contrast_for_cyl(img, roi_rad, adi_rad, thickness, x_cm, y_cm,
 
     # Determine the max values in the tumor region and the clutter
     # region
-    if method == 'scr' or method == 'smr':
+    if method == "scr" or method == "smr":
         sig_val = np.max(rot_img[indexing_breast == 4])
-        if 'c' in method:
-            clut_val = np.max(rot_img[np.logical_and(indexing_breast != 4,
-                                                      indexing_breast != 1)])
+        if "c" in method:
+            clut_val = np.max(
+                rot_img[
+                    np.logical_and(indexing_breast != 4, indexing_breast != 1)
+                ]
+            )
         else:
-            clut_val = np.mean(rot_img[np.logical_and(indexing_breast != 4,
-                                                      indexing_breast != 1)])
+            clut_val = np.mean(
+                rot_img[
+                    np.logical_and(indexing_breast != 4, indexing_breast != 1)
+                ]
+            )
     else:
         sig_val = np.mean(rot_img[indexing_breast == 4])
-        clut_val = np.mean(rot_img[np.logical_and(indexing_breast != 4,
-                                                      indexing_breast != 1)])
+        clut_val = np.mean(
+            rot_img[np.logical_and(indexing_breast != 4, indexing_breast != 1)]
+        )
 
     # Compute the SCR value
     scr = 20 * np.log10(sig_val / clut_val)
@@ -174,8 +196,10 @@ def get_contrast_for_cyl(img, roi_rad, adi_rad, thickness, x_cm, y_cm,
     _, clut_uncty = _get_top_percent_clut(rot_img, indexing_breast)
 
     # Compute the estimated uncertainty in the SCR
-    scr_uncty = np.sqrt((20 * tum_uncty / (np.log(10) * sig_val))**2 +
-                        (20 * clut_uncty / (np.log(10) * clut_val))**2)
+    scr_uncty = np.sqrt(
+        (20 * tum_uncty / (np.log(10) * sig_val)) ** 2
+        + (20 * clut_uncty / (np.log(10) * clut_val)) ** 2
+    )
 
     return scr, scr_uncty
 
@@ -205,7 +229,7 @@ def get_scr_healthy(img, roi_rad, adi_rad, healthy_rad=0.015):
     """
 
     # Rotate and flip image to facilitate use with indexing breast
-    img_for_iqm = np.abs(img)**2
+    img_for_iqm = np.abs(img) ** 2
 
     # Rotate image to properly compute the distances
     img_for_iqm = np.fliplr(img_for_iqm)
@@ -228,20 +252,32 @@ def get_scr_healthy(img, roi_rad, adi_rad, healthy_rad=0.015):
 
     # Create a model of the reconstruction, segmented by the various
     # tissue types
-    indexing_breast = get_breast(m_size=np.size(img, 0), ant_rad=roi_rad,
-                                 adi_rad=adi_rad, adi_x=0, adi_y=0,
-                                 fib_rad=0, fib_x=0, fib_y=0,
-                                 tum_rad=healthy_rad + _tum_rad_increase,
-                                 tum_x=max_x_pos, tum_y=max_y_pos,
-                                 skin_thickness=0,
-                                 adi_perm=2, fib_perm=3, tum_perm=4,
-                                 skin_perm=1, air_perm=1)
+    indexing_breast = get_breast(
+        m_size=np.size(img, 0),
+        ant_rad=roi_rad,
+        adi_rad=adi_rad,
+        adi_x=0,
+        adi_y=0,
+        fib_rad=0,
+        fib_x=0,
+        fib_y=0,
+        tum_rad=healthy_rad + _tum_rad_increase,
+        tum_x=max_x_pos,
+        tum_y=max_y_pos,
+        skin_thickness=0,
+        adi_perm=2,
+        fib_perm=3,
+        tum_perm=4,
+        skin_perm=1,
+        air_perm=1,
+    )
 
     # Determine the max values in the tumor region and the clutter
     # region
     sig_val = np.max(np.fliplr(img_for_iqm)[indexing_breast == 4])
-    max_clut_val = np.max(img_for_iqm[np.logical_and(indexing_breast != 4,
-                                                     indexing_breast != 1)])
+    max_clut_val = np.max(
+        img_for_iqm[np.logical_and(indexing_breast != 4, indexing_breast != 1)]
+    )
 
     # Compute the SCR value
     scr = 20 * np.log10(sig_val / max_clut_val)
@@ -251,8 +287,10 @@ def get_scr_healthy(img, roi_rad, adi_rad, healthy_rad=0.015):
     _, clut_uncty = _get_top_percent_clut(img_for_iqm, indexing_breast)
 
     # Compute the estimated uncertainty in the SCR
-    scr_uncty = np.sqrt((20 * tum_uncty / (np.log(10) * sig_val))**2 +
-                        (20 * clut_uncty / (np.log(10) * max_clut_val))**2)
+    scr_uncty = np.sqrt(
+        (20 * tum_uncty / (np.log(10) * sig_val)) ** 2
+        + (20 * clut_uncty / (np.log(10) * max_clut_val)) ** 2
+    )
 
     return scr, scr_uncty
 
@@ -319,8 +357,9 @@ def _get_top_percent_tum(img, indexing_breast):
     # Find the pixels in the tumor region that belong to the
     # _top_tum_percent
     # of tumor pixels
-    top_tum_pixs = tum_pixs[tum_pixs > np.percentile(tum_pixs,
-                                                     _top_tum_percent)]
+    top_tum_pixs = tum_pixs[
+        tum_pixs > np.percentile(tum_pixs, _top_tum_percent)
+    ]
 
     # Find the mean and standard deviation of intensity values among
     # these _top_tum_percent of pixels
@@ -359,8 +398,9 @@ def _get_top_percent_clut(img, indexing_breast):
 
     # Find the pixels in the clutter region in the _top_clutter_percent
     # of pixels
-    top_clut_pixs = clut_pixs[clut_pixs > np.percentile(clut_pixs,
-                                                        _top_clutter_percent)]
+    top_clut_pixs = clut_pixs[
+        clut_pixs > np.percentile(clut_pixs, _top_clutter_percent)
+    ]
 
     # Find the mean and standard deviation of the intensity values
     # among these _top_clutter_percent of pixels

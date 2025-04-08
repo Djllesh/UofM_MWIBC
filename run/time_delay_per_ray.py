@@ -5,7 +5,6 @@ Univerity of Manitoba,
 December 1st, 2023
 """
 
-
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 import numpy as np
@@ -19,7 +18,6 @@ from umbms.beamform.propspeed import estimate_speed, get_breast_speed_freq
 M_SIZE = 150
 
 if __name__ == "__main__":
-
     a = [[0.5, 0.3], [0.5, 0.3]]
     b = [[0.7, 0.1], [0.8, 0.05]]
 
@@ -27,8 +25,7 @@ if __name__ == "__main__":
     fig, ax = plt.subplots()
 
     # Initial image plot with 'a'
-    img = ax.imshow(a, vmin=0, vmax=1, cmap='viridis', animated=True)
-
+    img = ax.imshow(a, vmin=0, vmax=1, cmap="viridis", animated=True)
 
     # Update function for animation
     def update(frame):
@@ -37,7 +34,6 @@ if __name__ == "__main__":
         elif frame == 1:
             img.set_data(b)
         return [img]
-
 
     # Create animation
     animation = FuncAnimation(fig, update, frames=2, interval=1000, blit=True)
@@ -53,7 +49,5 @@ if __name__ == "__main__":
     #   2.3) On the plot: left - dependence, right - schematic of the
     #        ray propagating through the phantom
     # 3) Compare different rays
-
-
 
     pass

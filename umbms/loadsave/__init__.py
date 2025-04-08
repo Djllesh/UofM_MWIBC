@@ -4,7 +4,6 @@ University of Manitoba
 June 19th, 2019
 """
 
-
 import os
 import pickle
 import numpy as np
@@ -27,7 +26,7 @@ def load_pickle(path):
         etc.
     """
 
-    with open(path, 'rb') as handle:
+    with open(path, "rb") as handle:
         loaded_var = pickle.load(handle)
 
     return loaded_var
@@ -44,7 +43,7 @@ def save_pickle(var, path):
         The full path of the saved .pickle file
     """
 
-    with open(path, 'wb') as handle:
+    with open(path, "wb") as handle:
         pickle.dump(var, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
@@ -74,7 +73,7 @@ def load_birrs_txt(txt_path):
     """
 
     # Load the data
-    raw_data = np.genfromtxt(txt_path, dtype='float', delimiter=',')
+    raw_data = np.genfromtxt(txt_path, dtype="float", delimiter=",")
 
     # Find the number of frequencies and scan positions
     n_freqs, n_ant_pos = raw_data.shape
@@ -84,11 +83,11 @@ def load_birrs_txt(txt_path):
     fd_data = np.zeros([n_freqs, n_ant_pos], dtype=complex)
 
     for ant_pos in range(n_ant_pos):
-
         # Combine the real and imaginary parts of the scattering
         # parameter, as they're stored in the file
-        fd_data[:, ant_pos] = (raw_data[:, 2 * ant_pos]
-                               + 1j * raw_data[:, 2 * ant_pos + 1])
+        fd_data[:, ant_pos] = (
+            raw_data[:, 2 * ant_pos] + 1j * raw_data[:, 2 * ant_pos + 1]
+        )
 
     return fd_data
 
@@ -114,35 +113,35 @@ def clean_birrs_folder(folder_path):
     fs_in_dir = os.listdir(folder_path)
 
     for ii in fs_in_dir:  # For each file in the directory
-
         # If this file is a target file, i.e., it contains 'expt'
         # and the identifier strings 'Mono' or 'Multi', because
         # s11 data is saved with str 'Mono', and s21 data with str
         # 'Multi'
-        if ('expt' in ii) and ('Mono' in ii or 'Multi' in ii):
-
+        if ("expt" in ii) and ("Mono" in ii or "Multi" in ii):
             # If the scan was incomplete due to early-stopping of the
             # BIRRS system during a scan
-            if 'INCOMPLETE' in ii:
-
+            if "INCOMPLETE" in ii:
                 # Delete the file
                 os.remove(os.path.join(folder_path, ii))
 
             else:  # If the scan was complete
-
                 # The index of where the str 'expt' appears in the fname
-                expt_idx = ii.index('expt')
+                expt_idx = ii.index("expt")
 
-                if 'Mono' in ii:  # If the data was from s11
-                    new_name = ('s11_%s.txt'
-                                % ii[expt_idx:expt_idx + len('expt') + 2])
+                if "Mono" in ii:  # If the data was from s11
+                    new_name = (
+                        "s11_%s.txt" % ii[expt_idx : expt_idx + len("expt") + 2]
+                    )
                 else:  # If the data was from s21
-                    new_name = ('s21_%s.txt'
-                                % ii[expt_idx:expt_idx + len('expt') + 2])
+                    new_name = (
+                        "s21_%s.txt" % ii[expt_idx : expt_idx + len("expt") + 2]
+                    )
 
                 # Rename the completed scan file
-                os.rename(os.path.join(folder_path, ii),
-                          os.path.join(folder_path, new_name))
+                os.rename(
+                    os.path.join(folder_path, ii),
+                    os.path.join(folder_path, new_name),
+                )
 
 
 def count_n_scans(folder_path):
@@ -165,12 +164,10 @@ def count_n_scans(folder_path):
     n_scans = 0
 
     for ii in fs_in_dir:  # For each file in the directory
-
         # If this file is a target file, i.e., it contains 'expt'
         # and the identifier strings 'Mono' or 's11', indicating the
         # scan was from the S11 antenna
-        if ('expt' in ii) and ('Mono' in ii or 's11' in ii):
-
+        if ("expt" in ii) and ("Mono" in ii or "s11" in ii):
             n_scans += 1
 
     return n_scans

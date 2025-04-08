@@ -3,6 +3,7 @@ Illia Prykhodko
 University of Manitoba
 July 6, 2023
 """
+
 from scipy import optimize
 import numpy as np
 
@@ -30,11 +31,13 @@ def shift_and_rotate(xs, ys, delta_x, delta_y, delta_phi):
         New coordinates
     """
 
-    xs_shift_rot = (xs + delta_x) * np.cos(delta_phi) - \
-                   (ys + delta_y) * np.sin(delta_phi)
+    xs_shift_rot = (xs + delta_x) * np.cos(delta_phi) - (ys + delta_y) * np.sin(
+        delta_phi
+    )
 
-    ys_shift_rot = (xs + delta_x) * np.sin(delta_phi) + \
-                   (ys + delta_y) * np.cos(delta_phi)
+    ys_shift_rot = (xs + delta_x) * np.sin(delta_phi) + (ys + delta_y) * np.cos(
+        delta_phi
+    )
 
     return xs_shift_rot, ys_shift_rot
 
@@ -120,12 +123,13 @@ def MSE_shift_rot(shift, cs_left, cs_right):
     xs_right = rho_right * np.cos(phi)
     ys_right = rho_right * np.sin(phi)
 
-    xs_right_shift_rot, ys_right_shift_rot = \
-        shift_and_rotate(xs=xs_right,
-                         ys=ys_right,
-                         delta_x=shift[0],
-                         delta_y=shift[1],
-                         delta_phi=shift[2])
+    xs_right_shift_rot, ys_right_shift_rot = shift_and_rotate(
+        xs=xs_right,
+        ys=ys_right,
+        delta_x=shift[0],
+        delta_y=shift[1],
+        delta_phi=shift[2],
+    )
 
     mse_x = (1 / n) * (np.sum((xs_right_shift_rot - xs_left) ** 2))
     mse_y = (1 / n) * (np.sum((ys_right_shift_rot - ys_left) ** 2))
@@ -151,9 +155,14 @@ def minimize_differential_shift(cs_left, cs_right):
     shift : array_like
         x- and y-shift of the right breast to align with left
     """
-    x0 = np.array([0., 0.])
-    res = optimize.minimize(fun=MSE, x0=x0, args=(cs_left, cs_right),
-                            method='Nelder-Mead', tol=1e-11)
+    x0 = np.array([0.0, 0.0])
+    res = optimize.minimize(
+        fun=MSE,
+        x0=x0,
+        args=(cs_left, cs_right),
+        method="Nelder-Mead",
+        tol=1e-11,
+    )
 
     return res.x
 
@@ -173,8 +182,13 @@ def minimize_differential_shift_rot(cs_left, cs_right):
     shift : array_like
         x- and y-shift of the right breast to align with left
     """
-    x0 = np.array([0., 0., 0.])
-    res = optimize.minimize(fun=MSE_shift_rot, x0=x0, args=(cs_left, cs_right),
-                            method='Nelder-Mead', tol=1e-11)
+    x0 = np.array([0.0, 0.0, 0.0])
+    res = optimize.minimize(
+        fun=MSE_shift_rot,
+        x0=x0,
+        args=(cs_left, cs_right),
+        method="Nelder-Mead",
+        tol=1e-11,
+    )
 
     return res.x
