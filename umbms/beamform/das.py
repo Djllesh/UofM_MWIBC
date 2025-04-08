@@ -35,13 +35,14 @@ def fd_das(fd_data, phase_fac, freqs, worker_pool=None, partial_ant_idx=None):
     n_fs = np.size(freqs)  # Find number of frequencies used
 
     if worker_pool is None:  # If *not* doing parallel computation
-
         # Reconstruct the image
         img = np.sum(
             fd_data[:, :, None, None]
-            * np.power(phase_fac[None, :, :, :],
-                       -2 * freqs[:, None, None, None]),
-            axis=(0,1))
+            * np.power(
+                phase_fac[None, :, :, :], -2 * freqs[:, None, None, None]
+            ),
+            axis=(0, 1),
+        )
 
     else:
         # Correct for to/from propagation
@@ -49,21 +50,30 @@ def fd_das(fd_data, phase_fac, freqs, worker_pool=None, partial_ant_idx=None):
 
         if partial_ant_idx is None:
             # Create func for parallel computation
-            parallel_func = partial(_parallel_fd_das_func, fd_data, new_phase_fac,
-                                    freqs)
+            parallel_func = partial(
+                _parallel_fd_das_func, fd_data, new_phase_fac, freqs
+            )
         else:
-            parallel_func = partial(_parallel_fd_das_func_part_ant, fd_data,
-                                    new_phase_fac, partial_ant_idx, freqs)
+            parallel_func = partial(
+                _parallel_fd_das_func_part_ant,
+                fd_data,
+                new_phase_fac,
+                partial_ant_idx,
+                freqs,
+            )
 
         iterable_idxs = range(n_fs)  # Indices to iterate over
 
         # Store projections from parallel processing
-        back_projections = np.array(worker_pool.map(parallel_func, iterable_idxs))
+        back_projections = np.array(
+            worker_pool.map(parallel_func, iterable_idxs)
+        )
 
         # Reshape
-        back_projections = np.reshape(back_projections,
-                                      [n_fs, np.size(phase_fac, axis=1),
-                                       np.size(phase_fac, axis=2)])
+        back_projections = np.reshape(
+            back_projections,
+            [n_fs, np.size(phase_fac, axis=1), np.size(phase_fac, axis=2)],
+        )
 
         # Sum over all frequencies
         img = np.sum(back_projections, axis=0)
@@ -96,14 +106,16 @@ def _parallel_fd_das_func(fd_data, new_phase_fac, freqs, ff):
     this_phase_fac = new_phase_fac ** freqs[ff]
 
     # Sum over antenna positions
-    this_projection = np.sum(this_phase_fac * fd_data[ff, :, None, None],
-                             axis=0)
+    this_projection = np.sum(
+        this_phase_fac * fd_data[ff, :, None, None], axis=0
+    )
 
     return this_projection
 
 
-def _parallel_fd_das_func_part_ant(fd_data, new_phase_fac, partial_ant_idx,
-                                   freqs, ff):
+def _parallel_fd_das_func_part_ant(
+    fd_data, new_phase_fac, partial_ant_idx, freqs, ff
+):
     """Compute projection for given frequency ff and for given antenna
     indices
 
@@ -131,16 +143,32 @@ def _parallel_fd_das_func_part_ant(fd_data, new_phase_fac, partial_ant_idx,
     this_phase_fac = new_phase_fac ** freqs[ff]
 
     # Sum over antenna positions
-    this_projection = np.sum(this_phase_fac * fd_data[ff, partial_ant_idx,
-                                                      None, None], axis=0)
+    this_projection = np.sum(
+        this_phase_fac * fd_data[ff, partial_ant_idx, None, None], axis=0
+    )
 
     return this_projection
 
 
-def fd_das_freq_dep(fd_data, *, int_f_xs, int_f_ys, int_b_xs, int_b_ys,
-                    velocities, ant_rad, m_size, roi_rad, air_speed, freqs,
-                    worker_pool, adi_rad=0, mid_breast_max=0.0,
-                    mid_breast_min=0.0, partial_ant_idx=None):
+def fd_das_freq_dep(
+    fd_data,
+    *,
+    int_f_xs,
+    int_f_ys,
+    int_b_xs,
+    int_b_ys,
+    velocities,
+    ant_rad,
+    m_size,
+    roi_rad,
+    air_speed,
+    freqs,
+    worker_pool,
+    adi_rad=0,
+    mid_breast_max=0.0,
+    mid_breast_min=0.0,
+    partial_ant_idx=None,
+):
     """Compute frequency dependent DAS reconstruction
 
     Parameters
@@ -190,18 +218,43 @@ def fd_das_freq_dep(fd_data, *, int_f_xs, int_f_ys, int_b_xs, int_b_ys,
     n_fs = np.size(freqs)  # Find number of frequencies used
     if partial_ant_idx is None:
         # Create func for parallel computation
-        parallel_func = partial(_parallel_fd_das_freq_dep_func, fd_data,
-                                int_f_xs, int_f_ys, int_b_xs, int_b_ys,
-                                velocities,
-                                ant_rad, m_size, roi_rad, air_speed, freqs,
-                                adi_rad, mid_breast_max, mid_breast_min)
+        parallel_func = partial(
+            _parallel_fd_das_freq_dep_func,
+            fd_data,
+            int_f_xs,
+            int_f_ys,
+            int_b_xs,
+            int_b_ys,
+            velocities,
+            ant_rad,
+            m_size,
+            roi_rad,
+            air_speed,
+            freqs,
+            adi_rad,
+            mid_breast_max,
+            mid_breast_min,
+        )
     else:
         # Create func for parallel computation
-        parallel_func = partial(_parallel_fd_das_freq_dep_func_part_ant,
-                                fd_data, int_f_xs, int_f_ys, int_b_xs,
-                                int_b_ys, velocities, ant_rad, m_size, roi_rad,
-                                air_speed, freqs, adi_rad, mid_breast_max,
-                                mid_breast_min, partial_ant_idx)
+        parallel_func = partial(
+            _parallel_fd_das_freq_dep_func_part_ant,
+            fd_data,
+            int_f_xs,
+            int_f_ys,
+            int_b_xs,
+            int_b_ys,
+            velocities,
+            ant_rad,
+            m_size,
+            roi_rad,
+            air_speed,
+            freqs,
+            adi_rad,
+            mid_breast_max,
+            mid_breast_min,
+            partial_ant_idx,
+        )
 
     iterable_idxs = range(n_fs)  # Indices to iterate over
 
@@ -217,10 +270,23 @@ def fd_das_freq_dep(fd_data, *, int_f_xs, int_f_ys, int_b_xs, int_b_ys,
     return img
 
 
-def _parallel_fd_das_freq_dep_func(fd_data, int_f_xs, int_f_ys, int_b_xs,
-                                   int_b_ys, velocities, ant_rad, m_size,
-                                   roi_rad, air_speed, freqs, adi_rad,
-                                   mid_breast_max, mid_breast_min, ff):
+def _parallel_fd_das_freq_dep_func(
+    fd_data,
+    int_f_xs,
+    int_f_ys,
+    int_b_xs,
+    int_b_ys,
+    velocities,
+    ant_rad,
+    m_size,
+    roi_rad,
+    air_speed,
+    freqs,
+    adi_rad,
+    mid_breast_max,
+    mid_breast_min,
+    ff,
+):
     """Compute projection for given frequency ff
 
     Parameters
@@ -266,14 +332,20 @@ def _parallel_fd_das_freq_dep_func(fd_data, int_f_xs, int_f_ys, int_b_xs,
 
     # on each parallel iteration (ff) recalculate the time-delay array
     # using different velocity: velocities[ff]
-    pix_ts, _, _, _, _ = get_pix_ts(ant_rad=ant_rad, m_size=m_size,
-                                    roi_rad=roi_rad, air_speed=air_speed,
-                                    breast_speed=velocities[ff],
-                                    adi_rad=adi_rad,
-                                    mid_breast_max=mid_breast_max,
-                                    mid_breast_min=mid_breast_min,
-                                    int_f_xs=int_f_xs, int_f_ys=int_f_ys,
-                                    int_b_xs=int_b_xs, int_b_ys=int_b_ys)
+    pix_ts, _, _, _, _ = get_pix_ts(
+        ant_rad=ant_rad,
+        m_size=m_size,
+        roi_rad=roi_rad,
+        air_speed=air_speed,
+        breast_speed=velocities[ff],
+        adi_rad=adi_rad,
+        mid_breast_max=mid_breast_max,
+        mid_breast_min=mid_breast_min,
+        int_f_xs=int_f_xs,
+        int_f_ys=int_f_ys,
+        int_b_xs=int_b_xs,
+        int_b_ys=int_b_ys,
+    )
 
     pix_ts = apply_ant_pix_delay(pix_ts=pix_ts)
 
@@ -283,19 +355,31 @@ def _parallel_fd_das_freq_dep_func(fd_data, int_f_xs, int_f_ys, int_b_xs,
     this_phase_fac = phase_fac ** (freqs[ff] * (-2))
 
     # Sum over antenna positions
-    this_projection = np.sum(this_phase_fac * fd_data[ff, :, None, None],
-                             axis=0)
+    this_projection = np.sum(
+        this_phase_fac * fd_data[ff, :, None, None], axis=0
+    )
 
     return this_projection
 
 
-def _parallel_fd_das_freq_dep_func_part_ant(fd_data, int_f_xs, int_f_ys,
-                                            int_b_xs, int_b_ys, velocities,
-                                            ant_rad, m_size, roi_rad,
-                                            air_speed, freqs, adi_rad,
-                                            mid_breast_max, mid_breast_min,
-                                            partial_ant_idx,
-                                            ff):
+def _parallel_fd_das_freq_dep_func_part_ant(
+    fd_data,
+    int_f_xs,
+    int_f_ys,
+    int_b_xs,
+    int_b_ys,
+    velocities,
+    ant_rad,
+    m_size,
+    roi_rad,
+    air_speed,
+    freqs,
+    adi_rad,
+    mid_breast_max,
+    mid_breast_min,
+    partial_ant_idx,
+    ff,
+):
     """Compute projection for given frequency ff and for given antenna
     indices
 
@@ -342,15 +426,21 @@ def _parallel_fd_das_freq_dep_func_part_ant(fd_data, int_f_xs, int_f_ys,
 
     # on each parallel iteration (ff) recalculate the time-delay array
     # using different velocity: velocities[ff]
-    pix_ts, _, _, _, _ = get_pix_ts(ant_rad=ant_rad, m_size=m_size,
-                                    roi_rad=roi_rad, air_speed=air_speed,
-                                    breast_speed=velocities[ff],
-                                    adi_rad=adi_rad,
-                                    mid_breast_max=mid_breast_max,
-                                    mid_breast_min=mid_breast_min,
-                                    int_f_xs=int_f_xs, int_f_ys=int_f_ys,
-                                    int_b_xs=int_b_xs, int_b_ys=int_b_ys,
-                                    partial_ant_idx=partial_ant_idx)
+    pix_ts, _, _, _, _ = get_pix_ts(
+        ant_rad=ant_rad,
+        m_size=m_size,
+        roi_rad=roi_rad,
+        air_speed=air_speed,
+        breast_speed=velocities[ff],
+        adi_rad=adi_rad,
+        mid_breast_max=mid_breast_max,
+        mid_breast_min=mid_breast_min,
+        int_f_xs=int_f_xs,
+        int_f_ys=int_f_ys,
+        int_b_xs=int_b_xs,
+        int_b_ys=int_b_ys,
+        partial_ant_idx=partial_ant_idx,
+    )
 
     phase_fac = get_fd_phase_factor(pix_ts)
 
@@ -358,7 +448,8 @@ def _parallel_fd_das_freq_dep_func_part_ant(fd_data, int_f_xs, int_f_ys,
     this_phase_fac = phase_fac ** (freqs[ff] * (-2))
 
     # Sum over antenna positions
-    this_projection = np.sum(this_phase_fac * fd_data[ff, partial_ant_idx,
-                                                      None, None], axis=0)
+    this_projection = np.sum(
+        this_phase_fac * fd_data[ff, partial_ant_idx, None, None], axis=0
+    )
 
     return this_projection

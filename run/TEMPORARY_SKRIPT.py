@@ -7,7 +7,8 @@ August 18th, 2023
 import os
 import numpy as np
 import matplotlib
-matplotlib.use('tkagg')
+
+matplotlib.use("tkagg")
 import matplotlib.pyplot as plt
 
 from umbms import get_proj_path
@@ -54,12 +55,20 @@ def iczt_NEW(fd_sig, ini_f, fin_f, ini_t, fin_t, n_ts):
     t_indices = np.arange(n_ts)  # Time-indices, n = 0, 1, ...
 
     # Calculate the time domain signal via the ICZT
-    td_sig = np.sum(fd_sig[None, :]
-                    * np.exp(1j * 2 * np.pi * ini_t * df * f_indices)[None, :]
-                    * np.power((np.exp(1j * 2 * np.pi * dt
-                                       * (ini_f + df * f_indices)))[None, :],
-                               t_indices[:, None]),
-                    axis=1) / n_fs
+    td_sig = (
+        np.sum(
+            fd_sig[None, :]
+            * np.exp(1j * 2 * np.pi * ini_t * df * f_indices)[None, :]
+            * np.power(
+                (np.exp(1j * 2 * np.pi * dt * (ini_f + df * f_indices)))[
+                    None, :
+                ],
+                t_indices[:, None],
+            ),
+            axis=1,
+        )
+        / n_fs
+    )
 
     # Apply phase compensation
     td_sig *= np.exp(1j * 2 * np.pi * ini_f * ini_t)
@@ -102,17 +111,20 @@ def czt(td_sig, ini_t, fin_t, ini_f, fin_f, n_fs):
     t_indices = np.arange(n_ts)  # Time-indices, n = 0, 1, ...
 
     # Calculate the FD signal
-    fd_sig = np.sum(td_sig[None, :]
-                    * np.exp(-1j * 2 * np.pi * ini_f * dt * t_indices)[None, :]
-                    * np.power((np.exp(-1j * 2 * np.pi * df
-                                       * (ini_t + dt * t_indices)))[None, :],
-                               f_indices[:, None]),
-                    axis=1)
+    fd_sig = np.sum(
+        td_sig[None, :]
+        * np.exp(-1j * 2 * np.pi * ini_f * dt * t_indices)[None, :]
+        * np.power(
+            (np.exp(-1j * 2 * np.pi * df * (ini_t + dt * t_indices)))[None, :],
+            f_indices[:, None],
+        ),
+        axis=1,
+    )
 
     # Apply phase compensation
     fd_sig *= np.exp(-1j * 2 * np.pi * ini_f * ini_t)
 
-    fd_sig *= (n_fs / n_ts)  # Scaling factor
+    fd_sig *= n_fs / n_ts  # Scaling factor
 
     return fd_sig
 
@@ -120,9 +132,9 @@ def czt(td_sig, ini_t, fin_t, ini_f, fin_f, n_fs):
 ###############################################################################
 
 if __name__ == "__main__":
-
-    fd = load_pickle(os.path.join(get_proj_path(),
-                                  'data/umbmid/g3/g3_s11.pickle'))
+    fd = load_pickle(
+        os.path.join(get_proj_path(), "data/umbmid/g3/g3_s11.pickle")
+    )
 
     tar_sig = fd[0, :, 0]  # Target signal
 
@@ -145,28 +157,42 @@ if __name__ == "__main__":
     n_ts = n_fs * 8  # Can be any integer multiple of 1001
 
     # Calculate the TD signal using the ICZT as defined in this file
-    td = iczt_NEW(fd_sig=tar_sig, ini_f=ini_f, fin_f=fin_f,
-                  ini_t=ini_t, fin_t=fin_t, n_ts=n_ts)
+    td = iczt_NEW(
+        fd_sig=tar_sig,
+        ini_f=ini_f,
+        fin_f=fin_f,
+        ini_t=ini_t,
+        fin_t=fin_t,
+        n_ts=n_ts,
+    )
 
     # Calculate the TD signal using the *old* implementation of
     # the ICZT, to make sure the ICZT defined in this file is correct
-    td_old = iczt(fd_data=tar_sig, ini_f=ini_f, fin_f=fin_f,
-                  ini_t=ini_t, fin_t=fin_t, n_time_pts=n_ts)
+    td_old = iczt(
+        fd_data=tar_sig,
+        ini_f=ini_f,
+        fin_f=fin_f,
+        ini_t=ini_t,
+        fin_t=fin_t,
+        n_time_pts=n_ts,
+    )
 
     # Recover the FD signal using the CZT as defined in this file
-    rec_fd = czt(td_sig=td, ini_t=ini_t, fin_t=fin_t,
-                 ini_f=ini_f, fin_f=fin_f, n_fs=n_fs)
+    rec_fd = czt(
+        td_sig=td, ini_t=ini_t, fin_t=fin_t, ini_f=ini_f, fin_f=fin_f, n_fs=n_fs
+    )
 
     # Is the new ICZT the same as the old?
     plt.figure()
-    plt.plot(td, 'k-', label='new')
-    plt.plot(td_old, 'r--', label='old')
+    plt.plot(td, "k-", label="new")
+    plt.plot(td_old, "r--", label="old")
     plt.legend()
     plt.show()
 
     # Can we recover the FD signal?
     plt.figure()
-    plt.plot(freqs, np.abs(tar_sig), 'k-', label='original')
-    plt.plot(freqs, np.abs(rec_fd), 'r--', label='recovered')
+    plt.plot(freqs, np.abs(tar_sig), "k-", label="original")
+    plt.plot(freqs, np.abs(rec_fd), "r--", label="recovered")
     plt.legend()
     plt.show()
+

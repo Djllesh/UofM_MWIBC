@@ -168,7 +168,12 @@ def plot_img(
     # If normalizing the image, ensure the cbar axis extends from 0 to 1
     if normalize:
         plt.imshow(
-            img_to_plot, cmap=cmap, extent=tick_bounds, aspect="equal", vmin=0, vmax=1.0
+            img_to_plot,
+            cmap=cmap,
+            extent=tick_bounds,
+            aspect="equal",
+            vmin=0,
+            vmax=1.0,
         )
     elif norm_cbar:
         plt.imshow(
@@ -209,7 +214,9 @@ def plot_img(
 
     # If saving the image, save it to the save_str path and close it
     if save_fig:
-        plt.savefig(save_str, transparent=transparent, dpi=dpi, bbox_inches="tight")
+        plt.savefig(
+            save_str, transparent=transparent, dpi=dpi, bbox_inches="tight"
+        )
 
         if save_close:  # If wanting to close the fig after saving
             plt.close()
@@ -322,7 +329,9 @@ def plot_fd_img(
     # If cropping the image at the antenna-trajectory boundary
     if crop_img:
         # Find the region inside the antenna trajectory
-        roi = breastmodels.get_roi(roi_rad, np.size(img_to_plt, axis=0), img_rad)
+        roi = breastmodels.get_roi(
+            roi_rad, np.size(img_to_plt, axis=0), img_rad
+        )
 
         # Set the pixels outside of the antenna trajectory to NaN
         img_to_plt[np.logical_not(roi)] = np.NaN
@@ -389,7 +398,9 @@ def plot_fd_img(
     plt.ylim([-roi_rad, roi_rad])
 
     # plt.plot(ant_xs, ant_ys, 'k--', linewidth=2.5)
-    plt.plot(breast_xs, breast_ys, "w--", linewidth=2, label="Approximate outline")
+    plt.plot(
+        breast_xs, breast_ys, "w--", linewidth=2, label="Approximate outline"
+    )
 
     if partial_ant_idx is not None:
         # Start from the initial angle of the scan
@@ -511,7 +522,9 @@ def plot_fd_img(
             # plt.legend(loc='upper left')
 
         # plt.legend(loc='upper left')
-        plt.savefig(save_str, transparent=transparent, dpi=dpi, bbox_inches="tight")
+        plt.savefig(
+            save_str, transparent=transparent, dpi=dpi, bbox_inches="tight"
+        )
 
         if save_close:  # If wanting to close the fig after saving
             plt.close()
@@ -613,7 +626,9 @@ def plot_fd_img_with_intersections(
     # If cropping the image at the antenna-trajectory boundary
     if crop_img:
         # Find the region inside the antenna trajectory
-        roi = breastmodels.get_roi(roi_rad, np.size(img_to_plt, axis=0), img_rad)
+        roi = breastmodels.get_roi(
+            roi_rad, np.size(img_to_plt, axis=0), img_rad
+        )
 
         # Set the pixels outside of the antenna trajectory to NaN
         img_to_plt[np.logical_not(roi)] = np.NaN
@@ -715,10 +730,12 @@ def plot_fd_img_with_intersections(
             )
             pix_dot.set_data(pix_xs[self.px_x], pix_ys[self.px_y])
             int_f_pos.set_data(
-                int_f_xs[0, self.px_y, self.px_x], int_f_ys[0, self.px_y, self.px_x]
+                int_f_xs[0, self.px_y, self.px_x],
+                int_f_ys[0, self.px_y, self.px_x],
             )
             int_b_pos.set_data(
-                int_b_xs[0, self.px_y, self.px_x], int_b_ys[0, self.px_y, self.px_x]
+                int_b_xs[0, self.px_y, self.px_x],
+                int_b_ys[0, self.px_y, self.px_x],
             )
             plt.draw()
 
@@ -733,10 +750,12 @@ def plot_fd_img_with_intersections(
             )
             pix_dot.set_data(pix_xs[self.px_x], pix_ys[self.px_y])
             int_f_pos.set_data(
-                int_f_xs[0, self.px_y, self.px_x], int_f_ys[0, self.px_y, self.px_x]
+                int_f_xs[0, self.px_y, self.px_x],
+                int_f_ys[0, self.px_y, self.px_x],
             )
             int_b_pos.set_data(
-                int_b_xs[0, self.px_y, self.px_x], int_b_ys[0, self.px_y, self.px_x]
+                int_b_xs[0, self.px_y, self.px_x],
+                int_b_ys[0, self.px_y, self.px_x],
             )
             plt.draw()
 
@@ -751,10 +770,12 @@ def plot_fd_img_with_intersections(
             )
             pix_dot.set_data(pix_xs[self.px_x], pix_ys[self.px_y])
             int_f_pos.set_data(
-                int_f_xs[0, self.px_y, self.px_x], int_f_ys[0, self.px_y, self.px_x]
+                int_f_xs[0, self.px_y, self.px_x],
+                int_f_ys[0, self.px_y, self.px_x],
             )
             int_b_pos.set_data(
-                int_b_xs[0, self.px_y, self.px_x], int_b_ys[0, self.px_y, self.px_x]
+                int_b_xs[0, self.px_y, self.px_x],
+                int_b_ys[0, self.px_y, self.px_x],
             )
             plt.draw()
 
@@ -769,10 +790,12 @@ def plot_fd_img_with_intersections(
             )
             pix_dot.set_data(pix_xs[self.px_x], pix_ys[self.px_y])
             int_f_pos.set_data(
-                int_f_xs[0, self.px_y, self.px_x], int_f_ys[0, self.px_y, self.px_x]
+                int_f_xs[0, self.px_y, self.px_x],
+                int_f_ys[0, self.px_y, self.px_x],
             )
             int_b_pos.set_data(
-                int_b_xs[0, self.px_y, self.px_x], int_b_ys[0, self.px_y, self.px_x]
+                int_b_xs[0, self.px_y, self.px_x],
+                int_b_ys[0, self.px_y, self.px_x],
             )
             plt.draw()
 
@@ -868,7 +891,9 @@ def plot_fd_img_differential(
     # If cropping the image at the antenna-trajectory boundary
     if crop_img:
         # Find the region inside the antenna trajectory
-        roi = breastmodels.get_roi(roi_rad, np.size(img_to_plt, axis=0), img_rad)
+        roi = breastmodels.get_roi(
+            roi_rad, np.size(img_to_plt, axis=0), img_rad
+        )
 
         # Set the pixels outside of the antenna trajectory to NaN
         img_to_plt[np.logical_not(roi)] = np.NaN
@@ -910,7 +935,9 @@ def plot_fd_img_differential(
     plt.ylim([-roi_rad, roi_rad])
 
     # plt.plot(ant_xs, ant_ys, 'k--', linewidth=2.5)
-    plt.plot(breast_xs, breast_ys, "w--", linewidth=2, label="Approximate outline")
+    plt.plot(
+        breast_xs, breast_ys, "w--", linewidth=2, label="Approximate outline"
+    )
 
     # Plot the approximate tumor boundary
     plt.plot(tum_xs, tum_ys, "g", label="Observed position", linewidth=1.5)
@@ -937,14 +964,22 @@ def plot_fd_img_differential(
             plt.plot(xs, ys, "b-", label="Right breast boundary ")
 
         # plt.legend(loc='upper left')
-        plt.savefig(save_str, transparent=transparent, dpi=dpi, bbox_inches="tight")
+        plt.savefig(
+            save_str, transparent=transparent, dpi=dpi, bbox_inches="tight"
+        )
 
         if save_close:  # If wanting to close the fig after saving
             plt.close()
 
 
 def antennas_to_shifted_boundary(
-    cs, delta_x, delta_y, ant_rad, n_ant_pos=72, ini_ant_ang=-136.0, fin_ant_ang=355.0
+    cs,
+    delta_x,
+    delta_y,
+    ant_rad,
+    n_ant_pos=72,
+    ini_ant_ang=-136.0,
+    fin_ant_ang=355.0,
 ):
     """Creates a plot of a shifted and unshifted boundaries with
     corresponding antenna positions
@@ -984,7 +1019,10 @@ def antennas_to_shifted_boundary(
         plt.plot(ant_xs[ant_pos], ant_ys[ant_pos], "ro")
 
         unshifted_idx = np.argmin(
-            np.sqrt((ant_xs[ant_pos] - plot_xs) ** 2 + (ant_ys[ant_pos] - plot_ys) ** 2)
+            np.sqrt(
+                (ant_xs[ant_pos] - plot_xs) ** 2
+                + (ant_ys[ant_pos] - plot_ys) ** 2
+            )
         )
 
         unshifted_x = plot_xs[unshifted_idx]
@@ -1013,7 +1051,9 @@ def antennas_to_shifted_boundary(
         shifted_y = plot_ys_shifted[shifted_idx]
 
         closest_shifted_idx = np.argmin(
-            np.sqrt((shifted_x - xs_shifted) ** 2 + (shifted_y - ys_shifted) ** 2)
+            np.sqrt(
+                (shifted_x - xs_shifted) ** 2 + (shifted_y - ys_shifted) ** 2
+            )
         )
 
         closest_shifted_idxs = [
@@ -1023,7 +1063,9 @@ def antennas_to_shifted_boundary(
         ]
 
         plt.plot(
-            xs_shifted[closest_shifted_idxs], ys_shifted[closest_shifted_idxs], "r."
+            xs_shifted[closest_shifted_idxs],
+            ys_shifted[closest_shifted_idxs],
+            "r.",
         )
 
         plt.plot(
@@ -1040,13 +1082,17 @@ def antennas_to_shifted_boundary(
             "r-",
             linewidth=0.5,
         )
-        plt.plot(plot_xs_shifted[shifted_idx], plot_ys_shifted[shifted_idx], "r.")
+        plt.plot(
+            plot_xs_shifted[shifted_idx], plot_ys_shifted[shifted_idx], "r."
+        )
 
     plt.axis("square")
     plt.show()
 
 
-def calculate_arc_map(pix_ts, td_data, iczt_time, *, n_ant_pos=72, threshold=0.5e-11):
+def calculate_arc_map(
+    pix_ts, td_data, iczt_time, *, n_ant_pos=72, threshold=0.5e-11
+):
     """Calculates the arc map for a given time-domain data. Maps the
     highest intensity point.
 

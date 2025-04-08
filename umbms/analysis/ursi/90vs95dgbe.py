@@ -12,28 +12,36 @@ import matplotlib.pyplot as plt
 import os
 from umbms import get_proj_path
 from umbms.loadsave import load_pickle
-from umbms.beamform.propspeed import (cole_cole, phase_shape, phase_diff_MSE,
-                                      phase_shape_wrapped,
-                                      get_breast_speed_freq)
+from umbms.beamform.propspeed import (
+    cole_cole,
+    phase_shape,
+    phase_diff_MSE,
+    phase_shape_wrapped,
+    get_breast_speed_freq,
+)
 from umbms.analysis.stats import ccc
 
 import matplotlib.ticker as ticker  # <-- ADDED
-__DATA_DIR = os.path.join("C:/Users/prikh/Desktop/Master's thesis/ursi/data/",
-                          "DGBE95.csv")
 
-__DATA_DIR2 = os.path.join("C:/Users/prikh/Desktop/Master's thesis/ursi/data/",
-                          "DGBE90.csv")
+__DATA_DIR = os.path.join(
+    "C:/Users/prikh/Desktop/Master's thesis/ursi/data/", "DGBE95.csv"
+)
 
-__DIEL_DIR = os.path.join(get_proj_path(),
-                          'data/freq_data/')
+__DATA_DIR2 = os.path.join(
+    "C:/Users/prikh/Desktop/Master's thesis/ursi/data/", "DGBE90.csv"
+)
 
-__DIEL_NAME = '20241219_DGBE95.csv'
-__DIEL_NAME2 = '20241219_DGBE90.csv'
+__DIEL_DIR = os.path.join(get_proj_path(), "data/freq_data/")
+
+__DIEL_NAME = "20241219_DGBE95.csv"
+__DIEL_NAME2 = "20241219_DGBE90.csv"
 # The phase
-phase = np.deg2rad(np.genfromtxt(__DATA_DIR, skip_header=3, delimiter=',')
-                   [:, 1])
-phase2 = np.deg2rad(np.genfromtxt(__DATA_DIR2, skip_header=3, delimiter=',')
-                   [:, 1])
+phase = np.deg2rad(
+    np.genfromtxt(__DATA_DIR, skip_header=3, delimiter=",")[:, 1]
+)
+phase2 = np.deg2rad(
+    np.genfromtxt(__DATA_DIR2, skip_header=3, delimiter=",")[:, 1]
+)
 phase_unwrapped = np.unwrap(phase)
 phase_unwrapped2 = np.unwrap(phase2)
 __INI_F = 2e9
@@ -41,133 +49,169 @@ __FIN_F = 9e9
 __N_FS = 1001
 __MY_DPI = 120
 freqs = np.linspace(__INI_F, __FIN_F, __N_FS)
-length = 0.42# + (0.0449 + 0.03618) * 2
+length = 0.42  # + (0.0449 + 0.03618) * 2
 phantom_width = 0.11
 if __name__ == "__main__":
     # Read .csv file of permittivity and conductivity values
-    df = pandas.read_csv(os.path.join(__DIEL_DIR, __DIEL_NAME),
-                         delimiter=';', decimal=',', skiprows=9)
+    df = pandas.read_csv(
+        os.path.join(__DIEL_DIR, __DIEL_NAME),
+        delimiter=";",
+        decimal=",",
+        skiprows=9,
+    )
     diel_data_arr = df.values
 
     perms = np.array(diel_data_arr[:, 1])
     conds = np.array(diel_data_arr[:, 3])
 
-    df2 = pandas.read_csv(os.path.join(__DIEL_DIR, __DIEL_NAME2),
-                         delimiter=';', decimal=',', skiprows=9)
+    df2 = pandas.read_csv(
+        os.path.join(__DIEL_DIR, __DIEL_NAME2),
+        delimiter=";",
+        decimal=",",
+        skiprows=9,
+    )
     diel_data_arr2 = df2.values
 
     perms2 = np.array(diel_data_arr2[:, 1])
     conds2 = np.array(diel_data_arr2[:, 3])
 
-    results = minimize(fun=phase_diff_MSE,
-                       x0=np.array([3.40, 17.93, 101.75, 0.18,
-                                    - phase[0]]),
-                       bounds=((1, 7), (8, 80), (7, 103),
-                               (0.0, 0.25), (None, None)),
-                       args=(phase_unwrapped, freqs, length, False),
-                       method='trust-constr', options={'maxiter': 2000})
+    results = minimize(
+        fun=phase_diff_MSE,
+        x0=np.array([3.40, 17.93, 101.75, 0.18, -phase[0]]),
+        bounds=((1, 7), (8, 80), (7, 103), (0.0, 0.25), (None, None)),
+        args=(phase_unwrapped, freqs, length, False),
+        method="trust-constr",
+        options={"maxiter": 2000},
+    )
 
-    results_unwrapped = minimize(fun=phase_diff_MSE,
-                                 x0=np.array(results.x),
-                                 # bounds=((1, 7), (8, 80), (7, 103),
-                                 #         (0.0, 0.25), (None, None)),
-                                 args=(phase_unwrapped, freqs, length,
-                                       False),
-                                 method='trust-constr', tol=1e-15)
+    results_unwrapped = minimize(
+        fun=phase_diff_MSE,
+        x0=np.array(results.x),
+        # bounds=((1, 7), (8, 80), (7, 103),
+        #         (0.0, 0.25), (None, None)),
+        args=(phase_unwrapped, freqs, length, False),
+        method="trust-constr",
+        tol=1e-15,
+    )
 
     e_h, e_s, tau, alpha, shift = results_unwrapped.x
     epsilon = cole_cole(freqs, e_h, e_s, tau, alpha)
     shape_unwrapped = phase_shape(freqs, length, epsilon, shift)
 
-    results2 = minimize(fun=phase_diff_MSE,
-                       x0=np.array([3.40, 17.93, 101.75, 0.18,
-                                    - phase[0]]),
-                       bounds=((1, 7), (8, 80), (7, 103),
-                               (0.0, 0.25), (None, None)),
-                       args=(phase_unwrapped, freqs, length, False),
-                       method='trust-constr', options={'maxiter': 2000})
+    results2 = minimize(
+        fun=phase_diff_MSE,
+        x0=np.array([3.40, 17.93, 101.75, 0.18, -phase[0]]),
+        bounds=((1, 7), (8, 80), (7, 103), (0.0, 0.25), (None, None)),
+        args=(phase_unwrapped, freqs, length, False),
+        method="trust-constr",
+        options={"maxiter": 2000},
+    )
 
-    results_unwrapped2 = minimize(fun=phase_diff_MSE,
-                                 x0=np.array(results2.x),
-                                 # bounds=((1, 7), (8, 80), (7, 103),
-                                 #         (0.0, 0.25), (None, None)),
-                                 args=(phase_unwrapped2, freqs, length,
-                                       False),
-                                 method='trust-constr', tol=1e-15)
+    results_unwrapped2 = minimize(
+        fun=phase_diff_MSE,
+        x0=np.array(results2.x),
+        # bounds=((1, 7), (8, 80), (7, 103),
+        #         (0.0, 0.25), (None, None)),
+        args=(phase_unwrapped2, freqs, length, False),
+        method="trust-constr",
+        tol=1e-15,
+    )
 
     e_h, e_s, tau, alpha, shift = results_unwrapped2.x
     epsilon = cole_cole(freqs, e_h, e_s, tau, alpha)
     shape_unwrapped2 = phase_shape(freqs, length, epsilon, shift)
 
-    phase_speed_4pi = - 2 * np.pi * freqs * length / (shape_unwrapped - 2 *
-                                                      np.pi * 4)
-    phase_speed_4pi_in = (
-            phantom_width / (length / phase_speed_4pi -
-                             (length - phantom_width) / 3e8))
+    phase_speed_4pi = (
+        -2 * np.pi * freqs * length / (shape_unwrapped - 2 * np.pi * 4)
+    )
+    phase_speed_4pi_in = phantom_width / (
+        length / phase_speed_4pi - (length - phantom_width) / 3e8
+    )
 
-    phase_speed_4pi2 = - 2 * np.pi * freqs * length / (shape_unwrapped2 - 2 *
-                                                      np.pi * 4)
-    phase_speed_4pi_in2 = (
-            phantom_width / (length / phase_speed_4pi2 -
-                             (length - phantom_width) / 3e8))
+    phase_speed_4pi2 = (
+        -2 * np.pi * freqs * length / (shape_unwrapped2 - 2 * np.pi * 4)
+    )
+    phase_speed_4pi_in2 = phantom_width / (
+        length / phase_speed_4pi2 - (length - phantom_width) / 3e8
+    )
 
-    experimental_speed = get_breast_speed_freq(freqs=freqs,
-                                               permittivities=perms,
-                                               conductivities=conds)
-    experimental_speed2 = get_breast_speed_freq(freqs=freqs,
-                                               permittivities=perms2,
-                                               conductivities=conds2)
+    experimental_speed = get_breast_speed_freq(
+        freqs=freqs, permittivities=perms, conductivities=conds
+    )
+    experimental_speed2 = get_breast_speed_freq(
+        freqs=freqs, permittivities=perms2, conductivities=conds2
+    )
     __MY_DPI = 120
 
-    plt.rcParams['font.family'] = 'Times New Roman'
-    fig, ax = plt.subplots(**dict(figsize=(500 / __MY_DPI, 500 / __MY_DPI),
-                                  dpi=__MY_DPI))
+    plt.rcParams["font.family"] = "Times New Roman"
+    fig, ax = plt.subplots(
+        **dict(figsize=(500 / __MY_DPI, 500 / __MY_DPI), dpi=__MY_DPI)
+    )
 
     plot_freqs = np.linspace(2, 9, 1001)
 
     # 95
-    ax.plot(plot_freqs, experimental_speed, 'b--', label='Experimental speed',
-            linewidth=1.3)
-    ax.plot(plot_freqs, phase_speed_4pi_in, 'b-',
-            label=r'Estimated speed inside, shift = $-2 \cdot 4\pi$',
-            linewidth=1.3)
+    ax.plot(
+        plot_freqs,
+        experimental_speed,
+        "b--",
+        label="Experimental speed",
+        linewidth=1.3,
+    )
+    ax.plot(
+        plot_freqs,
+        phase_speed_4pi_in,
+        "b-",
+        label=r"Estimated speed inside, shift = $-2 \cdot 4\pi$",
+        linewidth=1.3,
+    )
 
     # 90
-    ax.plot(plot_freqs, experimental_speed2, 'r--', label='Experimental speed',
-            linewidth=1.3)
-    ax.plot(plot_freqs, phase_speed_4pi_in2, 'r-',
-            label=r'Estimated speed inside, shift = $-2 \cdot 4\pi$',
-            linewidth=1.3)
+    ax.plot(
+        plot_freqs,
+        experimental_speed2,
+        "r--",
+        label="Experimental speed",
+        linewidth=1.3,
+    )
+    ax.plot(
+        plot_freqs,
+        phase_speed_4pi_in2,
+        "r-",
+        label=r"Estimated speed inside, shift = $-2 \cdot 4\pi$",
+        linewidth=1.3,
+    )
 
-    ax.set_title('DGBE 95% vs 90%', fontsize=16)
+    ax.set_title("DGBE 95% vs 90%", fontsize=16)
 
     cor_phase = pearsonr(phase_speed_4pi_in, phase_speed_4pi_in2)[0]
-    cor_theor  = pearsonr(experimental_speed, experimental_speed2)[0]
+    cor_theor = pearsonr(experimental_speed, experimental_speed2)[0]
 
-    print(f'CCC phase = {ccc(phase_speed_4pi_in, phase_speed_4pi_in2)}')
-    print(f'CCC theory = {ccc(experimental_speed2, experimental_speed)}')
-    print(f'pearson r phase = {cor_phase}')
-    print(f'pearson r theory = {cor_theor}')
+    print(f"CCC phase = {ccc(phase_speed_4pi_in, phase_speed_4pi_in2)}")
+    print(f"CCC theory = {ccc(experimental_speed2, experimental_speed)}")
+    print(f"pearson r phase = {cor_phase}")
+    print(f"pearson r theory = {cor_theor}")
     # --- ADDED: turn off default offset/scientific notation
-    ax.ticklabel_format(style='plain', axis='y')
+    ax.ticklabel_format(style="plain", axis="y")
     # ax.yaxis.set_useOffset(False)
 
-    plt.rcParams['font.family'] = 'Times New Roman'
+    plt.rcParams["font.family"] = "Times New Roman"
+
     # --- ADDED: define a custom formatter, e.g., "2.30 × 10^7"
     def speed_formatter(value, pos):
         # value is the actual numeric data on the axis (like 2.3e7).
         # Convert to #.## × 10^7 style:
         plt_value = value / 1e8
-        exp_str = r'$\cdot$ 10$^8$'
+        exp_str = r"$\cdot$ 10$^8$"
         return f"{plt_value:.1f}" + exp_str
 
     ax.yaxis.set_major_formatter(ticker.FuncFormatter(speed_formatter))
 
     ax.grid(linewidth=0.5)
     # ax.legend(prop={'size': 8})
-    ax.set_xlabel('Frequency (GHz)', fontsize=14)
-    ax.set_ylabel('Propagation speed (m/s)', fontsize=14)
+    ax.set_xlabel("Frequency (GHz)", fontsize=14)
+    ax.set_ylabel("Propagation speed (m/s)", fontsize=14)
     plt.tight_layout()
     # plt.show()
 
-    plt.savefig('C:/Users/prikh/Desktop/dgbe95vs90.png', dpi=__MY_DPI)
+    plt.savefig("C:/Users/prikh/Desktop/dgbe95vs90.png", dpi=__MY_DPI)

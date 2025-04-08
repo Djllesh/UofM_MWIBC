@@ -17,9 +17,9 @@ from umbms.beamform.utility import apply_ant_t_delay
 
 ###############################################################################
 
-__DATA_DIR = os.path.join(get_proj_path(), 'data/umbmid/g3/')
+__DATA_DIR = os.path.join(get_proj_path(), "data/umbmid/g3/")
 
-__OUT_DIR = os.path.join(get_proj_path(), 'output/g3/')
+__OUT_DIR = os.path.join(get_proj_path(), "output/g3/")
 verify_path(__OUT_DIR)
 
 # Scan frequency parameters
@@ -32,15 +32,15 @@ __M_SIZE = 150
 
 # Approximate radius of each adipose shell in our array
 __ADI_RADS = {
-    'A1': 0.05,
-    'A2': 0.06,
-    'A3': 0.07,
-    'A11': 0.06,
-    'A12': 0.05,
-    'A13': 0.065,
-    'A14': 0.06,
-    'A15': 0.055,
-    'A16': 0.07
+    "A1": 0.05,
+    "A2": 0.06,
+    "A3": 0.07,
+    "A11": 0.06,
+    "A12": 0.05,
+    "A13": 0.065,
+    "A14": 0.06,
+    "A15": 0.055,
+    "A16": 0.07,
 }
 
 # Assumed tumour radius for healthy reconstructions where the SCR
@@ -49,7 +49,7 @@ __HEALTHY_RAD = 0.015
 
 # The str indicating the reference type for the tumour-containing scans
 # must be in ['adi', 'fib']
-__TUM_REF_STR = 'adi'
+__TUM_REF_STR = "adi"
 
 ###############################################################################
 
@@ -65,12 +65,12 @@ gd_col = [ii / 255 for ii in gd_col]
 
 
 if __name__ == "__main__":
-
     logger = get_script_logger(__file__)
 
     # Load the metadata for all scans
-    metadata = load_pickle(os.path.join(__DATA_DIR,
-                                        'metadata_gen_three.pickle'))
+    metadata = load_pickle(
+        os.path.join(__DATA_DIR, "metadata_gen_three.pickle")
+    )
 
     n_expts = len(metadata)  # Find number of experiments / scans
 
@@ -81,7 +81,7 @@ if __name__ == "__main__":
     tar_fs = scan_fs >= 2e9
 
     # The directory where reconstructed images are stored
-    img_dir = os.path.join(__OUT_DIR, 'recons/')
+    img_dir = os.path.join(__OUT_DIR, "recons/")
 
     # The SCR thresholds to be investigated
     scr_thresholds = np.linspace(0, 30, 1000)
@@ -97,9 +97,9 @@ if __name__ == "__main__":
 
     # For each SCR threshold...
     for scr_ii in range(len(scr_thresholds)):
-
-        logger.info('SCR threhsold [%3d / %3d]'
-                    % (scr_ii + 1, len(scr_thresholds)))
+        logger.info(
+            "SCR threhsold [%3d / %3d]" % (scr_ii + 1, len(scr_thresholds))
+        )
 
         # Get the SCR threshold here
         __SCR_THRESHOLD = scr_thresholds[scr_ii]
@@ -126,42 +126,42 @@ if __name__ == "__main__":
         orr_healthy_detects = []
 
         # Make output dir for figures
-        fig_out_dir = os.path.join(__OUT_DIR, 'iqms/')
+        fig_out_dir = os.path.join(__OUT_DIR, "iqms/")
         verify_path(fig_out_dir)
 
         # For each experiment / scan
         for ii in range(n_expts):
-
             # Get the metadata for this scan
             tar_md = metadata[ii]
 
             # If the scan had a fibroglandular shell (indicating it was of
             # a complete tumour-containing or healthy phantom)
-            if 'F' in tar_md['phant_id'] and ~np.isnan(tar_md['tum_diam']):
-
+            if "F" in tar_md["phant_id"] and ~np.isnan(tar_md["tum_diam"]):
                 # Use the fibroglandular reference scan
-                tar_img_dir = os.path.join(img_dir, 'id-%d-%s/'
-                                           % (tar_md['id'], __TUM_REF_STR))
+                tar_img_dir = os.path.join(
+                    img_dir, "id-%d-%s/" % (tar_md["id"], __TUM_REF_STR)
+                )
 
                 # Load the ORR reconstructions (at each step)
-                orr_imgs = load_pickle(os.path.join(tar_img_dir,
-                                                    'img_estimates.pickle'))
+                orr_imgs = load_pickle(
+                    os.path.join(tar_img_dir, "img_estimates.pickle")
+                )
                 orr_img = orr_imgs[-1]  # Examine the final image
 
                 # Load the DAS and DMAS reconstructions
-                das_img = load_pickle(os.path.join(tar_img_dir,
-                                                   'das_%s.pickle'
-                                                   % __TUM_REF_STR))
-                dmas_img = load_pickle(os.path.join(tar_img_dir,
-                                                    'dmas_%s.pickle'
-                                                    % __TUM_REF_STR))
+                das_img = load_pickle(
+                    os.path.join(tar_img_dir, "das_%s.pickle" % __TUM_REF_STR)
+                )
+                dmas_img = load_pickle(
+                    os.path.join(tar_img_dir, "dmas_%s.pickle" % __TUM_REF_STR)
+                )
 
                 # Get metadata for plotting
-                scan_rad = tar_md['ant_rad'] / 100
-                tum_x = tar_md['tum_x'] / 100
-                tum_y = tar_md['tum_y'] / 100
-                tum_rad = 0.5 * (tar_md['tum_diam'] / 100)
-                adi_rad = __ADI_RADS[tar_md['phant_id'].split('F')[0]]
+                scan_rad = tar_md["ant_rad"] / 100
+                tum_x = tar_md["tum_x"] / 100
+                tum_y = tar_md["tum_y"] / 100
+                tum_rad = 0.5 * (tar_md["tum_diam"] / 100)
+                adi_rad = __ADI_RADS[tar_md["phant_id"].split("F")[0]]
 
                 # Correct for the antenna radius measurement position
                 # (measured from point on antenna stand, not from SMA
@@ -175,28 +175,43 @@ if __name__ == "__main__":
                 ant_rad = apply_ant_t_delay(scan_rad=scan_rad, new_ant=True)
 
                 # Get the SCR and localization error for the DAS image
-                das_scr, das_d_scr = get_scr(img=das_img, roi_rad=roi_rad,
-                                             adi_rad=adi_rad,
-                                             tum_rad=tum_rad,
-                                             tum_x=tum_x, tum_y=tum_y)
-                das_le = get_loc_err_max_old(img=das_img, ant_rad=roi_rad,
-                                             tum_x=tum_x, tum_y=tum_y)
+                das_scr, das_d_scr = get_scr(
+                    img=das_img,
+                    roi_rad=roi_rad,
+                    adi_rad=adi_rad,
+                    tum_rad=tum_rad,
+                    tum_x=tum_x,
+                    tum_y=tum_y,
+                )
+                das_le = get_loc_err_max_old(
+                    img=das_img, ant_rad=roi_rad, tum_x=tum_x, tum_y=tum_y
+                )
 
                 # Get the SCR and localization error for the DMAS image
-                dmas_scr, dmas_d_scr = get_scr(img=dmas_img, roi_rad=roi_rad,
-                                               adi_rad=adi_rad,
-                                               tum_rad=tum_rad,
-                                               tum_x=tum_x, tum_y=tum_y)
-                dmas_le = get_loc_err_max_old(img=dmas_img, ant_rad=roi_rad,
-                                              tum_x=tum_x, tum_y=tum_y)
+                dmas_scr, dmas_d_scr = get_scr(
+                    img=dmas_img,
+                    roi_rad=roi_rad,
+                    adi_rad=adi_rad,
+                    tum_rad=tum_rad,
+                    tum_x=tum_x,
+                    tum_y=tum_y,
+                )
+                dmas_le = get_loc_err_max_old(
+                    img=dmas_img, ant_rad=roi_rad, tum_x=tum_x, tum_y=tum_y
+                )
 
                 # Get the SCR and localization error for the ORR image
-                orr_scr, orr_d_scr = get_scr(img=orr_img, roi_rad=roi_rad,
-                                             adi_rad=adi_rad,
-                                             tum_rad=tum_rad,
-                                             tum_x=tum_x, tum_y=tum_y)
-                orr_le = get_loc_err_max_old(img=orr_img, ant_rad=roi_rad,
-                                             tum_x=tum_x, tum_y=tum_y)
+                orr_scr, orr_d_scr = get_scr(
+                    img=orr_img,
+                    roi_rad=roi_rad,
+                    adi_rad=adi_rad,
+                    tum_rad=tum_rad,
+                    tum_x=tum_x,
+                    tum_y=tum_y,
+                )
+                orr_le = get_loc_err_max_old(
+                    img=orr_img, ant_rad=roi_rad, tum_x=tum_x, tum_y=tum_y
+                )
 
                 # Store the results
                 das_scrs.append((das_scr, das_d_scr))
@@ -210,12 +225,15 @@ if __name__ == "__main__":
                 # a tumour was *accurately* (i.e., the 'detected tumor'
                 # corresponds to the true tumor) detected in the
                 # reconstructions
-                das_detect = (das_scr >= __SCR_THRESHOLD
-                              and das_le <= (tum_rad + 0.005))
-                dmas_detect = (dmas_scr >= __SCR_THRESHOLD
-                               and dmas_le <= (tum_rad + 0.005))
-                orr_detect = (orr_scr >= __SCR_THRESHOLD
-                              and orr_le <= (tum_rad + 0.005))
+                das_detect = das_scr >= __SCR_THRESHOLD and das_le <= (
+                    tum_rad + 0.005
+                )
+                dmas_detect = dmas_scr >= __SCR_THRESHOLD and dmas_le <= (
+                    tum_rad + 0.005
+                )
+                orr_detect = orr_scr >= __SCR_THRESHOLD and orr_le <= (
+                    tum_rad + 0.005
+                )
 
                 # Store the true detection results
                 orr_detects.append(orr_detect)
@@ -225,29 +243,30 @@ if __name__ == "__main__":
                 all_md.append(tar_md)
 
             # If the experiment was of a healthy phantom
-            elif 'F' in tar_md['phant_id'] and np.isnan(tar_md['tum_diam']):
-
+            elif "F" in tar_md["phant_id"] and np.isnan(tar_md["tum_diam"]):
                 # Get the directory for this image
-                tar_img_dir = os.path.join(img_dir, 'id-%d-adi/'
-                                           % tar_md['id'])
+                tar_img_dir = os.path.join(img_dir, "id-%d-adi/" % tar_md["id"])
 
                 # Load the ORR reconstructions (at each step)
-                orr_imgs = load_pickle(os.path.join(tar_img_dir,
-                                                    'img_estimates.pickle'))
+                orr_imgs = load_pickle(
+                    os.path.join(tar_img_dir, "img_estimates.pickle")
+                )
                 orr_img = orr_imgs[-1]  # Examine final reconstruction
 
                 # Load the DAS and DMAS reconstructions
-                das_img = load_pickle(os.path.join(tar_img_dir,
-                                                   'das_adi.pickle'))
-                dmas_img = load_pickle(os.path.join(tar_img_dir,
-                                                    'dmas_adi.pickle'))
+                das_img = load_pickle(
+                    os.path.join(tar_img_dir, "das_adi.pickle")
+                )
+                dmas_img = load_pickle(
+                    os.path.join(tar_img_dir, "dmas_adi.pickle")
+                )
 
                 # Get metadata for plotting
-                scan_rad = tar_md['ant_rad'] / 100
-                tum_x = tar_md['tum_x'] / 100
-                tum_y = tar_md['tum_y'] / 100
-                tum_rad = 0.5 * (tar_md['tum_diam'] / 100)
-                adi_rad = __ADI_RADS[tar_md['phant_id'].split('F')[0]]
+                scan_rad = tar_md["ant_rad"] / 100
+                tum_x = tar_md["tum_x"] / 100
+                tum_y = tar_md["tum_y"] / 100
+                tum_rad = 0.5 * (tar_md["tum_diam"] / 100)
+                adi_rad = __ADI_RADS[tar_md["phant_id"].split("F")[0]]
 
                 # Correct for the antenna radius measurement position
                 # (measured from point on antenna stand, not from SMA
@@ -261,25 +280,31 @@ if __name__ == "__main__":
                 ant_rad = apply_ant_t_delay(scan_rad=scan_rad, new_ant=True)
 
                 # Get the SCR for DAS
-                das_scr, das_d_scr = get_scr_healthy(img=np.abs(das_img),
-                                                     roi_rad=roi_rad,
-                                                     adi_rad=adi_rad,
-                                                     ant_rad=roi_rad,
-                                                     healthy_rad=__HEALTHY_RAD)
+                das_scr, das_d_scr = get_scr_healthy(
+                    img=np.abs(das_img),
+                    roi_rad=roi_rad,
+                    adi_rad=adi_rad,
+                    ant_rad=roi_rad,
+                    healthy_rad=__HEALTHY_RAD,
+                )
 
                 # Get the SCR for DMAS
-                dmas_scr, dmas_d_scr = get_scr_healthy(img=np.abs(dmas_img),
-                                                       roi_rad=roi_rad,
-                                                       adi_rad=adi_rad,
-                                                       ant_rad=roi_rad,
-                                                       healthy_rad=__HEALTHY_RAD)
+                dmas_scr, dmas_d_scr = get_scr_healthy(
+                    img=np.abs(dmas_img),
+                    roi_rad=roi_rad,
+                    adi_rad=adi_rad,
+                    ant_rad=roi_rad,
+                    healthy_rad=__HEALTHY_RAD,
+                )
 
                 # Get the SCR for ORR
-                orr_scr, orr_d_scr = get_scr_healthy(img=np.abs(orr_img),
-                                                     roi_rad=roi_rad,
-                                                     adi_rad=adi_rad,
-                                                     ant_rad=roi_rad,
-                                                     healthy_rad=__HEALTHY_RAD)
+                orr_scr, orr_d_scr = get_scr_healthy(
+                    img=np.abs(orr_img),
+                    roi_rad=roi_rad,
+                    adi_rad=adi_rad,
+                    ant_rad=roi_rad,
+                    healthy_rad=__HEALTHY_RAD,
+                )
 
                 # Determine if a tumour was detected in each image
                 das_detect = das_scr >= __SCR_THRESHOLD
@@ -292,43 +317,58 @@ if __name__ == "__main__":
                 orr_healthy_detects.append(orr_detect)
 
         # Calculate and store the sensitivities
-        das_sensitivities[scr_ii] = (100 * np.sum(das_detects)
-                                     / len(das_detects))
-        dmas_sensitivities[scr_ii] = (100 * np.sum(dmas_detects)
-                                      / len(dmas_detects))
-        orr_sensitivities[scr_ii] = (100 * np.sum(orr_detects)
-                                     / len(orr_detects))
+        das_sensitivities[scr_ii] = 100 * np.sum(das_detects) / len(das_detects)
+        dmas_sensitivities[scr_ii] = (
+            100 * np.sum(dmas_detects) / len(dmas_detects)
+        )
+        orr_sensitivities[scr_ii] = 100 * np.sum(orr_detects) / len(orr_detects)
         # Calculate and store the specificities
-        das_specificities[scr_ii] = \
-            (100 * np.sum(1 - np.array(das_healthy_detects))
-             / len(das_healthy_detects))
-        dmas_specificities[scr_ii] = \
-            (100 * np.sum(1 - np.array(dmas_healthy_detects))
-             / len(dmas_healthy_detects))
-        orr_specificities[scr_ii] = \
-            (100 * np.sum(1 - np.array(orr_healthy_detects))
-             / len(orr_healthy_detects))
+        das_specificities[scr_ii] = (
+            100
+            * np.sum(1 - np.array(das_healthy_detects))
+            / len(das_healthy_detects)
+        )
+        dmas_specificities[scr_ii] = (
+            100
+            * np.sum(1 - np.array(dmas_healthy_detects))
+            / len(dmas_healthy_detects)
+        )
+        orr_specificities[scr_ii] = (
+            100
+            * np.sum(1 - np.array(orr_healthy_detects))
+            / len(orr_healthy_detects)
+        )
 
         # Report the sensitivities and specificities at this SCR
         # threshold to the logger
-        logger.info('--------------------------------------------------------')
+        logger.info("--------------------------------------------------------")
         # Report DAS
-        logger.info('\tDAS Sensitivity:\t%.2f%%' % das_sensitivities[scr_ii])
-        logger.info('\tDAS Specificity:\t%.2f%%' % das_specificities[scr_ii])
+        logger.info("\tDAS Sensitivity:\t%.2f%%" % das_sensitivities[scr_ii])
+        logger.info("\tDAS Specificity:\t%.2f%%" % das_specificities[scr_ii])
         # Report DMAS
-        logger.info('\tDMAS Sensitivity:\t%.2f%%' % dmas_sensitivities[scr_ii])
-        logger.info('\tDMAS Specificity:\t%.2f%%' % dmas_specificities[scr_ii])
+        logger.info("\tDMAS Sensitivity:\t%.2f%%" % dmas_sensitivities[scr_ii])
+        logger.info("\tDMAS Specificity:\t%.2f%%" % dmas_specificities[scr_ii])
         # Report ORR
-        logger.info('\tORR Sensitivity:\t\t%.2f%%' % orr_sensitivities[scr_ii])
-        logger.info('\tORR Specificity:\t\t%.2f%%' % orr_specificities[scr_ii])
+        logger.info("\tORR Sensitivity:\t\t%.2f%%" % orr_sensitivities[scr_ii])
+        logger.info("\tORR Specificity:\t\t%.2f%%" % orr_specificities[scr_ii])
 
     # Save the sensitivities and specifities (as a function of the
     # SCR threshold) to .pickle files
-    save_pickle((scr_thresholds, das_sensitivities,
-                 dmas_sensitivities, orr_sensitivities),
-                os.path.join(__OUT_DIR, '%s_ref_sensitvities.pickle'
-                             % __TUM_REF_STR))
-    save_pickle((scr_thresholds, das_specificities,
-                 dmas_specificities, orr_specificities),
-                os.path.join(__OUT_DIR, '%s_ref_specificities.pickle'
-                             % __TUM_REF_STR))
+    save_pickle(
+        (
+            scr_thresholds,
+            das_sensitivities,
+            dmas_sensitivities,
+            orr_sensitivities,
+        ),
+        os.path.join(__OUT_DIR, "%s_ref_sensitvities.pickle" % __TUM_REF_STR),
+    )
+    save_pickle(
+        (
+            scr_thresholds,
+            das_specificities,
+            dmas_specificities,
+            orr_specificities,
+        ),
+        os.path.join(__OUT_DIR, "%s_ref_specificities.pickle" % __TUM_REF_STR),
+    )

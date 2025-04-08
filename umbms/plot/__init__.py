@@ -5,7 +5,8 @@ July 09th, 2020
 """
 
 import matplotlib
-matplotlib.use('Agg')
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 
@@ -24,10 +25,8 @@ def init_plt(figsize=(12, 6), labelsize=18):
     """
 
     plt.figure(figsize=figsize)
-    plt.rc('font', family='Times New Roman')
+    plt.rc("font", family="Times New Roman")
     plt.tick_params(labelsize=labelsize)
 
 
 ###############################################################################
-
-

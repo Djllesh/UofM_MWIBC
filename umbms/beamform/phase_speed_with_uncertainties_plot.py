@@ -22,7 +22,9 @@ from umbms.beamform.propspeed import (
 )
 from umbms.loadsave import load_pickle
 
-__DATA_DIR = os.path.join(get_proj_path(), "data/umbmid/cyl_phantom/speed_paper/")
+__DATA_DIR = os.path.join(
+    get_proj_path(), "data/umbmid/cyl_phantom/speed_paper/"
+)
 __DIEL_DIR = os.path.join(get_proj_path(), "data/freq_data/")
 __FIG_DIR = os.path.join(get_proj_path(), "output/cyl_phantom/")
 __FD_NAME = "20240819_s21_data.pickle"
@@ -45,7 +47,10 @@ phantom_width = 0.11
 if __name__ == "__main__":
     # Read .csv file of permittivity and conductivity values
     df = pandas.read_csv(
-        os.path.join(__DIEL_DIR, __DIEL_NAME), delimiter=";", decimal=",", skiprows=9
+        os.path.join(__DIEL_DIR, __DIEL_NAME),
+        delimiter=";",
+        decimal=",",
+        skiprows=9,
     )
     diel_data_arr = df.values
 
@@ -85,13 +90,17 @@ if __name__ == "__main__":
         -2 * np.pi * freqs * length / (target_phase_unwrapped - 2 * np.pi * 6)
     )
 
-    phase_speed_5pi = -2 * np.pi * freqs * length / (shape_unwrapped - 2 * np.pi * 5)
+    phase_speed_5pi = (
+        -2 * np.pi * freqs * length / (shape_unwrapped - 2 * np.pi * 5)
+    )
 
     phase_speed_5pi_in = phantom_width / (
         length / phase_speed_5pi - (length - phantom_width) / 3e8
     )
 
-    phase_speed_6pi = -2 * np.pi * freqs * length / (shape_unwrapped - 2 * np.pi * 6)
+    phase_speed_6pi = (
+        -2 * np.pi * freqs * length / (shape_unwrapped - 2 * np.pi * 6)
+    )
 
     phase_speed_6pi_in = phantom_width / (
         length / phase_speed_6pi - (length - phantom_width) / 3e8
@@ -168,7 +177,13 @@ if __name__ == "__main__":
     #                                              r'$-2 \cdot 6\pi$',
     #         linewidth=1.2)
 
-    ax.plot(freqs, experimental_speed, "k-", label="Experimental speed", linewidth=1.3)
+    ax.plot(
+        freqs,
+        experimental_speed,
+        "k-",
+        label="Experimental speed",
+        linewidth=1.3,
+    )
 
     ax.plot(
         freqs,

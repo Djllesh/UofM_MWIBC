@@ -117,7 +117,8 @@ if __name__ == "__main__":
     # Assume signal attenuates with 1/r^2
     # Plot
     out_dir = os.path.join(
-        __OUT_DIR, "recons/Immediate reference/20240109_glass_rod/arc_investigation/"
+        __OUT_DIR,
+        "recons/Immediate reference/20240109_glass_rod/arc_investigation/",
     )
     verify_path(out_dir)
 
@@ -182,7 +183,9 @@ if __name__ == "__main__":
 
             # Estimate the average speed for the whole imaging domain
             # Assume homogeneous media and straight line propagation
-            speed = estimate_speed(adi_rad=adi_rad, ant_rad=scan_rad, new_ant=True)
+            speed = estimate_speed(
+                adi_rad=adi_rad, ant_rad=scan_rad, new_ant=True
+            )
 
             logger.info("\tTime-delay calculation...")
 
@@ -194,14 +197,22 @@ if __name__ == "__main__":
             pix_ts = apply_ant_pix_delay(pix_ts=pix_ts)
 
             times_signals = time_signal_per_antenna_modelled(
-                tar_x=tum_x, tar_y=tum_y, tar_rad=tum_rad, ant_rad=ant_rad, speed=speed
+                tar_x=tum_x,
+                tar_y=tum_y,
+                tar_rad=tum_rad,
+                ant_rad=ant_rad,
+                speed=speed,
             )
 
-            arc_map = calculate_arc_map_known_time(pix_ts, times_signals=times_signals)
+            arc_map = calculate_arc_map_known_time(
+                pix_ts, times_signals=times_signals
+            )
 
             plot_known_arc_map(
                 img_roi=roi_rad * 100,
-                save_str=os.path.join(out_dir, f"theoretical_arc_homog_{expt}.png"),
+                save_str=os.path.join(
+                    out_dir, f"theoretical_arc_homog_{expt}.png"
+                ),
                 arc_map=arc_map,
             )
 
@@ -247,11 +258,15 @@ if __name__ == "__main__":
                 air_speed=__VAC_SPEED,
             )
 
-            arc_map = calculate_arc_map_known_time(pix_ts, times_signals=times_signals)
+            arc_map = calculate_arc_map_known_time(
+                pix_ts, times_signals=times_signals
+            )
 
             plot_known_arc_map(
                 img_roi=roi_rad * 100,
-                save_str=os.path.join(out_dir, f"theoretical_arc_bin_{expt}.png"),
+                save_str=os.path.join(
+                    out_dir, f"theoretical_arc_bin_{expt}.png"
+                ),
                 arc_map=arc_map,
             )
 
@@ -298,6 +313,8 @@ if __name__ == "__main__":
 
             plot_known_arc_map(
                 img_roi=roi_rad * 100,
-                save_str=os.path.join(out_dir, f"theoretical_arc_freq_dep_{expt}.png"),
+                save_str=os.path.join(
+                    out_dir, f"theoretical_arc_freq_dep_{expt}.png"
+                ),
                 arc_map=arc_map,
             )

@@ -39,8 +39,7 @@ def get_ref_derivs(phase_fac, fd, fwd, freqs, worker_pool):
     """
 
     # Create func for parallel computation
-    parallel_func = partial(_parallel_ref_deriv, phase_fac, fwd, fd,
-                            freqs)
+    parallel_func = partial(_parallel_ref_deriv, phase_fac, fwd, fd, freqs)
 
     iterable_idxs = range(np.size(fd, axis=0))  # Indices to iterate over
 
@@ -48,9 +47,14 @@ def get_ref_derivs(phase_fac, fd, fwd, freqs, worker_pool):
     all_ref_derivs = np.array(worker_pool.map(parallel_func, iterable_idxs))
 
     # Reshape
-    all_ref_derivs = np.reshape(all_ref_derivs, [np.size(fd, axis=0),
-                                                 np.size(phase_fac, axis=1),
-                                                 np.size(phase_fac, axis=2)])
+    all_ref_derivs = np.reshape(
+        all_ref_derivs,
+        [
+            np.size(fd, axis=0),
+            np.size(phase_fac, axis=1),
+            np.size(phase_fac, axis=2),
+        ],
+    )
 
     # Sum over all frequencies
     ref_derivs = np.sum(all_ref_derivs, axis=0)
@@ -60,10 +64,24 @@ def get_ref_derivs(phase_fac, fd, fwd, freqs, worker_pool):
     return ref_derivs
 
 
-def get_ref_derivs_vel_freq(int_f_xs, int_f_ys, int_b_xs, int_b_ys, velocities,
-                            ant_rad, m_size, roi_rad, air_speed, adi_rad,
-                            mid_breast_max, mid_breast_min,
-                            fd, fwd, freqs, worker_pool):
+def get_ref_derivs_vel_freq(
+    int_f_xs,
+    int_f_ys,
+    int_b_xs,
+    int_b_ys,
+    velocities,
+    ant_rad,
+    m_size,
+    roi_rad,
+    air_speed,
+    adi_rad,
+    mid_breast_max,
+    mid_breast_min,
+    fd,
+    fwd,
+    freqs,
+    worker_pool,
+):
     """Get the gradient of the loss func wrt the reflectivities
 
     Parameters
@@ -111,10 +129,24 @@ def get_ref_derivs_vel_freq(int_f_xs, int_f_ys, int_b_xs, int_b_ys, velocities,
     """
 
     # Create func for parallel computation
-    parallel_func = partial(_parallel_ref_deriv_vel_freq, int_f_xs, int_f_ys,
-                            int_b_xs, int_b_ys, velocities, ant_rad, m_size,
-                            roi_rad, air_speed, adi_rad, mid_breast_max,
-                            mid_breast_min, fwd, fd, freqs)
+    parallel_func = partial(
+        _parallel_ref_deriv_vel_freq,
+        int_f_xs,
+        int_f_ys,
+        int_b_xs,
+        int_b_ys,
+        velocities,
+        ant_rad,
+        m_size,
+        roi_rad,
+        air_speed,
+        adi_rad,
+        mid_breast_max,
+        mid_breast_min,
+        fwd,
+        fd,
+        freqs,
+    )
 
     # Indices to iterate over
     iterable_idxs = range(np.size(fd, axis=0))
@@ -123,8 +155,9 @@ def get_ref_derivs_vel_freq(int_f_xs, int_f_ys, int_b_xs, int_b_ys, velocities,
     all_ref_derivs = np.array(worker_pool.map(parallel_func, iterable_idxs))
 
     # Reshape
-    all_ref_derivs = np.reshape(all_ref_derivs,
-                                [np.size(fd, axis=0), m_size, m_size])
+    all_ref_derivs = np.reshape(
+        all_ref_derivs, [np.size(fd, axis=0), m_size, m_size]
+    )
 
     # Sum over all frequencies
     ref_derivs = np.sum(all_ref_derivs, axis=0)
@@ -134,8 +167,19 @@ def get_ref_derivs_vel_freq(int_f_xs, int_f_ys, int_b_xs, int_b_ys, velocities,
     return ref_derivs
 
 
-def get_ref_derivs_speed(phase_fac, fd, fwd, freqs, dv, int_f_xs, int_f_ys,
-                         int_b_xs, int_b_ys, speed, worker_pool):
+def get_ref_derivs_speed(
+    phase_fac,
+    fd,
+    fwd,
+    freqs,
+    dv,
+    int_f_xs,
+    int_f_ys,
+    int_b_xs,
+    int_b_ys,
+    speed,
+    worker_pool,
+):
     """Get the gradient of the loss func wrt the reflectivities and speed
 
     Parameters
@@ -172,9 +216,19 @@ def get_ref_derivs_speed(phase_fac, fd, fwd, freqs, dv, int_f_xs, int_f_ys,
     """
 
     # Create func for parallel computation
-    parallel_func = partial(_parallel_ref_deriv_speed, phase_fac, fwd, fd,
-                            freqs, dv, int_f_xs, int_f_ys, int_b_xs, int_b_ys,
-                            speed)
+    parallel_func = partial(
+        _parallel_ref_deriv_speed,
+        phase_fac,
+        fwd,
+        fd,
+        freqs,
+        dv,
+        int_f_xs,
+        int_f_ys,
+        int_b_xs,
+        int_b_ys,
+        speed,
+    )
 
     iterable_idxs = range(np.size(fd, axis=0))  # Indices to iterate over
 
@@ -182,20 +236,35 @@ def get_ref_derivs_speed(phase_fac, fd, fwd, freqs, dv, int_f_xs, int_f_ys,
     all_ref_derivs = np.array(worker_pool.map(parallel_func, iterable_idxs))
 
     # Reshape
-    new_shape = [np.size(fd, axis=0),
-                 np.size(phase_fac, axis=1) * np.size(phase_fac, axis=2) + 1]
+    new_shape = [
+        np.size(fd, axis=0),
+        np.size(phase_fac, axis=1) * np.size(phase_fac, axis=2) + 1,
+    ]
 
     all_ref_derivs = np.reshape(all_ref_derivs, new_shape)
 
     all_ref_derivs = np.array([])
 
     for ff in range(np.size(fd, axis=0)):
-        all_ref_derivs = np.concatenate((all_ref_derivs,
-                                    _parallel_ref_deriv_speed(phase_fac, fwd,
-                                                        fd, freqs, dv,
-                                                        int_f_xs, int_f_ys,
-                                                        int_b_xs, int_b_ys,
-                                                        speed, ff)), axis=0)
+        all_ref_derivs = np.concatenate(
+            (
+                all_ref_derivs,
+                _parallel_ref_deriv_speed(
+                    phase_fac,
+                    fwd,
+                    fd,
+                    freqs,
+                    dv,
+                    int_f_xs,
+                    int_f_ys,
+                    int_b_xs,
+                    int_b_ys,
+                    speed,
+                    ff,
+                ),
+            ),
+            axis=0,
+        )
 
     all_ref_derivs = np.reshape(all_ref_derivs, new_shape)
 
@@ -207,9 +276,9 @@ def get_ref_derivs_speed(phase_fac, fd, fwd, freqs, dv, int_f_xs, int_f_ys,
     ref_derivs = np.delete(ref_derivs, np.size(ref_derivs) - 1)
 
     # reshape it to phase factor size
-    ref_derivs = np.reshape(ref_derivs,
-                            [np.size(phase_fac, axis=1),
-                             np.size(phase_fac, axis=2)])
+    ref_derivs = np.reshape(
+        ref_derivs, [np.size(phase_fac, axis=1), np.size(phase_fac, axis=2)]
+    )
 
     ref_derivs *= -1  # Apply normalization factor
     # v_in_deriv *= -1
@@ -217,9 +286,19 @@ def get_ref_derivs_speed(phase_fac, fd, fwd, freqs, dv, int_f_xs, int_f_ys,
     return ref_derivs, v_in_deriv
 
 
-def _parallel_ref_deriv_speed(phase_fac, fwd, fd, freqs, dv,
-                              int_f_xs, int_f_ys, int_b_xs, int_b_ys,
-                              speed, ff):
+def _parallel_ref_deriv_speed(
+    phase_fac,
+    fwd,
+    fd,
+    freqs,
+    dv,
+    int_f_xs,
+    int_f_ys,
+    int_b_xs,
+    int_b_ys,
+    speed,
+    ff,
+):
     """Parallelized function for ref_deriv calculation
     (both reflectivity and velocity gradient)
 
@@ -243,8 +322,9 @@ def _parallel_ref_deriv_speed(phase_fac, fwd, fd, freqs, dv,
         The gradient at this frequency
     """
     # calculate the derivatives wrt speed
-    td_s_deriv_vel = td_velocity_deriv(int_f_xs, int_f_ys, int_b_xs, int_b_ys,
-                                       speed)
+    td_s_deriv_vel = td_velocity_deriv(
+        int_f_xs, int_f_ys, int_b_xs, int_b_ys, speed
+    )
     s_deriv_vel = s_velocity_deriv(phase_fac, td_s_deriv_vel, freqs[ff], dv)
 
     # Calculate the derivative wrt to the S-parameter
@@ -257,9 +337,10 @@ def _parallel_ref_deriv_speed(phase_fac, fwd, fd, freqs, dv,
     # temp = np.zeros([n_ant_pos, 1])
     # temp[:, 0] = s_deriv_vel
 
-    s_deriv = np.zeros([n_ant_pos,
-                        np.size(phase_fac, axis=1)
-                        * np.size(phase_fac, axis=2)], dtype=complex)
+    s_deriv = np.zeros(
+        [n_ant_pos, np.size(phase_fac, axis=1) * np.size(phase_fac, axis=2)],
+        dtype=complex,
+    )
 
     for i in range(n_ant_pos):  # create a flattened array
         s_deriv[i] = s_deriv_refl[i].flatten()
@@ -271,11 +352,13 @@ def _parallel_ref_deriv_speed(phase_fac, fwd, fd, freqs, dv,
     s_deriv = np.concatenate((s_deriv, s_deriv_vel), axis=1)
 
     # Calculate the derivative wrt the reflectivities
-    ref_deriv = np.sum((np.conj(s_deriv)
-                        * (fd[ff, :, None] - fwd[ff, :, None])
-                        + s_deriv * np.conj(fd[ff, :, None]
-                                            - fwd[ff, :, None])),
-                       axis=0)
+    ref_deriv = np.sum(
+        (
+            np.conj(s_deriv) * (fd[ff, :, None] - fwd[ff, :, None])
+            + s_deriv * np.conj(fd[ff, :, None] - fwd[ff, :, None])
+        ),
+        axis=0,
+    )
 
     ref_deriv = ref_deriv.flatten()
 
@@ -309,19 +392,37 @@ def _parallel_ref_deriv(phase_fac, fwd, fd, freqs, ff):
     s_deriv_refl = phase_fac ** (2 * freqs[ff])
 
     # Calculate the derivative wrt the reflectivities
-    ref_deriv = np.sum((np.conj(s_deriv_refl)
-                        * (fd[ff, :, None, None] - fwd[ff, :, None, None])
-                        + s_deriv_refl * np.conj(fd[ff, :, None, None]
-                                                 - fwd[ff, :, None, None])),
-                       axis=0)
+    ref_deriv = np.sum(
+        (
+            np.conj(s_deriv_refl)
+            * (fd[ff, :, None, None] - fwd[ff, :, None, None])
+            + s_deriv_refl
+            * np.conj(fd[ff, :, None, None] - fwd[ff, :, None, None])
+        ),
+        axis=0,
+    )
 
     return ref_deriv
 
 
-def _parallel_ref_deriv_vel_freq(int_f_xs, int_f_ys, int_b_xs, int_b_ys,
-                                 velocities, ant_rad, m_size, roi_rad,
-                                 air_speed, adi_rad, mid_breast_max,
-                                 mid_breast_min, fwd, fd, freqs, ff):
+def _parallel_ref_deriv_vel_freq(
+    int_f_xs,
+    int_f_ys,
+    int_b_xs,
+    int_b_ys,
+    velocities,
+    ant_rad,
+    m_size,
+    roi_rad,
+    air_speed,
+    adi_rad,
+    mid_breast_max,
+    mid_breast_min,
+    fwd,
+    fd,
+    freqs,
+    ff,
+):
     """Parallelized function for ref_deriv calculation
 
     Parameters
@@ -366,13 +467,20 @@ def _parallel_ref_deriv_vel_freq(int_f_xs, int_f_ys, int_b_xs, int_b_ys,
     ref_deriv : array_like
         The gradient at this frequency
     """
-    pix_ts, _, _, _, _ = get_pix_ts(ant_rad=ant_rad, m_size=m_size,
-                            roi_rad=roi_rad, air_speed=air_speed,
-                            breast_speed=velocities[ff], adi_rad=adi_rad,
-                            mid_breast_max=mid_breast_max,
-                            mid_breast_min=mid_breast_min, int_f_xs=int_f_xs,
-                            int_f_ys=int_f_ys, int_b_xs=int_b_xs,
-                            int_b_ys=int_b_ys)
+    pix_ts, _, _, _, _ = get_pix_ts(
+        ant_rad=ant_rad,
+        m_size=m_size,
+        roi_rad=roi_rad,
+        air_speed=air_speed,
+        breast_speed=velocities[ff],
+        adi_rad=adi_rad,
+        mid_breast_max=mid_breast_max,
+        mid_breast_min=mid_breast_min,
+        int_f_xs=int_f_xs,
+        int_f_ys=int_f_ys,
+        int_b_xs=int_b_xs,
+        int_b_ys=int_b_ys,
+    )
 
     phase_fac = get_fd_phase_factor(pix_ts)
 
@@ -380,11 +488,15 @@ def _parallel_ref_deriv_vel_freq(int_f_xs, int_f_ys, int_b_xs, int_b_ys,
     s_deriv_refl = phase_fac ** (2 * freqs[ff])
 
     # Calculate the derivative wrt the reflectivities
-    ref_deriv = np.sum((np.conj(s_deriv_refl)
-                        * (fd[ff, :, None, None] - fwd[ff, :, None, None])
-                        + s_deriv_refl * np.conj(fd[ff, :, None, None]
-                                                 - fwd[ff, :, None, None])),
-                       axis=0)
+    ref_deriv = np.sum(
+        (
+            np.conj(s_deriv_refl)
+            * (fd[ff, :, None, None] - fwd[ff, :, None, None])
+            + s_deriv_refl
+            * np.conj(fd[ff, :, None, None] - fwd[ff, :, None, None])
+        ),
+        axis=0,
+    )
 
     return ref_deriv
 
@@ -410,8 +522,15 @@ def s_velocity_deriv(phase_fac, speed_deriv, dv, ff):
         Value of s_deriv wrt to speed
     """
     # sum over all antenna positions and all pixels
-    s_speed_deriv = -2 * np.pi * 1j * 2 * ff * dv * \
-                    np.sum(phase_fac * speed_deriv, axis=(1, 2))
+    s_speed_deriv = (
+        -2
+        * np.pi
+        * 1j
+        * 2
+        * ff
+        * dv
+        * np.sum(phase_fac * speed_deriv, axis=(1, 2))
+    )
     return s_speed_deriv
 
 
@@ -438,15 +557,19 @@ def td_velocity_deriv(int_f_xs, int_f_ys, int_b_xs, int_b_ys, speed):
     """
 
     # initialize an array of derivs
-    speed_deriv = np.zeros([np.size(int_f_xs, axis=0),
-                            np.size(int_f_xs, axis=1),
-                            np.size(int_f_xs, axis=2)])
+    speed_deriv = np.zeros(
+        [
+            np.size(int_f_xs, axis=0),
+            np.size(int_f_xs, axis=1),
+            np.size(int_f_xs, axis=2),
+        ]
+    )
 
     # iterate over every antenna position
     for a_pos in range(np.size(int_f_xs, axis=0)):
-        speed_deriv[a_pos] = - np.sqrt((int_b_xs[a_pos] - int_f_xs[a_pos]) ** 2
-                                       +
-                                       (int_b_ys[a_pos] - int_f_ys[a_pos]) ** 2)\
-                                        / (speed ** 2)
+        speed_deriv[a_pos] = -np.sqrt(
+            (int_b_xs[a_pos] - int_f_xs[a_pos]) ** 2
+            + (int_b_ys[a_pos] - int_f_ys[a_pos]) ** 2
+        ) / (speed**2)
 
     return speed_deriv

@@ -29,7 +29,9 @@ def create_antenna_array(ant_rad=0.2, n_ants=24):
     return x_ants, y_ants
 
 
-def find_xy_ant_bound_circle(ant_xs, ant_ys, n_ant_pos, adi_rad, *, ox=0.0, oy=0.0):
+def find_xy_ant_bound_circle(
+    ant_xs, ant_ys, n_ant_pos, adi_rad, *, ox=0.0, oy=0.0
+):
     """Finds breast boundary intersection coordinates
     with propagation trajectory from antenna position
     to corresponding pixel
@@ -192,8 +194,12 @@ def calculate_avg_speed(
         air_time_back = (
             np.sqrt(fin_ant_to_back_xs**2 + fin_ant_to_back_ys**2) / air_speed
         )
-        phantom_time = np.sqrt(back_to_front_xs**2 + back_to_front_ys**2) / breast_speed
-        air_time_front = np.sqrt(front_to_ant_xs**2 + front_to_ant_ys**2) / air_speed
+        phantom_time = (
+            np.sqrt(back_to_front_xs**2 + back_to_front_ys**2) / breast_speed
+        )
+        air_time_front = (
+            np.sqrt(front_to_ant_xs**2 + front_to_ant_ys**2) / air_speed
+        )
 
         total_time = air_time_front + phantom_time + air_time_back
 

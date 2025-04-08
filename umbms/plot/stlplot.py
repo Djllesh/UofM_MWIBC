@@ -12,7 +12,7 @@ from umbms import get_proj_path
 
 ###############################################################################
 
-__STL_FILE_PATH = os.path.join(get_proj_path(), 'data/phantoms-stl/')
+__STL_FILE_PATH = os.path.join(get_proj_path(), "data/phantoms-stl/")
 
 ###############################################################################
 
@@ -38,9 +38,9 @@ def get_stl_vertices(shell_id):
     """
 
     # Import stl file
-    shell_mesh = mesh.Mesh.from_file(os.path.join(__STL_FILE_PATH,
-                                                  '%s_inner_dense.stl'
-                                                  % shell_id))
+    shell_mesh = mesh.Mesh.from_file(
+        os.path.join(__STL_FILE_PATH, "%s_inner_dense.stl" % shell_id)
+    )
 
     shell_vertices = shell_mesh.vectors  # Get the x,y,z coordinates, in mm
 
@@ -81,9 +81,9 @@ def get_shell_mesh(shell_id):
     """
 
     # Load stl file
-    shell_mesh = mesh.Mesh.from_file(os.path.join(__STL_FILE_PATH,
-                                                  '%s_inner_dense.stl'
-                                                  % shell_id))
+    shell_mesh = mesh.Mesh.from_file(
+        os.path.join(__STL_FILE_PATH, "%s_inner_dense.stl" % shell_id)
+    )
 
     return shell_mesh
 
@@ -160,19 +160,25 @@ def get_xyz_min_mid_and_max(shell_vertices):
     # x -> y, y -> z, z -> x
 
     # Find the minimum positions
-    x_min, y_min, z_min = (np.min(shell_vertices[:, :, 0]),
-                           np.min(shell_vertices[:, :, 1]),
-                           np.min(shell_vertices[:, :, 2]))
+    x_min, y_min, z_min = (
+        np.min(shell_vertices[:, :, 0]),
+        np.min(shell_vertices[:, :, 1]),
+        np.min(shell_vertices[:, :, 2]),
+    )
 
     # Find the maximum positions
-    x_max, y_max, z_max = (np.max(shell_vertices[:, :, 0]),
-                           np.max(shell_vertices[:, :, 1]),
-                           np.max(shell_vertices[:, :, 2]))
+    x_max, y_max, z_max = (
+        np.max(shell_vertices[:, :, 0]),
+        np.max(shell_vertices[:, :, 1]),
+        np.max(shell_vertices[:, :, 2]),
+    )
 
     # Find the middle-positions
-    x_mid, y_mid, z_mid = (0.5 * (x_max - x_min) + x_min,
-                           0.5 * (y_max - y_min) + y_min,
-                           0.5 * (z_max - z_min) + z_min)
+    x_mid, y_mid, z_mid = (
+        0.5 * (x_max - x_min) + x_min,
+        0.5 * (y_max - y_min) + y_min,
+        0.5 * (z_max - z_min) + z_min,
+    )
 
     # Store the min/mid/max as tuples for ease-of-use
     x_positions = (x_min, x_mid, x_max)
@@ -224,18 +230,17 @@ def get_shell_xy_for_z(shell_id, z_plane, slice_thickness=1.0):
 
     # For every triangle
     for triangle_idx in range(np.size(shell_vertices, axis=0)):
-
         # Get the vertices for this triangle
         triangle_vertices = shell_vertices[triangle_idx, :, :]
 
         for vertex_idx in range(3):  # For each vertex
-
             # If the vertex is within half the slice_thickness from
             # the desired z_plane
-            if (z_plane - slice_thickness / 2 <
-                    triangle_vertices[vertex_idx, 2] <
-                    z_plane + slice_thickness):
-
+            if (
+                z_plane - slice_thickness / 2
+                < triangle_vertices[vertex_idx, 2]
+                < z_plane + slice_thickness
+            ):
                 # Store the x/y coordinates of this vertex
                 x_points.append(triangle_vertices[vertex_idx, 0])
                 y_points.append(triangle_vertices[vertex_idx, 1])
@@ -293,19 +298,18 @@ def get_phantom_xy_for_z(adi_id, fib_id, z_plane, slice_thickness=1.0):
 
     # For every triangle
     for triangle_idx in range(np.size(phantom_vertices, axis=0)):
-
         # Get the vertices for this triangle
         triangle_vertices = phantom_vertices[triangle_idx, :, :]
 
         # For each vertex, see if it's in the coronal slice
         for vertex_idx in range(3):
-
             # If the vertex is within half the slice_thickness from
             # the desired z_plane
-            if (z_plane - slice_thickness / 2 <
-                    triangle_vertices[vertex_idx, 2] <
-                    z_plane + slice_thickness / 2):
-
+            if (
+                z_plane - slice_thickness / 2
+                < triangle_vertices[vertex_idx, 2]
+                < z_plane + slice_thickness / 2
+            ):
                 # Store the x/y coordinates of this vertex
                 x_pts.append(triangle_vertices[vertex_idx, 0])
                 y_pts.append(triangle_vertices[vertex_idx, 1])

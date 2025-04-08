@@ -325,9 +325,9 @@ def get_ant_scan_xys(ant_rad, n_ant_pos, *, ini_ant_ang=-136.0):
 
     # Find the polar angles of each of the antenna positions used in the
     # scan
-    ant_angles = np.linspace(0, (355 / 360) * 2 * np.pi, n_ant_pos) + np.deg2rad(
-        ini_ant_ang
-    )
+    ant_angles = np.linspace(
+        0, (355 / 360) * 2 * np.pi, n_ant_pos
+    ) + np.deg2rad(ini_ant_ang)
     ant_angles = np.flip(ant_angles)
 
     ant_xs = np.cos(ant_angles) * ant_rad  # Find the x-positions
@@ -371,7 +371,9 @@ def get_ant_xy_idxs(ant_rad, roi_rad, n_ant_pos, m_size, *, ini_ant_ang=-136.0):
     pixdist_ratio = get_pixdist_ratio(m_size, roi_rad)
 
     # Get the ant x/y positions
-    ant_xs, ant_ys = get_ant_scan_xys(ant_rad, n_ant_pos, ini_ant_ang=ini_ant_ang)
+    ant_xs, ant_ys = get_ant_scan_xys(
+        ant_rad, n_ant_pos, ini_ant_ang=ini_ant_ang
+    )
 
     # Convert the antenna x,y positions to x,y coordinates, store as ints so
     # they can be used for indexing later
@@ -383,7 +385,9 @@ def get_ant_xy_idxs(ant_rad, roi_rad, n_ant_pos, m_size, *, ini_ant_ang=-136.0):
     return ant_x_idxs, ant_y_idxs
 
 
-def get_pix_dists_angs(m_size, n_ant_pos, ant_rad, roi_rad, *, ini_ant_ang=-136.0):
+def get_pix_dists_angs(
+    m_size, n_ant_pos, ant_rad, roi_rad, *, ini_ant_ang=-136.0
+):
     """Returns the distance and angle between each pixel and antenna
 
     Returns arrays in which each pixel is assigned its distance from the
@@ -418,7 +422,9 @@ def get_pix_dists_angs(m_size, n_ant_pos, ant_rad, roi_rad, *, ini_ant_ang=-136.
     """
 
     # Get the antenna x,y positions
-    ant_xs, ant_ys = get_ant_scan_xys(ant_rad, n_ant_pos, ini_ant_ang=ini_ant_ang)
+    ant_xs, ant_ys = get_ant_scan_xys(
+        ant_rad, n_ant_pos, ini_ant_ang=ini_ant_ang
+    )
 
     # Initialize arrays
     pix_dists = np.ones([n_ant_pos, m_size, m_size])
@@ -484,7 +490,9 @@ def normalize_arr(arr):
     return normalized_arr
 
 
-def crop_fd(fd_data, *, ini_min_f=1e9, ini_max_f=8e9, tar_min_f=2e9, tar_max_f=8e9):
+def crop_fd(
+    fd_data, *, ini_min_f=1e9, ini_max_f=8e9, tar_min_f=2e9, tar_max_f=8e9
+):
     """
 
     Parameters

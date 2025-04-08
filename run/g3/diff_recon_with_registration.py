@@ -30,24 +30,37 @@ from umbms.hardware.antenna import apply_ant_pix_delay, to_phase_center
 
 from umbms.beamform.iczt import iczt
 
-from umbms.plot.imgplots import plot_fd_img, plot_fd_img_differential, \
-    antennas_to_shifted_boundary
+from umbms.plot.imgplots import (
+    plot_fd_img,
+    plot_fd_img_differential,
+    antennas_to_shifted_boundary,
+)
 from umbms.plot.sinogramplot import plt_sino, show_sinogram
 
-from umbms.boundary.boundary_detection import get_boundary_iczt, \
-    fd_differential_align, cart_to_polar, time_aligned_kernel, \
-    rho_ToR_from_td, shift_cs, extract_delta_t_from_boundary, \
-    prepare_fd_data, phase_shift_aligned_boundaries, shift_rot_cs, \
-    window_skin_alignment
-from umbms.boundary.differential_minimization import \
-    minimize_differential_shift, minimize_differential_shift_rot
+from umbms.boundary.boundary_detection import (
+    get_boundary_iczt,
+    fd_differential_align,
+    cart_to_polar,
+    time_aligned_kernel,
+    rho_ToR_from_td,
+    shift_cs,
+    extract_delta_t_from_boundary,
+    prepare_fd_data,
+    phase_shift_aligned_boundaries,
+    shift_rot_cs,
+    window_skin_alignment,
+)
+from umbms.boundary.differential_minimization import (
+    minimize_differential_shift,
+    minimize_differential_shift_rot,
+)
 
 __CPU_COUNT = mp.cpu_count()
 ###############################################################################
 
-__D_DIR = os.path.join(get_proj_path(), 'data/umbmid/g3/')
+__D_DIR = os.path.join(get_proj_path(), "data/umbmid/g3/")
 
-__O_DIR = os.path.join(get_proj_path(), 'output/differential-alignment/')
+__O_DIR = os.path.join(get_proj_path(), "output/differential-alignment/")
 verify_path(__O_DIR)
 
 # The frequency parameters from the scan
@@ -61,15 +74,15 @@ __ROI_RAD = 0.08  # ROI radius, in [m]
 
 # The approximate radius of each adipose phantom in our array
 __ADI_RADS = {
-    'A1': 5,
-    'A2': 6,
-    'A3': 7,
-    'A11': 6,
-    'A12': 5,
-    'A13': 6.5,
-    'A14': 6,
-    'A15': 5.5,
-    'A16': 7,
+    "A1": 5,
+    "A2": 6,
+    "A3": 7,
+    "A11": 6,
+    "A12": 5,
+    "A13": 6.5,
+    "A14": 6,
+    "A15": 5.5,
+    "A16": 7,
 }
 
 # Polar coordinate phi of the antenna at each position during the scan
@@ -78,9 +91,17 @@ __ANT_PHIS = np.flip(np.linspace(0, 355, 72) + -136.0)
 
 ###############################################################################
 
-def recon_imgs(s11, idx_pairs, id_pairs, do_das=True, do_dmas=False,
-               do_orr=False,
-               boundary_data_left=None, boundary_data_right=None):
+
+def recon_imgs(
+    s11,
+    idx_pairs,
+    id_pairs,
+    do_das=True,
+    do_dmas=False,
+    do_orr=False,
+    boundary_data_left=None,
+    boundary_data_right=None,
+):
     """Reconstructs images, using DAS, DMAS, and/or ORR
 
     Parameters
@@ -100,57 +121,61 @@ def recon_imgs(s11, idx_pairs, id_pairs, do_das=True, do_dmas=False,
     """
 
     # Init array for storing DAS images
-    das_imgs = np.zeros([np.size(s11_pair_diffs, axis=0),
-                         __M_SIZE, __M_SIZE], dtype=complex)
-    dmas_imgs = np.zeros([np.size(s11_pair_diffs, axis=0),
-                          __M_SIZE, __M_SIZE], dtype=complex)
-    orr_imgs = np.zeros([np.size(s11_pair_diffs, axis=0),
-                         __M_SIZE, __M_SIZE], dtype=complex)
+    das_imgs = np.zeros(
+        [np.size(s11_pair_diffs, axis=0), __M_SIZE, __M_SIZE], dtype=complex
+    )
+    dmas_imgs = np.zeros(
+        [np.size(s11_pair_diffs, axis=0), __M_SIZE, __M_SIZE], dtype=complex
+    )
+    orr_imgs = np.zeros(
+        [np.size(s11_pair_diffs, axis=0), __M_SIZE, __M_SIZE], dtype=complex
+    )
 
     # Make dir for storing DAS results
-    das_o_dir = os.path.join(__O_DIR, 'das/')
+    das_o_dir = os.path.join(__O_DIR, "das/")
     verify_path(das_o_dir)
-    dmas_o_dir = os.path.join(__O_DIR, 'dmas/')
+    dmas_o_dir = os.path.join(__O_DIR, "dmas/")
     verify_path(dmas_o_dir)
-    orr_o_dir = os.path.join(__O_DIR, 'orr/')
+    orr_o_dir = os.path.join(__O_DIR, "orr/")
     verify_path(orr_o_dir)
 
     # For each breast pair
     # for ii in range(np.size(s11_pair_diffs, axis=0)):
     for ii in [2]:
-
-        logger.info('\tWorking on pair [%4d / %4d]...'
-                    % (ii + 1, np.size(s11_pair_diffs, axis=0)))
+        logger.info(
+            "\tWorking on pair [%4d / %4d]..."
+            % (ii + 1, np.size(s11_pair_diffs, axis=0))
+        )
 
         # Get the metadata of the left/right breasts
         md_left = md[idx_pairs[ii, 0]]
         md_right = md[idx_pairs[ii, 1]]
 
         # If left breast has a tumour
-        if ~np.isnan(md_left['tum_x']):
-            tum_y = md_left['tum_y']
+        if ~np.isnan(md_left["tum_x"]):
+            tum_y = md_left["tum_y"]
             if id_pairs[ii, 0] < 0:  # If the breast was mirrored
-                tum_x = -md_left['tum_x']  # Mirror tum position
+                tum_x = -md_left["tum_x"]  # Mirror tum position
             else:
-                tum_x = md_left['tum_x']
-            tum_rad = md_left['tum_diam'] / 2
+                tum_x = md_left["tum_x"]
+            tum_rad = md_left["tum_diam"] / 2
 
         # If right breast has a tumour
-        elif ~np.isnan(md_right['tum_x']):
-            tum_y = md_right['tum_y']
+        elif ~np.isnan(md_right["tum_x"]):
+            tum_y = md_right["tum_y"]
             if id_pairs[ii, 1] < 0:  # If the breast was mirrored
-                tum_x = -md_right['tum_x']  # Mirror tum position
+                tum_x = -md_right["tum_x"]  # Mirror tum position
             else:
-                tum_x = md_right['tum_x']
-            tum_rad = md_right['tum_diam'] / 2
+                tum_x = md_right["tum_x"]
+            tum_rad = md_right["tum_diam"] / 2
         else:  # If no breast had a tumour
             tum_x = 0
             tum_y = 0
             tum_rad = 0
 
         # Get the scan metadata explicitly
-        ant_rad = md_left['ant_rad'] / 100
-        adi_rad = __ADI_RADS[md_left['phant_id'].split('F')[0]]
+        ant_rad = md_left["ant_rad"] / 100
+        adi_rad = __ADI_RADS[md_left["phant_id"].split("F")[0]]
 
         ant_rad += 0.03618
         ant_rho = apply_ant_t_delay(scan_rad=ant_rad, new_ant=True)
@@ -162,11 +187,13 @@ def recon_imgs(s11, idx_pairs, id_pairs, do_das=True, do_dmas=False,
         speed = estimate_speed(adi_rad=adi_rad / 100, ant_rad=ant_rho)
 
         # Get the approximate pixel time delays
-        pix_ts = get_pix_ts_old(ant_rad=ant_rho,
-                                m_size=__M_SIZE,
-                                roi_rad=__ROI_RAD,
-                                speed=speed,
-                                ini_ant_ang=-136.0)
+        pix_ts = get_pix_ts_old(
+            ant_rad=ant_rho,
+            m_size=__M_SIZE,
+            roi_rad=__ROI_RAD,
+            speed=speed,
+            ini_ant_ang=-136.0,
+        )
 
         # Correct for antenna t delay
         # pix_ts = apply_ant_pix_delay(pix_ts)
@@ -177,38 +204,42 @@ def recon_imgs(s11, idx_pairs, id_pairs, do_das=True, do_dmas=False,
         # --- DAS Below this line ---------------------------------------------
         # Reconstruct the DAS image
         if do_das:
-
             das_start = time.time()
-            das_imgs[ii, :, :] = fd_das(fd_data=s11[ii, :, :],
-                                        phase_fac=phase_fac,
-                                        freqs=recon_fs,
-                                        worker_pool=worker_pool)
+            das_imgs[ii, :, :] = fd_das(
+                fd_data=s11[ii, :, :],
+                phase_fac=phase_fac,
+                freqs=recon_fs,
+                worker_pool=worker_pool,
+            )
             das_t = time.time() - das_start
-            logger.info('\t\tDAS completed in %.1f sec' % das_t)
+            logger.info("\t\tDAS completed in %.1f sec" % das_t)
 
             if ii == 2:
                 cs_left, _, _ = boundary_data_left[0]
 
-            plot_fd_img(img=np.abs(das_imgs[ii, :, :]),
-                        tum_x=tum_x / 100,
-                        tum_y=tum_y / 100,
-                        tum_rad=tum_rad / 100,
-                        adi_rad=adi_rad / 100,
-                        roi_rad=__ROI_RAD,
-                        img_rad=__ROI_RAD,
-                        save_str=os.path.join(das_o_dir,
-                                              'id_%d-%d_window.png'
-                                              % (id_pairs[ii, 0],
-                                                 id_pairs[ii, 1])),
-                        transparent=False,
-                        save_close=True,
-                        save_fig=True)
+            plot_fd_img(
+                img=np.abs(das_imgs[ii, :, :]),
+                tum_x=tum_x / 100,
+                tum_y=tum_y / 100,
+                tum_rad=tum_rad / 100,
+                adi_rad=adi_rad / 100,
+                roi_rad=__ROI_RAD,
+                img_rad=__ROI_RAD,
+                save_str=os.path.join(
+                    das_o_dir,
+                    "id_%d-%d_window.png" % (id_pairs[ii, 0], id_pairs[ii, 1]),
+                ),
+                transparent=False,
+                save_close=True,
+                save_fig=True,
+            )
 
             # Save reconstructions every 100 scans to be safe
             if ii % 1000 == 0:
-                save_pickle(das_imgs,
-                            os.path.join(das_o_dir,
-                                         'das_up_to_ii_%d.pickle' % ii))
+                save_pickle(
+                    das_imgs,
+                    os.path.join(das_o_dir, "das_up_to_ii_%d.pickle" % ii),
+                )
 
         # --- DAS Above this line ---------------------------------------------
         # # --- DMAS Below this line --------------------------------------------
@@ -288,11 +319,11 @@ def recon_imgs(s11, idx_pairs, id_pairs, do_das=True, do_dmas=False,
         # # --- ORR Above this line ---------------------------------------------
 
     if do_das:
-        save_pickle(das_imgs, os.path.join(das_o_dir, 'das_imgs.pickle'))
+        save_pickle(das_imgs, os.path.join(das_o_dir, "das_imgs.pickle"))
     if do_dmas:
-        save_pickle(dmas_imgs, os.path.join(dmas_o_dir, 'dmas_imgs.pickle'))
+        save_pickle(dmas_imgs, os.path.join(dmas_o_dir, "dmas_imgs.pickle"))
     if do_orr:
-        save_pickle(orr_imgs, os.path.join(orr_o_dir, 'orr_imgs.pickle'))
+        save_pickle(orr_imgs, os.path.join(orr_o_dir, "orr_imgs.pickle"))
 
 
 def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
@@ -314,15 +345,14 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
     """
 
     if np.sum(id_pairs < 0) == 0:  # If no mirroring occurs
-
         idx_pairs = id_pairs - 1  # Convert from ID to index
 
         # Obtain the differential S11 data in the frequency domain
-        s11_pair_diffs = (s11_data[idx_pairs[:, 0], :, :]
-                          - s11_data[idx_pairs[:, 1], :, :])
+        s11_pair_diffs = (
+            s11_data[idx_pairs[:, 0], :, :] - s11_data[idx_pairs[:, 1], :, :]
+        )
 
     else:  # If sinogram mirroring is intended...
-
         # Find any IDs meant to be mirrored in sinogram space
         ids_to_mirror = id_pairs < 0
 
@@ -332,31 +362,33 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
         idx_pairs = id_pairs - 1  # Convert from ID to index
 
         # Init array for return
-        s11_pair_diffs = np.zeros([np.size(id_pairs, axis=0),
-                                   np.size(s11_data, axis=1),
-                                   np.size(s11_data, axis=2)],
-                                  dtype=complex)
+        s11_pair_diffs = np.zeros(
+            [
+                np.size(id_pairs, axis=0),
+                np.size(s11_data, axis=1),
+                np.size(s11_data, axis=2),
+            ],
+            dtype=complex,
+        )
 
         boundary_data_left = []
         boundary_data_right = []
         # For each breast pair
         # for ii in range(np.size(s11_pair_diffs, axis=0)):
         for ii in range(4):
-
             # Get breast data, pre-cal
             left_uncal = s11_data[idx_pairs[ii, 0], :, :]
             right_uncal = s11_data[idx_pairs[ii, 1], :, :]
 
             # Get the empty chamber reference data
-            left_ref = s11_data[md[idx_pairs[ii, 0]]['emp_ref_id'] - 1, :, :]
-            right_ref = s11_data[md[idx_pairs[ii, 1]]['emp_ref_id'] - 1, :, :]
+            left_ref = s11_data[md[idx_pairs[ii, 0]]["emp_ref_id"] - 1, :, :]
+            right_ref = s11_data[md[idx_pairs[ii, 1]]["emp_ref_id"] - 1, :, :]
 
             # Calibrate the left/right data by empty-chamber subtraction
             left_cal = left_uncal - left_ref
             right_cal = right_uncal - right_ref
 
             if ids_to_mirror[ii, 0]:  # If mirroring left breast
-
                 left_s11 = get_mirrored_sino(left_cal)
 
             else:  # If not mirroring the left breast
@@ -368,7 +400,7 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
                 right_s11 = right_cal
 
             if ii == 2:
-                ant_rad = md[ii]['ant_rad'] / 100 + 0.03618 + 0.0449
+                ant_rad = md[ii]["ant_rad"] / 100 + 0.03618 + 0.0449
 
                 # s11_aligned_right = fd_differential_align(
                 #     fd_emp_ref_left=left_s11[__SCAN_FS >= 2e9, :],
@@ -376,70 +408,94 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
                 #     ini_t=1e-9, fin_t=2e-9, n_time_pts=1000,
                 #     ini_f=2e9, fin_f=9e9)
 
-                cs_left, x_cm_left, y_cm_left = \
-                    get_boundary_iczt(adi_emp_cropped=left_s11[__SCAN_FS >=
-                                                               2e9, :],
-                                      ant_rad=ant_rad,
-                                      out_dir=os.path.join(__O_DIR,
-                                                           'boundary_l/'),
-                                      ini_f=2e9, fin_f=9e9,
-                                      ini_t=1e-9, fin_t=2e-9,
-                                      n_time_pts=1000)
+                cs_left, x_cm_left, y_cm_left = get_boundary_iczt(
+                    adi_emp_cropped=left_s11[__SCAN_FS >= 2e9, :],
+                    ant_rad=ant_rad,
+                    out_dir=os.path.join(__O_DIR, "boundary_l/"),
+                    ini_f=2e9,
+                    fin_f=9e9,
+                    ini_t=1e-9,
+                    fin_t=2e-9,
+                    n_time_pts=1000,
+                )
 
                 boundary_data_left.append((cs_left, x_cm_left, y_cm_left))
 
-                cs_right, x_cm_right, y_cm_right = \
-                    get_boundary_iczt(adi_emp_cropped=right_s11[__SCAN_FS >=
-                                                                2e9, :],
-                                      ant_rad=ant_rad,
-                                      out_dir=os.path.join(__O_DIR,
-                                                           'boundary_r/'),
-                                      ini_f=2e9, fin_f=9e9,
-                                      ini_t=1e-9, fin_t=2e-9,
-                                      n_time_pts=1000)
+                cs_right, x_cm_right, y_cm_right = get_boundary_iczt(
+                    adi_emp_cropped=right_s11[__SCAN_FS >= 2e9, :],
+                    ant_rad=ant_rad,
+                    out_dir=os.path.join(__O_DIR, "boundary_r/"),
+                    ini_f=2e9,
+                    fin_f=9e9,
+                    ini_t=1e-9,
+                    fin_t=2e-9,
+                    n_time_pts=1000,
+                )
 
                 # --------- TEMPORARY --------- #
 
-                shift = minimize_differential_shift_rot(cs_left=cs_left,
-                                                        cs_right=cs_right)
+                shift = minimize_differential_shift_rot(
+                    cs_left=cs_left, cs_right=cs_right
+                )
 
-                cs_right_shifted = shift_rot_cs(cs=cs_right, delta_x=shift[0],
-                                                delta_y=shift[1],
-                                                delta_phi=shift[2])
+                cs_right_shifted = shift_rot_cs(
+                    cs=cs_right,
+                    delta_x=shift[0],
+                    delta_y=shift[1],
+                    delta_phi=shift[2],
+                )
 
                 s11_aligned_right = phase_shift_aligned_boundaries(
                     fd_emp_ref_right=right_s11[__SCAN_FS >= 2e9, :],
                     ant_rad=ant_rad,
-                    cs_right_shifted=cs_right_shifted, ini_t=1e-9, fin_t=2e-9,
-                    n_time_pts=1000, ini_f=2e9, fin_f=__FIN_F, n_fs=__N_FS,
-                    scan_ini_f=__INI_F, scan_fin_f=None)
+                    cs_right_shifted=cs_right_shifted,
+                    ini_t=1e-9,
+                    fin_t=2e-9,
+                    n_time_pts=1000,
+                    ini_f=2e9,
+                    fin_f=__FIN_F,
+                    n_fs=__N_FS,
+                    scan_ini_f=__INI_F,
+                    scan_fin_f=None,
+                )
 
-                s11_aligned_right = window_skin_alignment(s11_aligned_right,
-                                    left_s11[__SCAN_FS >= 2e9, :],
-                                    ant_rad=ant_rad)
+                s11_aligned_right = window_skin_alignment(
+                    s11_aligned_right,
+                    left_s11[__SCAN_FS >= 2e9, :],
+                    ant_rad=ant_rad,
+                )
 
-                plt_sino(fd=s11_aligned_right, title='Right breast phase '
-                                                     'shifted',
-                         out_dir=os.path.join(__O_DIR, 'boundary_r/'),
-                         save_str='right_phase_shifted.png')
+                plt_sino(
+                    fd=s11_aligned_right,
+                    title="Right breast phase shifted",
+                    out_dir=os.path.join(__O_DIR, "boundary_r/"),
+                    save_str="right_phase_shifted.png",
+                )
 
-                plt_sino(fd=right_s11[__SCAN_FS >= 2e9, :],
-                         title='Right breast (empty chamber)',
-                         out_dir=os.path.join(__O_DIR, 'boundary_r/'),
-                         save_str='right_emp_ref.png')
+                plt_sino(
+                    fd=right_s11[__SCAN_FS >= 2e9, :],
+                    title="Right breast (empty chamber)",
+                    out_dir=os.path.join(__O_DIR, "boundary_r/"),
+                    save_str="right_emp_ref.png",
+                )
 
-                plt_sino(fd=left_s11[__SCAN_FS >= 2e9, :],
-                         title='Left breast (empty chamber)',
-                         out_dir=os.path.join(__O_DIR, 'boundary_r/'),
-                         save_str='left_emp_ref.png')
+                plt_sino(
+                    fd=left_s11[__SCAN_FS >= 2e9, :],
+                    title="Left breast (empty chamber)",
+                    out_dir=os.path.join(__O_DIR, "boundary_r/"),
+                    save_str="left_emp_ref.png",
+                )
 
-                left_right_ref = left_s11[__SCAN_FS >= 2e9, :] -\
-                                 s11_aligned_right
+                left_right_ref = (
+                    left_s11[__SCAN_FS >= 2e9, :] - s11_aligned_right
+                )
 
-                plt_sino(fd=left_right_ref,
-                         title='Left - right (after alignment)',
-                         out_dir=os.path.join(__O_DIR, 'boundary_r/'),
-                         save_str='left-right_aligned.png')
+                plt_sino(
+                    fd=left_right_ref,
+                    title="Left - right (after alignment)",
+                    out_dir=os.path.join(__O_DIR, "boundary_r/"),
+                    save_str="left-right_aligned.png",
+                )
 
                 # td, ts, kernel = prepare_fd_data(
                 #     adi_emp_cropped=right_s11[__SCAN_FS >= 2e9, :],
@@ -522,7 +578,7 @@ def get_mirrored_sino(sino):
 
     # Crop to obtain the rotated sinogram so that the y_int_pos is
     # at the middle
-    rot_sino = padded_sino[:, 72 + (y_int_pos - 36): 72 + (y_int_pos + 36) + 1]
+    rot_sino = padded_sino[:, 72 + (y_int_pos - 36) : 72 + (y_int_pos + 36) + 1]
 
     # Mirror and remove last element (duplicate)
     mirror_sino = np.fliplr(rot_sino)[:, :-1]
@@ -531,8 +587,9 @@ def get_mirrored_sino(sino):
     mirror_padded = np.tile(mirror_sino, reps=3)
 
     # Put sinogram back into original angle indexing format
-    unrot_mirror = \
-        mirror_padded[:, 72 + (36 - y_int_pos): 144 + (36 - y_int_pos)]
+    unrot_mirror = mirror_padded[
+        :, 72 + (36 - y_int_pos) : 144 + (36 - y_int_pos)
+    ]
 
     return unrot_mirror
 
@@ -548,22 +605,26 @@ if __name__ == "__main__":
     logger = get_script_logger(__file__)
 
     # Load the indices of pairs
-    id_pairs = np.array(load_pickle(
-        os.path.join(__D_DIR, 'differential/pairs_ideal_sym_mirror.pickle')))
+    id_pairs = np.array(
+        load_pickle(
+            os.path.join(__D_DIR, "differential/pairs_ideal_sym_mirror.pickle")
+        )
+    )
 
     # Load the frequency-domain S11 and metadata
-    s11 = load_pickle(os.path.join(__D_DIR, 'g3_s11.pickle'))
-    md = load_pickle(os.path.join(__D_DIR, 'g3_md.pickle'))
+    s11 = load_pickle(os.path.join(__D_DIR, "g3_s11.pickle"))
+    md = load_pickle(os.path.join(__D_DIR, "g3_md.pickle"))
 
     # Get the scan IDs
-    scan_ids = np.array([ii['id'] for ii in md])
+    scan_ids = np.array([ii["id"] for ii in md])
 
     # Store the frequencies used for reconstruction
     recon_fs = __SCAN_FS[__SCAN_FS >= 2e9]
 
     # Get the S11 differences and indices of the breast pairs
-    s11_pair_diffs, idx_pairs, boundary_data_left, boundary_data_right = \
+    s11_pair_diffs, idx_pairs, boundary_data_left, boundary_data_right = (
         get_breast_pair_s11_diffs(s11_data=s11, id_pairs=id_pairs, md=md)
+    )
 
     # Retain only frequencies from 2-9 GHz
     s11_pair_diffs = s11_pair_diffs[:, __SCAN_FS >= 2e9, :]
@@ -577,7 +638,7 @@ if __name__ == "__main__":
         do_dmas=False,
         do_orr=False,
         boundary_data_left=boundary_data_left,
-        boundary_data_right=boundary_data_right
+        boundary_data_right=boundary_data_right,
     )
 
     worker_pool.close()

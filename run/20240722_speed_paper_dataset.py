@@ -15,12 +15,12 @@ import pandas
 import scipy.constants
 
 from umbms import get_proj_path, get_script_logger, verify_path
-from umbms.beamform.das import fd_das, fd_das_freq_dep  # noqa: F401
-from umbms.beamform.iczt import iczt  # noqa: F401
+from umbms.beamform.das import fd_das, fd_das_freq_dep
+from umbms.beamform.iczt import iczt
 from umbms.beamform.propspeed import estimate_speed, get_breast_speed_freq
 from umbms.beamform.time_delay import get_pix_ts, get_pix_ts_old
-from umbms.beamform.utility import apply_ant_t_delay, get_fd_phase_factor  # noqa: F401
-from umbms.boundary.boundary_detection import (  # noqa: F401
+from umbms.beamform.utility import apply_ant_t_delay, get_fd_phase_factor
+from umbms.boundary.boundary_detection import (
     get_binary_mask,
     get_boundary_iczt,
 )
@@ -34,7 +34,9 @@ __CPU_COUNT = mp.cpu_count()
 # SPECIFY CORRECT DATA AND OUTPUT PATHS
 ########################################################################
 
-__DATA_DIR = os.path.join(get_proj_path(), "data/umbmid/cyl_phantom/speed_paper/")
+__DATA_DIR = os.path.join(
+    get_proj_path(), "data/umbmid/cyl_phantom/speed_paper/"
+)
 __OUT_DIR = os.path.join(get_proj_path(), "output/cyl_phantom/")
 verify_path(__OUT_DIR)
 __DIEL_DATA_DIR = os.path.join(get_proj_path(), "data/freq_data/")

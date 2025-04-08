@@ -21,12 +21,31 @@ from umbms.plot.imgplots import plot_fd_img
 
 ###############################################################################
 
-def orr_recon(ini_img, freqs, m_size, fd, pos, tum_rad,
-              velocities=None, phase_fac=None, breast_speed=0.0, ant_rad=0.0,
-              air_speed=0.0, adi_rad=0.0, mid_breast_max=0.0,
-              mid_breast_min=0.0, step_size=0.114,
-              int_f_xs=None, int_f_ys=None, int_b_xs=None, int_b_ys=None,
-              out_dir='', worker_pool=None, logger=null_logger):
+
+def orr_recon(
+    ini_img,
+    freqs,
+    m_size,
+    fd,
+    pos,
+    tum_rad,
+    velocities=None,
+    phase_fac=None,
+    breast_speed=0.0,
+    ant_rad=0.0,
+    air_speed=0.0,
+    adi_rad=0.0,
+    mid_breast_max=0.0,
+    mid_breast_min=0.0,
+    step_size=0.114,
+    int_f_xs=None,
+    int_f_ys=None,
+    int_b_xs=None,
+    int_b_ys=None,
+    out_dir="",
+    worker_pool=None,
+    logger=null_logger,
+):
     """Perform optimization-based radar reconstruction, via grad desc
 
     Parameters
@@ -83,47 +102,78 @@ def orr_recon(ini_img, freqs, m_size, fd, pos, tum_rad,
     roi_rad = adi_rad + 0.01
 
     # Get the area of each individual pixel
-    dv = ((2 * roi_rad) ** 2) / (m_size ** 2)
+    dv = ((2 * roi_rad) ** 2) / (m_size**2)
 
     # Plot the original data in the time and frequency domains
-    plt_sino(fd=fd, title="Experimental Data",
-             save_str='experimental_data.png',
-             close=True, out_dir=out_dir, transparent=False)
-    plt_fd_sino(fd=fd, title='Experimental Data',
-                save_str='expt_data_fd.png',
-                close=True, out_dir=out_dir, transparent=False)
+    plt_sino(
+        fd=fd,
+        title="Experimental Data",
+        save_str="experimental_data.png",
+        close=True,
+        out_dir=out_dir,
+        transparent=False,
+    )
+    plt_fd_sino(
+        fd=fd,
+        title="Experimental Data",
+        save_str="expt_data_fd.png",
+        close=True,
+        out_dir=out_dir,
+        transparent=False,
+    )
 
     img = ini_img  # Initialize the image
 
     # Plot the initial image estimate
-    plot_fd_img(np.real(img), tum_x=tum_x, tum_y=tum_y, tum_rad=tum_rad,
-                adi_rad=adi_rad, mid_breast_max=mid_breast_max,
-                mid_breast_min=mid_breast_min, roi_rad=roi_rad,
-                img_rad=roi_rad,
-                title="Image Estimate Step %d" % 0,
-                save_str=os.path.join(out_dir,
-                                      "imageEstimate_step_%d.png" % 0),
-                save_fig=True, save_close=True, cbar_fmt='%.2e',
-                transparent=False)
+    plot_fd_img(
+        np.real(img),
+        tum_x=tum_x,
+        tum_y=tum_y,
+        tum_rad=tum_rad,
+        adi_rad=adi_rad,
+        mid_breast_max=mid_breast_max,
+        mid_breast_min=mid_breast_min,
+        roi_rad=roi_rad,
+        img_rad=roi_rad,
+        title="Image Estimate Step %d" % 0,
+        save_str=os.path.join(out_dir, "imageEstimate_step_%d.png" % 0),
+        save_fig=True,
+        save_close=True,
+        cbar_fmt="%.2e",
+        transparent=False,
+    )
 
     cost_funcs = []  # Init list for storing cost function values
 
     # Forward project the current image estimate
     if not (velocities is None):
-        fwd = fd_fwd_proj_vel_freq(model=img, int_f_xs=int_f_xs,
-                                   int_f_ys=int_f_ys, int_b_xs=int_b_xs,
-                                   int_b_ys=int_b_ys, velocities=velocities,
-                                   ant_rad=ant_rad, m_size=m_size,
-                                   roi_rad=roi_rad,
-                                   air_speed=air_speed, dv=dv, adi_rad=adi_rad,
-                                   mid_breast_max=mid_breast_max,
-                                   mid_breast_min=mid_breast_min, freqs=freqs,
-                                   worker_pool=worker_pool)
+        fwd = fd_fwd_proj_vel_freq(
+            model=img,
+            int_f_xs=int_f_xs,
+            int_f_ys=int_f_ys,
+            int_b_xs=int_b_xs,
+            int_b_ys=int_b_ys,
+            velocities=velocities,
+            ant_rad=ant_rad,
+            m_size=m_size,
+            roi_rad=roi_rad,
+            air_speed=air_speed,
+            dv=dv,
+            adi_rad=adi_rad,
+            mid_breast_max=mid_breast_max,
+            mid_breast_min=mid_breast_min,
+            freqs=freqs,
+            worker_pool=worker_pool,
+        )
     else:
-
         # Forward project the current image estimate
-        fwd = fd_fwd_proj(model=img, phase_fac=phase_fac, dv=dv, freqs=freqs,
-                          worker_pool=worker_pool)
+        fwd = fd_fwd_proj(
+            model=img,
+            phase_fac=phase_fac,
+            dv=dv,
+            freqs=freqs,
+            worker_pool=worker_pool,
+        )
 
     img_estimates = []  # Init list for storing image estimates
 
@@ -139,51 +189,78 @@ def orr_recon(ini_img, freqs, m_size, fd, pos, tum_rad,
     # new_speed = breast_speed
     # old_speed = breast_speed
 
-    logger.info('\tInitial cost value:\t%.4f' % cost_funcs[0])
+    logger.info("\tInitial cost value:\t%.4f" % cost_funcs[0])
 
     # Perform gradient descent until the relative change in the cost
     # function is less than 0.1%
     while cost_rel_change > 0.001:
-
-        logger.info('\tStep %d...' % (step + 1))
+        logger.info("\tStep %d..." % (step + 1))
 
         # Plot the forward projection of the image estimate
-        plt_sino(fd=fwd, title='Forward Projection Step %d' % (step + 1),
-                 save_str='fwdProj_step_%d.png' % (step + 1),
-                 close=True, out_dir=out_dir, transparent=False)
-        plt_fd_sino(fd=fwd, title='Forward Projection Step %d' % (step + 1),
-                    save_str='fwdProj_FD_step_%d.png' % (step + 1),
-                    close=True, out_dir=out_dir, transparent=False)
+        plt_sino(
+            fd=fwd,
+            title="Forward Projection Step %d" % (step + 1),
+            save_str="fwdProj_step_%d.png" % (step + 1),
+            close=True,
+            out_dir=out_dir,
+            transparent=False,
+        )
+        plt_fd_sino(
+            fd=fwd,
+            title="Forward Projection Step %d" % (step + 1),
+            save_str="fwdProj_FD_step_%d.png" % (step + 1),
+            close=True,
+            out_dir=out_dir,
+            transparent=False,
+        )
 
         # Plot the diff between forward and expt data
-        plt_sino(fd=(fd - fwd), title='Exp - Fwd Step %d' % (step + 1),
-                 save_str='fwdExpDiff_step_%d.png' % (step + 1),
-                 close=True, out_dir=out_dir, transparent=False)
-        plt_fd_sino(fd=(fd - fwd), title='Exp - Fwd Step %d' % (step + 1),
-                    save_str='fwdExpDiff_FD_step_%d.png' % (step + 1),
-                    close=True, out_dir=out_dir, transparent=False)
+        plt_sino(
+            fd=(fd - fwd),
+            title="Exp - Fwd Step %d" % (step + 1),
+            save_str="fwdExpDiff_step_%d.png" % (step + 1),
+            close=True,
+            out_dir=out_dir,
+            transparent=False,
+        )
+        plt_fd_sino(
+            fd=(fd - fwd),
+            title="Exp - Fwd Step %d" % (step + 1),
+            save_str="fwdExpDiff_FD_step_%d.png" % (step + 1),
+            close=True,
+            out_dir=out_dir,
+            transparent=False,
+        )
 
         if not (velocities is None):
-            ref_derivs = get_ref_derivs_vel_freq(int_f_xs=int_f_xs,
-                                                 int_f_ys=int_f_ys,
-                                                 int_b_xs=int_b_xs,
-                                                 int_b_ys=int_b_ys,
-                                                 ant_rad=ant_rad,
-                                                 velocities=velocities,
-                                                 m_size=m_size,
-                                                 roi_rad=roi_rad,
-                                                 air_speed=air_speed,
-                                                 mid_breast_max=mid_breast_max,
-                                                 mid_breast_min=mid_breast_min,
-                                                 adi_rad=adi_rad, fd=fd,
-                                                 fwd=fwd,
-                                                 freqs=freqs,
-                                                 worker_pool=worker_pool)
+            ref_derivs = get_ref_derivs_vel_freq(
+                int_f_xs=int_f_xs,
+                int_f_ys=int_f_ys,
+                int_b_xs=int_b_xs,
+                int_b_ys=int_b_ys,
+                ant_rad=ant_rad,
+                velocities=velocities,
+                m_size=m_size,
+                roi_rad=roi_rad,
+                air_speed=air_speed,
+                mid_breast_max=mid_breast_max,
+                mid_breast_min=mid_breast_min,
+                adi_rad=adi_rad,
+                fd=fd,
+                fwd=fwd,
+                freqs=freqs,
+                worker_pool=worker_pool,
+            )
         else:
             # Calculate the gradient of the loss function wrt the
             # reflectivities in the object space
-            ref_derivs = get_ref_derivs(phase_fac=phase_fac, fd=fd, fwd=fwd,
-                                        freqs=freqs, worker_pool=worker_pool)
+            ref_derivs = get_ref_derivs(
+                phase_fac=phase_fac,
+                fd=fd,
+                fwd=fwd,
+                freqs=freqs,
+                worker_pool=worker_pool,
+            )
 
         # Update image estimate
         img -= step_size * np.real(ref_derivs)
@@ -200,118 +277,145 @@ def orr_recon(ini_img, freqs, m_size, fd, pos, tum_rad,
 
         # Plot the map of the loss function derivative with respect to
         # each reflectivity point
-        plot_fd_img(np.real(ref_derivs), tum_x=tum_x, tum_y=tum_y,
-                    tum_rad=tum_rad, adi_rad=adi_rad,
-                    mid_breast_max=mid_breast_max,
-                    mid_breast_min=mid_breast_min, roi_rad=roi_rad,
-                    img_rad=roi_rad,
-                    title="Full Deriv Step %d" % (step + 1),
-                    save_str=os.path.join(out_dir,
-                                          "fullDeriv_step_%d.png"
-                                          % (step + 1)),
-                    save_fig=True,
-                    save_close=True,
-                    cbar_fmt='%.2e',
-                    transparent=False)
+        plot_fd_img(
+            np.real(ref_derivs),
+            tum_x=tum_x,
+            tum_y=tum_y,
+            tum_rad=tum_rad,
+            adi_rad=adi_rad,
+            mid_breast_max=mid_breast_max,
+            mid_breast_min=mid_breast_min,
+            roi_rad=roi_rad,
+            img_rad=roi_rad,
+            title="Full Deriv Step %d" % (step + 1),
+            save_str=os.path.join(
+                out_dir, "fullDeriv_step_%d.png" % (step + 1)
+            ),
+            save_fig=True,
+            save_close=True,
+            cbar_fmt="%.2e",
+            transparent=False,
+        )
 
         # Plot the new image estimate
-        plot_fd_img(np.real(img), tum_x=tum_x, tum_y=tum_y,
-                    tum_rad=tum_rad, adi_rad=adi_rad,
-                    mid_breast_max=mid_breast_max,
-                    mid_breast_min=mid_breast_min, roi_rad=roi_rad,
-                    img_rad=roi_rad,
-                    title="Image Estimate Step %d" % (step + 1),
-                    save_str=os.path.join(out_dir,
-                                          "imageEstimate_step_%d.png"
-                                          % (step + 1)),
-                    save_fig=True,
-                    save_close=True,
-                    cbar_fmt='%.2e',
-                    transparent=False)
-        plot_fd_img(np.abs(img), tum_x=tum_x, tum_y=tum_y,
-                    tum_rad=tum_rad, adi_rad=adi_rad,
-                    mid_breast_max=mid_breast_max,
-                    mid_breast_min=mid_breast_min, roi_rad=roi_rad,
-                    img_rad=roi_rad,
-                    title="Image Estimate Step %d" % (step + 1),
-                    save_str=os.path.join(out_dir,
-                                          "imageEstimate_step_%d_abs.png"
-                                          % (step + 1)),
-                    save_fig=True,
-                    save_close=True,
-                    cbar_fmt='%.2e',
-                    transparent=False)
+        plot_fd_img(
+            np.real(img),
+            tum_x=tum_x,
+            tum_y=tum_y,
+            tum_rad=tum_rad,
+            adi_rad=adi_rad,
+            mid_breast_max=mid_breast_max,
+            mid_breast_min=mid_breast_min,
+            roi_rad=roi_rad,
+            img_rad=roi_rad,
+            title="Image Estimate Step %d" % (step + 1),
+            save_str=os.path.join(
+                out_dir, "imageEstimate_step_%d.png" % (step + 1)
+            ),
+            save_fig=True,
+            save_close=True,
+            cbar_fmt="%.2e",
+            transparent=False,
+        )
+        plot_fd_img(
+            np.abs(img),
+            tum_x=tum_x,
+            tum_y=tum_y,
+            tum_rad=tum_rad,
+            adi_rad=adi_rad,
+            mid_breast_max=mid_breast_max,
+            mid_breast_min=mid_breast_min,
+            roi_rad=roi_rad,
+            img_rad=roi_rad,
+            title="Image Estimate Step %d" % (step + 1),
+            save_str=os.path.join(
+                out_dir, "imageEstimate_step_%d_abs.png" % (step + 1)
+            ),
+            save_fig=True,
+            save_close=True,
+            cbar_fmt="%.2e",
+            transparent=False,
+        )
         if not (velocities is None):
             # Forward project the current image estimate
-            fwd = fd_fwd_proj_vel_freq(model=img, int_f_xs=int_f_xs,
-                                       int_f_ys=int_f_ys, int_b_xs=int_b_xs,
-                                       int_b_ys=int_b_ys,
-                                       velocities=velocities,
-                                       ant_rad=ant_rad, m_size=m_size,
-                                       roi_rad=roi_rad, air_speed=air_speed,
-                                       dv=dv, adi_rad=adi_rad,
-                                       mid_breast_max=mid_breast_max,
-                                       mid_breast_min=mid_breast_min,
-                                       freqs=freqs,
-                                       worker_pool=worker_pool)
+            fwd = fd_fwd_proj_vel_freq(
+                model=img,
+                int_f_xs=int_f_xs,
+                int_f_ys=int_f_ys,
+                int_b_xs=int_b_xs,
+                int_b_ys=int_b_ys,
+                velocities=velocities,
+                ant_rad=ant_rad,
+                m_size=m_size,
+                roi_rad=roi_rad,
+                air_speed=air_speed,
+                dv=dv,
+                adi_rad=adi_rad,
+                mid_breast_max=mid_breast_max,
+                mid_breast_min=mid_breast_min,
+                freqs=freqs,
+                worker_pool=worker_pool,
+            )
         else:
             # Forward project the current image estimate
-            fwd = fd_fwd_proj(model=img, phase_fac=phase_fac, dv=dv,
-                              freqs=freqs, worker_pool=worker_pool)
+            fwd = fd_fwd_proj(
+                model=img,
+                phase_fac=phase_fac,
+                dv=dv,
+                freqs=freqs,
+                worker_pool=worker_pool,
+            )
 
         # Normalize the forward projection
         cost_funcs.append(np.sum(np.abs(fwd - fd) ** 2))
 
-        logger.info('\t\tCost func:\t%.4f' % (cost_funcs[step + 1]))
+        logger.info("\t\tCost func:\t%.4f" % (cost_funcs[step + 1]))
 
         # Calculate the relative change in the cost function
-        cost_rel_change = ((cost_funcs[step] - cost_funcs[step + 1])
-                           / cost_funcs[step])
-        logger.info('\t\t\tCost Func ratio:\t%.4f%%'
-                    % (100 * cost_rel_change))
+        cost_rel_change = (
+            cost_funcs[step] - cost_funcs[step + 1]
+        ) / cost_funcs[step]
+        logger.info("\t\t\tCost Func ratio:\t%.4f%%" % (100 * cost_rel_change))
 
         if step >= 1:  # For each step after the 0th
-
             # Plot the value of the cost function vs the number of
             # gradient descent steps performed
             plt.figure(figsize=(12, 6))
-            plt.rc('font', family='Times New Roman')
+            plt.rc("font", family="Times New Roman")
             plt.tick_params(labelsize=18)
-            plt.plot(np.arange(1, step + 2), cost_funcs[:step + 1],
-                     'ko--')
-            plt.xlabel('Iteration Number', fontsize=22)
-            plt.ylabel('Cost Function Value', fontsize=22)
-            plt.title("Optimization Performance with Gradient Descent",
-                      fontsize=24)
+            plt.plot(np.arange(1, step + 2), cost_funcs[: step + 1], "ko--")
+            plt.xlabel("Iteration Number", fontsize=22)
+            plt.ylabel("Cost Function Value", fontsize=22)
+            plt.title(
+                "Optimization Performance with Gradient Descent", fontsize=24
+            )
             plt.tight_layout()
             # plt.show()
-            plt.savefig(os.path.join(out_dir,
-                                     "costFuncs_step_%d.png" % (
-                                             step + 1)),
-                        transparent=False,
-                        dpi=300)
+            plt.savefig(
+                os.path.join(out_dir, "costFuncs_step_%d.png" % (step + 1)),
+                transparent=False,
+                dpi=300,
+            )
             plt.close()
 
         step += 1  # Increment the step counter
 
     # After completing image reconstruction, plot the learning curve
     plt.figure(figsize=(12, 6))
-    plt.rc('font', family='Times New Roman')
+    plt.rc("font", family="Times New Roman")
     plt.tick_params(labelsize=18)
-    plt.plot(np.arange(1, len(cost_funcs) + 1), cost_funcs, 'ko--')
-    plt.xlabel('Iteration Number', fontsize=22)
-    plt.ylabel('Cost Function Value', fontsize=22)
-    plt.title("Optimization Performance with Gradient Descent",
-              fontsize=24)
+    plt.plot(np.arange(1, len(cost_funcs) + 1), cost_funcs, "ko--")
+    plt.xlabel("Iteration Number", fontsize=22)
+    plt.ylabel("Cost Function Value", fontsize=22)
+    plt.title("Optimization Performance with Gradient Descent", fontsize=24)
     plt.tight_layout()
     # plt.show()
-    plt.savefig(os.path.join(out_dir, "costFuncs.png"),
-                transparent=True,
-                dpi=300)
+    plt.savefig(
+        os.path.join(out_dir, "costFuncs.png"), transparent=True, dpi=300
+    )
     plt.close()
 
     # Save the image estimates to a .pickle file
-    save_pickle(img_estimates, os.path.join(out_dir, 'img_estimates.pickle'))
+    save_pickle(img_estimates, os.path.join(out_dir, "img_estimates.pickle"))
 
     return img
-
