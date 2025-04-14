@@ -7,6 +7,7 @@ March 17, 2025
 import matlab.engine
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
 
 def create_domain(roi=0.2, phantom_rad=0.055):
@@ -88,14 +89,14 @@ def find_xy_ant_bound_circle(
             if np.isclose(px_x, ant_pos_x, atol=1e-8):
                 x_roots = [px_x, px_x]
                 y_roots = [
-                    oy + np.sqrt(phantom_rad**2 - (px_x - ox) ** 2),
-                    oy - np.sqrt(phantom_rad**2 - (px_x - ox) ** 2),
+                    oy + np.sqrt(adi_rad**2 - (px_x - ox) ** 2),
+                    oy - np.sqrt(adi_rad**2 - (px_x - ox) ** 2),
                 ]
             elif np.isclose(px_y, ant_pos_y, atol=1e-8):
                 y_roots = [px_y, px_y]
                 x_roots = [
-                    ox + np.sqrt(phantom_rad**2 - (px_y - oy) ** 2),
-                    ox - np.sqrt(phantom_rad**2 - (px_y - oy) ** 2),
+                    ox + np.sqrt(adi_rad**2 - (px_y - oy) ** 2),
+                    ox - np.sqrt(adi_rad**2 - (px_y - oy) ** 2),
                 ]
             else:
                 # calculating coefficients of polynomial
@@ -209,15 +210,15 @@ def calculate_avg_speed(
 
 
 if __name__ == "__main__":
-    n_ant_pos = 200
+    n_ant_pos = 72
     ant_rad = 0.21
-    phantom_rad = 0.055
-    roi = phantom_rad + 0.01
-    xs, ys, phantom_mask = create_domain(roi=ant_rad, phantom_rad=phantom_rad)
+    adi_rad = 0.055
+    roi = adi_rad + 0.01
+    xs, ys, phantom_mask = create_domain(roi=ant_rad, phantom_rad=adi_rad)
     x_ants, y_ants = create_antenna_array(ant_rad=ant_rad, n_ants=n_ant_pos)
 
     int_f_xs, int_f_ys, int_b_xs, int_b_ys = find_xy_ant_bound_circle(
-        ant_xs=x_ants, ant_ys=y_ants, n_ant_pos=n_ant_pos, adi_rad=phantom_rad
+        ant_xs=x_ants, ant_ys=y_ants, n_ant_pos=n_ant_pos, adi_rad=adi_rad
     )
 
     ant_speed = calculate_avg_speed(
@@ -232,10 +233,12 @@ if __name__ == "__main__":
         breast_speed=1.7e8,
     )
 
-    # plt.imshow(ant_speed.T, extent=(0, 360, 0, 24), aspect='auto')
-    # plt.xlabel(r'Detector angle ($^\circ$)')
-    # plt.ylabel('Antenna position')
-    #
+    # ant_speed[2:, :] = 0
+
+    sino = plt.imshow(ant_speed.T, extent=(0, 360, 0, 24), aspect="auto")
+    plt.xlabel(r"Detector angle ($^\circ$)")
+    plt.ylabel("Receiving antenna")
+    plt.colorbar(sino, label="Propagation speed (m/s)")
 
     # plt.plot(ant_speed[0, :])
     # plt.xlabel('Antenna position')
@@ -267,14 +270,14 @@ if __name__ == "__main__":
     b = -a * np.min(image)
     image = a * image + b
 
-    img = plt.imshow(image)
+    # img = plt.imshow(image)
+    # plt.colorbar(img)
 
-    plt.colorbar(img)
-
-    # plt.plot(np.linspace(-1, 1, len(image[0])),
-    #          image[np.size(image, axis=0)//2, :])
-    # plt.xlabel('Horizontal extent')
-    # plt.ylabel(r'Propagation speed $10^8$ (m/s)')
+    # plt.plot(
+    #     np.linspace(-1, 1, len(image[0])), image[np.size(image, axis=0) // 2, :]
+    # )
+    # plt.xlabel("Horizontal extent")
+    # plt.ylabel(r"Propagation speed $10^8$ (m/s)")
 
     # circle_angles = np.linspace(0, 2*np.pi, 100)
     #
@@ -290,5 +293,19 @@ if __name__ == "__main__":
     #     plt.plot([x_ants[8], point_x], [y_ants[8], point_y], 'b-')
     # plt.gca().set_aspect('equal')
     plt.tight_layout()
-    plt.show()
+    # plt.show()
+
+    # plt.savefig(
+    #     os.path.join(
+    #         os.path.expanduser("~"),
+    #         "Desktop/slice_%d_ants.png" % n_ant_pos,
+    #     )
+    # )
+
+    plt.savefig(
+        os.path.join(
+            os.path.expanduser("~"), "Desktop/backprojection_sinogram.png"
+        )
+    )
+
     eng.exit()

@@ -342,6 +342,37 @@ def phase_diff_MSE(x, exp_phase, freq, length, wrapped=False):
     return mse
 
 
+def speed_diff_MSE(x, exp_speed, freq, length):
+    """Returns the MSE between the experimental speed
+    and the derived shape
+
+    Parameters:
+    ----------------
+    x : array-like
+        An array of parameters for the Cole-Cole model
+    exp_speed :  array-like
+        Extracted speed (m/s)
+    freq : array-like
+        Frequencies used in the experiment (Hz)
+    length : float
+        The transmission distance (separation between the antennas)
+
+    Returns:
+    ----------------
+    mse : float
+        Mean square error
+    """
+
+    (e_h, e_s, tau, alpha) = x
+    epsilon = cole_cole(freq, e_h, e_s, tau, alpha)
+
+    shape = get_speed_from_epsilon(epsilon)
+
+    mse = (1 / np.size(exp_speed)) * (np.sum((exp_speed - shape) ** 2))
+
+    return mse
+
+
 def fit_bootstrap(p0, datax, datay, length, function, yerr_systematic=0.0):
     errfunc = lambda p, x, y, l: function(x, l, *p) - y
 
