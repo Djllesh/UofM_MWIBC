@@ -255,7 +255,7 @@ if __name__ == "__main__":
 
             # Reconstruct a DAS image
             # das_adi_recon =\
-            #     fd_das_vel_freq(fd_data=adi_cal_cropped,
+            #     fd_das_freq_dep(fd_data=adi_cal_cropped,
             #                     int_f_xs=int_f_xs, int_f_ys=int_f_ys,
             #                     int_b_xs=int_b_xs, int_b_ys=int_b_ys,
             #                     velocities=velocities, ant_rad=ant_rad,

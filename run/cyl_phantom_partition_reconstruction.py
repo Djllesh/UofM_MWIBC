@@ -406,7 +406,7 @@ if __name__ == "__main__":
             # #                                   % ii), save_close=True)
             #
             # # 3. Frequency-dependent DAS (zero cond)
-            # das_freq_dep_zero_cond_recon = fd_das_vel_freq(
+            # das_freq_dep_zero_cond_recon = fd_das_freq_dep(
             #     fd_data=adi_cal_cropped,
             #     int_f_xs=int_f_xs,
             #     int_f_ys=int_f_ys,
@@ -448,7 +448,7 @@ if __name__ == "__main__":
             # #                                   % ii), save_close=True)
             #
             # # 4. Frequency-dependent DAS
-            # das_freq_dep_recon = fd_das_vel_freq(fd_data=adi_cal_cropped,
+            # das_freq_dep_recon = fd_das_freq_dep(fd_data=adi_cal_cropped,
             #                                      int_f_xs=int_f_xs,
             #                                      int_f_ys=int_f_ys,
             #                                      int_b_xs=int_b_xs,
@@ -580,7 +580,7 @@ if __name__ == "__main__":
             #     # plt.show()
 
             # rec_start = perf_counter()
-            # das_adi_recon = fd_das_vel_freq(fd_data=adi_cal_cropped,
+            # das_adi_recon = fd_das_freq_dep(fd_data=adi_cal_cropped,
             #                                 int_f_xs=int_f_xs,
             #                                 int_f_ys=int_f_ys,
             #                                 int_b_xs=int_b_xs,
