@@ -1,21 +1,7 @@
-import pandas
-from scipy.optimize import minimize
-from scipy.stats import pearsonr
-import numpy as np
-import matplotlib.pyplot as plt
 import os
-from umbms import get_proj_path
-from umbms.loadsave import load_pickle
-from umbms.beamform.propspeed import (
-    cole_cole,
-    phase_shape,
-    phase_diff_MSE,
-    phase_shape_wrapped,
-    get_breast_speed_freq,
-)
-from umbms.analysis.stats import ccc
 
-import matplotlib.ticker as ticker  # <-- ADDED
+import matplotlib.pyplot as plt
+import numpy as np
 
 # The phase
 __INI_F = 2e9
@@ -49,16 +35,24 @@ dgbe70_fit = dgbe70_data[:, 2]
 
 if __name__ == "__main__":
     __MY_DPI = 120
-    plt.rcParams["font.family"] = "Times New Roman"
+
+    plt.rcParams["font.family"] = "Garamond"
+    plt.rcParams["text.color"] = "white"
+    plt.rcParams["axes.labelcolor"] = "white"
+    plt.rcParams["xtick.color"] = "white"
+    plt.rcParams["ytick.color"] = "white"
+
     fig, ax = plt.subplots(
         2,
         2,
         **dict(figsize=(900 / __MY_DPI, 900 / __MY_DPI), dpi=__MY_DPI),
         sharex=True,
         sharey=True,
+        facecolor="#0e2841",
     )
+
     plot_freqs = np.linspace(2, 9, 1001)
-    mask = plot_freqs <= 4
+    mask = plot_freqs > 1
 
     ax[0, 0].plot(plot_freqs[mask], glycerin_exp[mask], "r--", linewidth=0.9)
     ax[0, 0].plot(
@@ -68,7 +62,7 @@ if __name__ == "__main__":
         label=r"Estimated speed inside, shift = $-2 \cdot 4\pi$",
         linewidth=1.3,
     )
-    ax[0, 0].set_title("Glycerin", fontsize=16)
+    ax[0, 0].set_title("Glycerin", fontsize=16, fontdict={"color": "white"})
 
     ax[0, 1].plot(plot_freqs[mask], dgbe95_exp[mask], "r--", linewidth=0.9)
     ax[0, 1].plot(
@@ -78,7 +72,7 @@ if __name__ == "__main__":
         label=r"Estimated speed inside, shift = $-2 \cdot 4\pi$",
         linewidth=1.3,
     )
-    ax[0, 1].set_title("DGBE 95%", fontsize=16)
+    ax[0, 1].set_title("DGBE 95%", fontsize=16, fontdict={"color": "white"})
 
     ax[1, 0].plot(plot_freqs[mask], dgbe90_exp[mask], "r--", linewidth=0.9)
     ax[1, 0].plot(
@@ -88,7 +82,7 @@ if __name__ == "__main__":
         label=r"Estimated speed inside, shift = $-2 \cdot 4\pi$",
         linewidth=1.3,
     )
-    ax[1, 0].set_title("DGBE 90%", fontsize=16)
+    ax[1, 0].set_title("DGBE 90%", fontsize=16, fontdict={"color": "white"})
 
     ax[1, 1].plot(
         plot_freqs[mask],
@@ -104,8 +98,8 @@ if __name__ == "__main__":
         label=r"Fitted phase",
         linewidth=1.3,
     )
-    ax[1, 1].set_title("DGBE 70%", fontsize=16)
-    ax[1, 1].legend()
+    ax[1, 1].set_title("DGBE 70%", fontsize=16, fontdict={"color": "white"})
+    ax[1, 1].legend(labelcolor="k")
 
     for axis in ax.flatten():
         # axis.ticklabel_format(style='plain', axis='y')
@@ -123,4 +117,7 @@ if __name__ == "__main__":
 
     plt.tight_layout()
     # plt.show()
-    plt.savefig("C:/Users/prikh/Desktop/phases_noise_low.png", dpi=__MY_DPI)
+    plt.savefig(
+        "C:/Users/prikh/Desktop/phases.png",
+        dpi=__MY_DPI,
+    )

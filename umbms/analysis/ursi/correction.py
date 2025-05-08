@@ -5,12 +5,16 @@ University of Manitoba
 January 24th, 2025
 """
 
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 from scipy.stats import pearsonr
 import matplotlib.ticker as ticker
 from umbms.analysis.stats import ccc
+
+
+cwd = os.getcwd()
 
 
 def fun(x, a):  # , b):
@@ -30,18 +34,24 @@ def fun(x, a):  # , b):
 
 if __name__ == "__main__":
     # Opening the data
-    data_dgbe90 = np.genfromtxt("data/dgbe90.csv", delimiter=",", skip_header=1)
+    data_dgbe90 = np.genfromtxt(
+        os.path.join(cwd, "data/dgbe90.csv"), delimiter=",", skip_header=1
+    )
 
-    data_dgbe95 = np.genfromtxt("data/dgbe95.csv", delimiter=",", skip_header=1)
+    data_dgbe95 = np.genfromtxt(
+        os.path.join(cwd, "data/dgbe95.csv"), delimiter=",", skip_header=1
+    )
 
-    data_dgbe70 = np.genfromtxt("data/dgbe70.csv", delimiter=",", skip_header=1)
+    data_dgbe70 = np.genfromtxt(
+        os.path.join(cwd, "data/dgbe70.csv"), delimiter=",", skip_header=1
+    )
 
     data_glycerin = np.genfromtxt(
-        "data/glycerin.csv", delimiter=",", skip_header=1
+        os.path.join(cwd, "data/glycerin.csv"), delimiter=",", skip_header=1
     )
 
     freqs = data_glycerin[:, 0]
-
+    print(os.getcwd())
     exp_dgbe90 = data_dgbe90[:, 1]
     phase_dgbe90 = data_dgbe90[:, 2]
 
@@ -83,7 +93,12 @@ if __name__ == "__main__":
         print(f"CCC = {ccc_:.6f}, PCC = {cor:.6f}")
         print(f"Mean ratio = {np.mean(y_exp[i]) / np.mean(y_phase[i])}")
 
-    plt.rcParams["font.family"] = "Times New Roman"
+    plt.rcParams["font.family"] = "Garamond"
+    plt.rcParams["text.color"] = "white"
+    plt.rcParams["axes.labelcolor"] = "white"
+    plt.rcParams["xtick.color"] = "white"
+    plt.rcParams["ytick.color"] = "white"
+
     # N = np.size(freqs)
     # delta = N * np.sum(phase_dgbe70**2) - np.sum(phase_dgbe70)**2
     # sigma_y2 = 1/(N-2) * np.sum((exp_dgbe70 - fun(phase_dgbe70, *popt))**2)
@@ -94,8 +109,10 @@ if __name__ == "__main__":
 
     __MY_DPI = 120
     fig, ax = plt.subplots(
-        **dict(figsize=(800 / __MY_DPI, 800 / __MY_DPI), dpi=__MY_DPI)
+        **dict(figsize=(800 / __MY_DPI, 800 / __MY_DPI), dpi=__MY_DPI),
+        facecolor="#0e2841",
     )
+
     plotfreqs = np.linspace(2, 9, 1001)
     mask = plotfreqs > 4
     plotfreqs = plotfreqs[mask]
@@ -154,9 +171,9 @@ if __name__ == "__main__":
     ax.set_xlim(3.9, 9.1)
     ax.set_ylim(7.2e7, 14.0e7)
     ax.grid(linewidth=0.5)
-    plt.legend(loc="center right", fontsize=14)
+    plt.legend(loc="center right", fontsize=14, labelcolor="linecolor")
     plt.xlabel("Frequency (GHz)", fontsize=16)
     plt.ylabel("Propagation speed (m/s)", fontsize=16)
     plt.tight_layout()
-    # plt.show()
-    # plt.savefig('C:/Users/prikh/Desktop/correction.png', dpi=__MY_DPI)
+    plt.show()
+    # plt.savefig("C:/Users/prikh/Desktop/correction.png", dpi=__MY_DPI)

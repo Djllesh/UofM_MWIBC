@@ -1,13 +1,14 @@
-# pyproject.toml
-
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "MWIBC" # Use the name you had before
-version = "0.1.0"        # Use the version you had before
+name = "MWIBC"
+version = "0.1.0"
+# (you can list your dependencies here under `dependencies = [...]`)
 
-# Add this section to explicitly tell setuptools which directories are packages
-[tool.setuptools]
-packages = ["umbms", "run"]
+# automatically include any directory that starts with umbms or run
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["umbms*", "run*"]
+

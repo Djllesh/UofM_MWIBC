@@ -26,7 +26,7 @@ prop_speed_data_path = os.path.join(
 freqs = np.linspace(2e9, 9e9, 1001)
 
 
-def calculate_propagation_speed(td, thickness, D):
+def calculate_propagation_speed(td: float, thickness: float, D: float):
     """Calculates the propagation speed inside of the dielectric
     material based on the time delay and the thickness of the material
 
@@ -226,7 +226,7 @@ if __name__ == "__main__":
     ax[0].grid(linewidth=0.9)
     ax[1].grid(linewidth=0.9)
     plt.tight_layout()
-    # plt.show()
+    plt.show()
 
     # plt.savefig(
     #     os.path.join(os.path.expanduser("~"), "Desktop/init_vs_adjust.png"),
@@ -435,7 +435,6 @@ if __name__ == "__main__":
 
     ax.legend()
     plt.tight_layout()
-
     plt.savefig(
         os.path.join(os.path.expanduser("~"), "Desktop/true_vs_fit.png"),
         dpi=MY_DPI,

@@ -55,7 +55,8 @@ def generate_circle(radius, theta):
     return x, y
 
 
-fig = plt.figure(constrained_layout=True, figsize=(14, 7))
+fig = plt.figure(constrained_layout=True, figsize=(14, 7), facecolor="#0e2841")
+plt.rc("font", **{"family": "Garamond", "size": 12})
 subfig = fig.subfigures()
 # Create a 2x3 grid of subplots with a shared colorbar
 axes = subfig.subplots(2, 3)
@@ -71,9 +72,9 @@ for ax in axes.flat:
 
 # Plot the original perfect circle in the top-left plot
 x_circle, y_circle = generate_circle(radius, theta)
-axes[0, 0].set_facecolor((68 / 256, 1 / 256, 84 / 256, 0.4))
+axes[0, 0].set_facecolor("#e0a93a")
 axes[0, 0].set_aspect("equal", "box")
-axes[0, 0].set_title("Uniform propagation speed")
+axes[0, 0].set_title("Uniform propagation speed", fontdict={"color": "white"})
 axes[0, 0].text(s=r"$v = v_{avg}$", x=0.5 - 0.05, y=0.5)
 # Plot 4 mishapen circles with Perlin noise
 for i in range(2):
@@ -95,7 +96,7 @@ for i in range(2):
                 alpha=0.6,
             )
             ax.set_aspect("equal", "box")
-            ax.set_title(f"Binary Modelling")
+            ax.set_title(f"Binary Modelling", fontdict={"color": "white"})
             ax.text(s=r"$v_{in}$", x=-0.05, y=0)
             ax.text(s=r"$v_{out} = c$", x=0.446, y=-1)
             continue
@@ -134,7 +135,9 @@ for i in range(2):
                 arrowprops=dict(arrowstyle="<->"),
             )
             ax.text(s="1001", x=1.064, y=-0.576)
-            ax.set_title("Frequency-dependent modelling")
+            ax.set_title(
+                "Frequency-dependent modelling", fontdict={"color": "white"}
+            )
             ax.text(s=r"$v_{in}(f)$", x=-0.05, y=0)
             ax.text(s=r"$v_{out} = c$", x=0.446, y=-1)
             continue
@@ -180,7 +183,10 @@ for i in range(2):
             ax.text(s="1001", x=1.007, y=-0.65)
             ax.text(s=r"$v_{in}(f)$", x=-0.05, y=0)
             ax.text(s=r"$v_{out} = c$", x=0.446, y=-1)
-            ax.set_title("Frequency-dependent modelling (boundary detection)")
+            ax.set_title(
+                "Frequency-dependent modelling (boundary detection)",
+                fontdict={"color": "white"},
+            )
             continue
 
         # Add Perlin noise with varying noise_strength for variety
@@ -201,7 +207,9 @@ for i in range(2):
             alpha=0.6,
         )
         ax.set_aspect("equal", "box")
-        ax.set_title("Boundary detection, binary modelling")
+        ax.set_title(
+            "Boundary detection, binary modelling", fontdict={"color": "white"}
+        )
         ax.text(s=r"$v_{in}$", x=-0.05, y=0)
         ax.text(s=r"$v_{out} = c$", x=0.446, y=-1)
 
@@ -236,7 +244,7 @@ for i in range(m_size):
 
 # Normalize noise for colormap
 perlin_grid_normalized = norm(perlin_grid)
-perlin_grid_normalized[np.logical_not(mask)] = np.NaN
+perlin_grid_normalized[np.logical_not(mask)] = np.nan
 # Set the extent based on the extracted limits
 extent = [xlim[0], xlim[1], ylim[0], ylim[1]]
 
@@ -248,7 +256,10 @@ im = ax_last.imshow(
 # Plot the outline of the mishapen circle on top
 ax_last.plot(x_mishapen_last * 0.99, y_mishapen_last * 0.99, color="k", lw=1.7)
 ax_last.set_aspect("equal", "box")
-ax_last.set_title("Extracted Propagation Speed, Boundary Detection")
+ax_last.set_title(
+    "Extracted Propagation Speed, Boundary Detection",
+    fontdict={"color": "white"},
+)
 
 # Set the same xlim and ylim for the last plot as the others
 ax_last.set_xlim(extent[0], extent[1])
