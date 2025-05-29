@@ -114,7 +114,7 @@ def get_pix_ts(
     pix_xs, pix_ys = get_xy_arrs(m_size=m_size, roi_rad=roi_rad)
 
     if int_f_xs is None:  # if no intersections provided
-        if adi_rad != 0:  # if the shape is not a circle
+        if adi_rad != 0:  # if the shape is a circle
             if worker_pool is not None:  # if using parallel computation
                 int_f_xs, int_f_ys, int_b_xs, int_b_ys = (
                     get_circle_intersections_parallel(

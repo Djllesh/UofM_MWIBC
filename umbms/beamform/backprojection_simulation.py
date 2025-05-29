@@ -169,6 +169,7 @@ def calculate_avg_speed(
     two antennas
 
     """
+
     # Init array for storing speeds
     ant_speed = np.zeros([n_ant_pos, n_ant_pos - 1])
 

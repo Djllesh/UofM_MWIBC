@@ -707,7 +707,6 @@ def plot_fd_img_with_intersections(
     plt.title(title, fontsize=20)  # Make the plot title
     plt.xlabel("x-axis (cm)", fontsize=16)  # Make the x-axis label
     plt.ylabel("y-axis (cm)", fontsize=16)  # Make the y-axis label
-    plt.tight_layout()  # Remove excess whitespace in the figure
 
     (line,) = plt.plot((ant_pos_x, pix_xs[0]), (ant_pos_y, pix_ys[0]), "g-")
     (pix_dot,) = plt.plot(pix_xs[0], pix_ys[0], "r.")
@@ -815,6 +814,7 @@ def plot_fd_img_with_intersections(
     bprev_y = matplotlib.widgets.Button(axprev_y, "Previous Y")
     bprev_y.on_clicked(callback.prev_y)
 
+    plt.tight_layout()  # Remove excess whitespace in the figure
     plt.show()
 
 
