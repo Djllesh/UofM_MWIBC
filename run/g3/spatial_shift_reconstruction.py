@@ -27,14 +27,14 @@ from umbms.plot.imgplots import plot_fd_img, plot_fd_img_differential
 
 from umbms.boundary.boundary_detection import (
     get_boundary_iczt,
-    fd_differential_align,
+    align_skin_on_time_diff,
     cart_to_polar,
     time_aligned_kernel,
     rho_ToR_from_td,
     shift_cs,
     extract_delta_t_from_boundary,
     prepare_fd_data,
-    phase_shift_aligned_boundaries,
+    align_skin_on_spatial_shift,
     shift_rot_cs,
     window_skin_alignment,
 )
@@ -175,7 +175,7 @@ if __name__ == "__main__":
             cs=cs_right, delta_x=shift[0], delta_y=shift[1], delta_phi=shift[2]
         )
 
-        right_cal = phase_shift_aligned_boundaries(
+        right_cal = align_skin_on_spatial_shift(
             fd_emp_ref_right=right_cal,
             ant_rad=ant_rad_bd,
             cs_right_shifted=cs_right_shifted,

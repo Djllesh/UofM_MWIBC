@@ -5,6 +5,8 @@ from umbms import get_proj_path
 from umbms.beamform.iczt import iczt
 from collections import defaultdict, OrderedDict
 
+
+__SAVE_DIR = os.path.expanduser("~")
 __DATA_DIR = os.path.join(get_proj_path(), "data/attenuation_experiment/dgbe/")
 __MY_DPI = 120
 
@@ -71,7 +73,7 @@ def make_plot():
     colors = [cmap(i) for i in np.linspace(0, 1, len(averaged_vol) + 1)]
 
     fig, ax = plt.subplots(
-        figsize=(800 / __MY_DPI, 800 / __MY_DPI), dpi=__MY_DPI
+        figsize=(1200 / __MY_DPI, 800 / __MY_DPI), dpi=__MY_DPI
     )
 
     ax.plot(
@@ -87,7 +89,7 @@ def make_plot():
         ax.plot(
             time,
             data,
-            label=str(vol),
+            label=f"{str(vol)} ml",
             color=colors[col_idx],
             linewidth=0.6,
         )
@@ -99,7 +101,8 @@ def make_plot():
     ax.legend(fontsize=7)
     ax.grid()
     plt.tight_layout()
-    plt.show()
+    fig.savefig(os.path.join(__SAVE_DIR, "Desktop/conductivity_plot.png"))
+    # plt.show()
 
 
 def main():

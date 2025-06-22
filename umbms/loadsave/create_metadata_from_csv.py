@@ -9,10 +9,11 @@ import pandas as pd
 import os
 from umbms.loadsave import save_pickle
 
-__DATA_DIR = "C:/Users/prikh/Desktop/Exp data/20240819/"
+__DATA_DIR = "C:/Users/prikh/Desktop/Exp data/big_dataset_merge/"
 
 df = pd.read_csv(
-    os.path.join(__DATA_DIR, "20240819_small_ball.csv"), delimiter=","
+    os.path.join(__DATA_DIR, "Speed_paper_dataset_metadata_second_attempt.csv"),
+    delimiter=",",
 )
 size = len(df["id"].values)
 
@@ -27,7 +28,7 @@ tar_dict = {
     "adi_ref_id2": np.nan,
     "rod_ref_id": np.nan,
     "emp_ref_id": np.nan,
-    "date": "20240819",
+    "date": "20250612",
     "ant_rad": 21.0,
     "type": None,
 }
@@ -52,5 +53,4 @@ for i in range(size):
             md[i][key] = df[key][i]
 
 
-save_pickle(md, os.path.join(__DATA_DIR, "20240819_metadata.pickle"))
-
+save_pickle(md, os.path.join(__DATA_DIR, "big_dataset_metadata.pickle"))

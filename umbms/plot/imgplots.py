@@ -82,7 +82,7 @@ def plot_img(
         If True, will normalize the image to have the maximum value
         max_val
     crop_img : bool
-        If True, will set the values in the image to NaN outside of the
+        If True, will set the values in the image to nan outside of the
         inner antenna trajectory
     cbar_fmt : str
         The format for the tick labels on the colorbar
@@ -113,8 +113,8 @@ def plot_img(
             temp_val - 10, np.size(img_to_plt, axis=0), ant_rad
         )
 
-        # Set the pixels outside of the antenna trajectory to NaN
-        img_to_plt[np.logical_not(in_ant_trajectory)] = np.NaN
+        # Set the pixels outside of the antenna trajectory to nan
+        img_to_plt[np.logical_not(in_ant_trajectory)] = np.nan
 
     # Define angles for plot the tissue geometry
     draw_angs = np.linspace(0, 2 * np.pi, 1000)
@@ -298,7 +298,7 @@ def plot_fd_img(
     title : str
         The title for the plot
     crop_img : bool
-        If True, will set the values in the image to NaN outside of the
+        If True, will set the values in the image to nan outside of the
         inner antenna trajectory
     cbar_fmt : str
         The format for the tick labels on the colorbar
@@ -333,8 +333,8 @@ def plot_fd_img(
             roi_rad, np.size(img_to_plt, axis=0), img_rad
         )
 
-        # Set the pixels outside of the antenna trajectory to NaN
-        img_to_plt[np.logical_not(roi)] = np.NaN
+        # Set the pixels outside of the antenna trajectory to nan
+        img_to_plt[np.logical_not(roi)] = np.nan
 
     # Define angles for plot the tissue geometry
     draw_angs = np.linspace(0, 2 * np.pi, 1000)
@@ -587,7 +587,7 @@ def plot_fd_img_with_intersections(
     title : str
         The title for the plot
     crop_img : bool
-        If True, will set the values in the image to NaN outside of the
+        If True, will set the values in the image to nan outside of the
         inner antenna trajectory
     cbar_fmt : str
         The format for the tick labels on the colorbar
@@ -630,8 +630,8 @@ def plot_fd_img_with_intersections(
             roi_rad, np.size(img_to_plt, axis=0), img_rad
         )
 
-        # Set the pixels outside of the antenna trajectory to NaN
-        img_to_plt[np.logical_not(roi)] = np.NaN
+        # Set the pixels outside of the antenna trajectory to nan
+        img_to_plt[np.logical_not(roi)] = np.nan
 
     # Define angles for plot the tissue geometry
     draw_angs = np.linspace(0, 2 * np.pi, 1000)
@@ -868,7 +868,7 @@ def plot_fd_img_differential(
     title : str
         The title for the plot
     crop_img : bool
-        If True, will set the values in the image to NaN outside of the
+        If True, will set the values in the image to nan outside of the
         inner antenna trajectory
     cmap : str
         Color map
@@ -895,8 +895,8 @@ def plot_fd_img_differential(
             roi_rad, np.size(img_to_plt, axis=0), img_rad
         )
 
-        # Set the pixels outside of the antenna trajectory to NaN
-        img_to_plt[np.logical_not(roi)] = np.NaN
+        # Set the pixels outside of the antenna trajectory to nan
+        img_to_plt[np.logical_not(roi)] = np.nan
 
     # Define angles for plot the tissue geometry
     draw_angs = np.linspace(0, 2 * np.pi, 1000)

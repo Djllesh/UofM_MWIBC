@@ -891,7 +891,7 @@ def phase_shift(fd, delta_t, freqs):
     return shifted_fd
 
 
-def fd_differential_align(
+def align_skin_on_time_diff(
     fd_emp_ref_left,
     fd_emp_ref_right,
     ant_rad=0.0,
@@ -1068,7 +1068,7 @@ def extract_delta_t_from_boundary(
     return delta_t
 
 
-def phase_shift_aligned_boundaries(
+def align_skin_on_spatial_shift(
     fd_emp_ref_right,
     ant_rad,
     cs_right_shifted,
@@ -1170,7 +1170,7 @@ def phase_shift_aligned_boundaries(
     return s11_aligned_right
 
 
-def window_skin_alignment(
+def align_skin_window(
     fd_emp_ref_right,
     fd_emp_ref_left,
     ant_rad=0.0,

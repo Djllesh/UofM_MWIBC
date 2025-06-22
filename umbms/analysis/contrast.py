@@ -237,7 +237,7 @@ def get_scr_healthy(img, roi_rad, adi_rad, healthy_rad=0.015):
     # Find the conversion factor to convert pixel index to distance
     pix_to_dist = 2 * roi_rad / np.size(img, 0)
 
-    # Set any NaN values to zero
+    # Set any nan values to zero
     img_for_iqm[np.isnan(img_for_iqm)] = 0
 
     # Find the index of the maximum response in the reconstruction

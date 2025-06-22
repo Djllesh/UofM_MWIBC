@@ -628,7 +628,7 @@ def get_loc_err_max_old(img, ant_rad, tum_x, tum_y):
     # Find the conversion factor to convert pixel index to distance
     pix_to_dist = 2 * ant_rad / np.size(img, 0)
 
-    # Set any NaN values to zero
+    # Set any nan values to zero
     img_for_iqm[np.isnan(img_for_iqm)] = 0
 
     # Find the index of the maximum response in the reconstruction

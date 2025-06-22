@@ -39,14 +39,14 @@ from umbms.plot.sinogramplot import plt_sino, show_sinogram
 
 from umbms.boundary.boundary_detection import (
     get_boundary_iczt,
-    fd_differential_align,
+    align_skin_on_time_diff,
     cart_to_polar,
     time_aligned_kernel,
     rho_ToR_from_td,
     shift_cs,
     extract_delta_t_from_boundary,
     prepare_fd_data,
-    phase_shift_aligned_boundaries,
+    align_skin_on_spatial_shift,
     shift_rot_cs,
     window_skin_alignment,
 )
@@ -445,7 +445,7 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
                     delta_phi=shift[2],
                 )
 
-                s11_aligned_right = phase_shift_aligned_boundaries(
+                s11_aligned_right = align_skin_on_spatial_shift(
                     fd_emp_ref_right=right_s11[__SCAN_FS >= 2e9, :],
                     ant_rad=ant_rad,
                     cs_right_shifted=cs_right_shifted,
