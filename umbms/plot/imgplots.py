@@ -378,7 +378,7 @@ def plot_fd_img(
     img_extent = [-img_rad, img_rad, -img_rad, img_rad]
 
     # Set the font to times new roman
-    plt.rc("font", family="Times New Roman")
+    plt.rc("font", family="Libertinus Serif")
     plt.figure()  # Make the figure window
 
     plt.imshow(img_to_plt, cmap=cmap, extent=img_extent, aspect="equal")

@@ -28,6 +28,7 @@ from umbms.boundary.raytrace import find_boundary_rt  # noqa: F401
 from umbms.hardware.antenna import apply_ant_pix_delay, to_phase_center
 from umbms.loadsave import load_pickle, save_pickle
 from umbms.plot.imgplots import plot_fd_img
+from umbms.plot.sinogramplot import plt_fd_sino
 
 __CPU_COUNT = mp.cpu_count()
 
@@ -72,6 +73,7 @@ __M_SIZE = 150
 # Number of antenna positions
 __N_ANT_POS = 72
 __SAMPLING = 12
+
 ########################################################################
 
 # Define propagation speed in vacuum
@@ -211,7 +213,8 @@ if __name__ == "__main__":
     logger.info("\t\tTime: %.3f s" % (time_delay_tp_end - time_delay_tp_start))
     phase_fac_bin = get_fd_phase_factor(pix_ts=pix_ts_bin)
 
-    for expt in range(n_expts):
+    # for expt in range(n_expts):
+    for expt in [2]:
         logger.info("Scan [%3d / %3d]..." % (expt + 1, n_expts))
 
         # Get the frequency domain data and metadata of this experiment
@@ -242,6 +245,13 @@ if __name__ == "__main__":
             adi_fd = fd_data[expt_ids.index(tar_md["adi_ref_id2"]), :, :]
             adi_cal_cropped_emp = tar_fd - adi_fd_emp
             adi_cal_cropped = tar_fd - adi_fd
+
+            plt_fd_sino(
+                adi_cal_cropped,
+                title="",
+                save_str="typical_raw.png",
+                out_dir=out_dir,
+            )
 
             # 5 DIFFERENT RECONSTRUCTIONS
             ############################################################

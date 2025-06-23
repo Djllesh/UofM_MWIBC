@@ -5,7 +5,7 @@ June 27th, 2019
 """
 
 import os
-
+from umbms.plot import init_plt
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib import pyplot as plt
@@ -297,7 +297,8 @@ def plt_fd_sino(
 
     # Plot primary scatter forward projection only
     plt.figure()
-    plt.rc("font", family="Times New Roman")
+    # init_plt()
+    plt.rc("font", family="Libertinus Serif")
     plt.imshow(
         np.abs(fd), aspect=plt_aspect_ratio, cmap="inferno", extent=plt_extent
     )
