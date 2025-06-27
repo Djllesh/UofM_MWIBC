@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.widgets
 import numpy as np
 
-matplotlib.use("Agg")
+# matplotlib.use("Agg")
 
 import umbms.beamform.breastmodels as breastmodels
 from umbms.beamform.utility import get_xy_arrs

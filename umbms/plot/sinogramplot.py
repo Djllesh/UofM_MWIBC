@@ -258,16 +258,21 @@ def plt_sino(
             to_save_dir = os.path.join(out_dir, slice_dir)
             verify_path(to_save_dir)
 
+            plt.figure(figsize=(1000 / 120, 800 / 120), dpi=120)
+
+            plt.rc("font", family="Libertinus Serif")
             # Plotting
             plt.plot(ts, np.abs(td[:, ant_idx]), "k-", linewidth=1.6)
-            plt.title("Antenna index #%d" % ant_idx, fontsize=15)
-            plt.grid("--")
-            plt.xlabel("Time of response (s)")
-            plt.ylabel("Intensity")
+            # plt.title("Antenna index #%d" % ant_idx, fontsize=15)
+            plt.grid("-")
+            plt.xlabel("Time of response (ns)", fontsize=16)
+            plt.ylabel("Intensity (a.u.)", fontsize=16)
 
             # Saving
             plt.tight_layout()
-            plt.savefig(os.path.join(to_save_dir, "slice_%d.png" % ant_idx))
+            plt.savefig(
+                os.path.join(to_save_dir, "slice_%d.png" % ant_idx), dpi=120
+            )
             plt.close()
 
     show_sinogram(
@@ -369,7 +374,7 @@ def show_sinogram(
 
     # Plot primary scatter forward projection only
     plt.figure()
-    plt.rc("font", family="Times New Roman")
+    plt.rc("font", family="Libertinus Serif")
     plt.imshow(np.abs(data), aspect=aspect_ratio, cmap="inferno", extent=extent)
     plt.colorbar(format=cbar_fmt).ax.tick_params(labelsize=16)
 

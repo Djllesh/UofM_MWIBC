@@ -462,6 +462,9 @@ def get_boundary_iczt(
     plt_slices=False,
     plt_transparent=False,
     plot_sino=False,
+    plot_points=False,
+    sino_title="",
+    save_str="",
     out_dir="",
     cs_shift=None,
 ):
@@ -537,6 +540,33 @@ def get_boundary_iczt(
     # calculate the center of mass fo this shape
     x_cm, y_cm = find_centre_of_mass(rho, angles)
 
+    if plot_points:
+        plot_angles = np.linspace(angles[0], angles[-1], 200)
+        # Plot the extracted discrete points against the cubic spline
+        plt.rc("font", family="Libertinus Serif")
+        fig, ax = plt.subplots()
+        ax.plot(angles, rho, "rx", label="Extracted skin peaks", linewidth=1)
+        ax.plot(
+            plot_angles,
+            cs(plot_angles),
+            "k-",
+            label="Cubic Spline",
+            linewidth=1.2,
+        )
+
+        ax.set_xlabel(r"Polar angle of the antenna (rad)", fontsize=16)
+        ax.set_ylabel("Polar distance (m)", fontsize=16)
+
+        ax.grid(linewidth=0.9)
+        ax.legend(fontsize=15)
+        plt.tight_layout()
+
+        fig.savefig(
+            os.path.join(out_dir, save_str + "boundary_points_vs_spline.png"),
+            dpi=141,
+        )
+        plt.close()
+
     if plot_sino:
         # angles for plotting
         plt_angles = np.linspace(0, 355, n_ant_pos)
@@ -550,9 +580,9 @@ def get_boundary_iczt(
             data=td_plt,
             aspect_ratio=plt_aspect_ratio,
             extent=plt_extent,
-            title="Boundary check",
+            title=sino_title,
             out_dir=out_dir,
-            save_str="boundary_vs_sino_no_shift.png",
+            save_str=save_str + "boundary_vs_sino_no_shift.png",
             ts=ts_plt,
             transparent=plt_transparent,
             bound_angles=plt_angles,
@@ -570,9 +600,9 @@ def get_boundary_iczt(
                 data=td_plt,
                 aspect_ratio=plt_aspect_ratio,
                 extent=plt_extent,
-                title="Boundary check",
+                title=sino_title,
                 out_dir=out_dir,
-                save_str="boundary_vs_sino_shift.png",
+                save_str=save_str + "boundary_vs_sino_shift.png",
                 ts=ts_plt,
                 transparent=plt_transparent,
                 bound_angles=plt_angles,
@@ -608,6 +638,7 @@ def get_boundary_iczt(
     #
     # deviation = np.average(delta_r_dev)
     # uns_dev = np.average(np.abs(delta_r_dev))
+
     return cs, x_cm, y_cm
 
 
