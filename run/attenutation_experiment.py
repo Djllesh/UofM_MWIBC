@@ -7,8 +7,10 @@ from collections import defaultdict, OrderedDict
 
 
 __SAVE_DIR = os.path.expanduser("~")
-__DATA_DIR = os.path.join(get_proj_path(), "data/attenuation_experiment/dgbe/")
-__MY_DPI = 120
+__DATA_DIR = os.path.join(
+    get_proj_path(), "data/attenuation_experiment/illia_attenuation/"
+)
+__MY_DPI = 150
 
 
 def transform_to_td(data):
@@ -18,39 +20,8 @@ def transform_to_td(data):
     return ts_data
 
 
-def process_data():
-    groups = defaultdict(list)  # {volume: [file, file, file]}
-    control = defaultdict(list)  # {volume: [file, file, file]}
-
-    for fname in os.listdir(__DATA_DIR):
-        name = fname.split("ml")[0]
-        if name.isdigit():
-            name = int(name)
-            groups[name].append(os.path.join(__DATA_DIR, fname))
-        else:
-            name = name.split(".")[0][:-1]
-            control[name].append(os.path.join(__DATA_DIR, fname))
-
-    averaged_vol = {}  # {volume: np.ndarray}
-    no_liquid_data = {}
-
-    stacks_open = [
-        np.genfromtxt(f, delimiter=",", skip_header=3)[:, 1:]
-        for f in control["open"]
-    ]
-    open_reference = np.mean(
-        tuple(data[:, 0] + 1j * data[:, 1] for data in stacks_open), axis=0
-    )
-
-    stacks = [
-        np.genfromtxt(f, delimiter=",", skip_header=3)[:, 1:]
-        for f in control["no_liquid"]
-    ]
-    # Process the real and imaginary parts into one number
-    stacks_fd = tuple(data[:, 0] + 1j * data[:, 1] for data in stacks)
-    no_liquid_data["no_liquid"] = np.abs(
-        transform_to_td(np.mean(stacks_fd, axis=0) - open_reference)
-    )
+def average_groups(groups):
+    averaged_vol = {}
 
     for vol, files in groups.items():
         stacks = [
@@ -58,34 +29,59 @@ def process_data():
         ]
         # Process the real and imaginary parts into one number
         stacks_fd = tuple(data[:, 0] + 1j * data[:, 1] for data in stacks)
-        averaged_vol[vol] = np.abs(
-            transform_to_td(np.mean(stacks_fd, axis=0) - open_reference)
-        )
+        averaged_vol[vol] = np.abs(transform_to_td(np.mean(stacks_fd, axis=0)))
 
-    return OrderedDict(sorted(averaged_vol.items())), no_liquid_data
+    return averaged_vol
+
+
+def process_data():
+    groups_target = defaultdict(list)  # {volume: [file, file, file]}
+    groups_ref = defaultdict(list)  # {volume: [file, file, file]}
+    calibrated_data = {}
+
+    for fname in os.listdir(__DATA_DIR):
+        name = fname.split("ml_")[0]
+        type = fname.split("ml_")[1]
+        name = int(name)
+
+        if "target" in type:
+            groups_target[name].append(os.path.join(__DATA_DIR, fname))
+        elif "ref" in type:
+            groups_ref[name].append(os.path.join(__DATA_DIR, fname))
+
+    averaged_vol_ref = average_groups(groups_ref)
+    averaged_vol_target = average_groups(groups_target)
+
+    for vol, data in averaged_vol_ref.items():
+        print(f"The volume is {vol}")
+        calibrated_data_vol = data - averaged_vol_target[vol]
+        calibrated_data[vol] = calibrated_data_vol
+
+    return OrderedDict(sorted(calibrated_data.items()))
 
 
 def make_plot():
-    averaged_vol, no_liquid_data = process_data()
+    calibrated_data = process_data()
     time = np.linspace(0.5, 5.5, 1000)
 
     cmap = plt.get_cmap("plasma")
-    colors = [cmap(i) for i in np.linspace(0, 1, len(averaged_vol) + 1)]
+    colors = [cmap(i) for i in np.linspace(0, 1, len(calibrated_data) + 1)]
 
     fig, ax = plt.subplots(
         figsize=(1200 / __MY_DPI, 800 / __MY_DPI), dpi=__MY_DPI
     )
 
-    ax.plot(
-        time,
-        no_liquid_data["no_liquid"],
-        label="No liquid",
-        color=colors[0],
-        linewidth=1,
-    )
-
     col_idx = 1
-    for vol, data in averaged_vol.items():
+    for vol, data in calibrated_data.items():
+        if vol == 0:
+            ax.plot(
+                time,
+                data,
+                label="No liquid",
+                color=colors[0],
+                linewidth=1,
+            )
+
         ax.plot(
             time,
             data,
@@ -101,8 +97,8 @@ def make_plot():
     ax.legend(fontsize=7)
     ax.grid()
     plt.tight_layout()
-    fig.savefig(os.path.join(__SAVE_DIR, "Desktop/conductivity_plot.png"))
-    # plt.show()
+    # fig.savefig(os.path.join(__SAVE_DIR, "Desktop/conductivity_plot.png"))
+    plt.show()
 
 
 def main():
