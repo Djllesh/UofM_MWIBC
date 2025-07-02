@@ -1,7 +1,7 @@
 """
 Illia Prykhodko
 University of Manitoba
-September 13th, 2022
+June 24th, 2025
 """
 
 import os
@@ -300,7 +300,7 @@ if __name__ == "__main__":
 
             x_v1 = -roi_rad  # left vertical line
             x_v2 = -0.0285  # right vertical line
-            plt.figure(figsize=(1000 / 120, 800 / 120), dpi=120)
+            plt.figure(figsize=(1000 / 150, 800 / 150), dpi=150)
             plt.rc("font", family="Libertinus Serif")
             # Set the size of the axis tick labels
             plt.tick_params(labelsize=14)
@@ -340,7 +340,7 @@ if __name__ == "__main__":
             # plt.show()
             plt.savefig(
                 os.path.join(out_dir, "slice_comparison_%d.png" % ii),
-                dpi=120,
+                dpi=150,
                 transparent=True,
             )
 
