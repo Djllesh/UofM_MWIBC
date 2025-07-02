@@ -420,7 +420,14 @@ def find_centre_of_mass_from_cs(cs, n_points=200):
 
 
 def prepare_fd_data(
-    adi_emp_cropped, ini_t, fin_t, n_time_pts, ini_f, fin_f, ant_rad, adi_rad
+    adi_emp_cropped,
+    ini_t,
+    fin_t,
+    n_time_pts,
+    ini_f,
+    fin_f,
+    ant_rad=0,
+    adi_rad=0,
 ):
     """Prepares unorganized data for boundary detection"""
 
@@ -441,6 +448,7 @@ def prepare_fd_data(
         td_mask = td >= tor_min
         td = td[td_mask]
         ts = ts[td_mask]
+
     # find the kernel
     kernel = time_aligned_kernel(td)
     return td, ts, kernel
@@ -1362,10 +1370,14 @@ def align_skin_window(
             mode="same",
         )
 
+        # FIX: the phase shift should only touch the S11 signal, not
+        # the whole thing
+
         # S11 * sinc for the skin region * phase shift based on the
         # delta_t value for a given antenna position
         skin_sinc_conv = np.convolve(
-            original_signal_zero_padded,
+            original_signal_zero_padded
+            * np.exp(-2j * np.pi * freqs_to_convolve * delta_t[ii]),
             (t_end - t_start)
             * np.sinc(freqs_to_convolve * (t_end - t_start))
             * np.exp(
@@ -1375,7 +1387,7 @@ def align_skin_window(
                 * (t_start + (t_end - t_start) / 2)
             ),
             mode="same",
-        ) * np.exp(-2j * np.pi * freqs_to_convolve * delta_t[ii])
+        )
 
         # S11 * sinc for after the skin region
         post_skin_sinc_conv = np.convolve(

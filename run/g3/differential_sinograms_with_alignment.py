@@ -48,7 +48,7 @@ from umbms.boundary.boundary_detection import (
     prepare_fd_data,
     align_skin_on_spatial_shift,
     shift_rot_cs,
-    window_skin_alignment,
+    align_skin_window,
 )
 from umbms.boundary.differential_minimization import (
     minimize_differential_shift,
@@ -424,7 +424,7 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
                 cs_right, x_cm_right, y_cm_right = get_boundary_iczt(
                     adi_emp_cropped=right_s11[__SCAN_FS >= 2e9, :],
                     ant_rad=ant_rad,
-                    out_dir=os.path.join(__O_DIR, "boundary_r/"),
+                    out_dir=os.path.join(__O_DIR, "boundary_r_fix/"),
                     ini_f=2e9,
                     fin_f=9e9,
                     ini_t=1e-9,
@@ -459,7 +459,7 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
                     scan_fin_f=None,
                 )
 
-                s11_aligned_right = window_skin_alignment(
+                s11_aligned_right = align_skin_window(
                     s11_aligned_right,
                     left_s11[__SCAN_FS >= 2e9, :],
                     ant_rad=ant_rad,
@@ -468,21 +468,21 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
                 plt_sino(
                     fd=s11_aligned_right,
                     title="Right breast phase shifted",
-                    out_dir=os.path.join(__O_DIR, "boundary_r/"),
+                    out_dir=os.path.join(__O_DIR, "boundary_r_fix/"),
                     save_str="right_phase_shifted.png",
                 )
 
                 plt_sino(
                     fd=right_s11[__SCAN_FS >= 2e9, :],
                     title="Right breast (empty chamber)",
-                    out_dir=os.path.join(__O_DIR, "boundary_r/"),
+                    out_dir=os.path.join(__O_DIR, "boundary_r_fix/"),
                     save_str="right_emp_ref.png",
                 )
 
                 plt_sino(
                     fd=left_s11[__SCAN_FS >= 2e9, :],
                     title="Left breast (empty chamber)",
-                    out_dir=os.path.join(__O_DIR, "boundary_r/"),
+                    out_dir=os.path.join(__O_DIR, "boundary_r_fix/"),
                     save_str="left_emp_ref.png",
                 )
 
@@ -493,7 +493,7 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
                 plt_sino(
                     fd=left_right_ref,
                     title="Left - right (after alignment)",
-                    out_dir=os.path.join(__O_DIR, "boundary_r/"),
+                    out_dir=os.path.join(__O_DIR, "boundary_r_fix/"),
                     save_str="left-right_aligned.png",
                 )
 
@@ -543,7 +543,7 @@ def get_breast_pair_s11_diffs(s11_data, id_pairs, md):
                 # show_sinogram(data=td_plt, aspect_ratio=plt_aspect_ratio,
                 #               extent=plt_extent, title='Space shifted vs '
                 #                                        'phase shifted',
-                #               out_dir=os.path.join(__O_DIR, 'boundary_r/'),
+                #               out_dir=os.path.join(__O_DIR, 'boundary_r_fix/'),
                 #               save_str='space_shifted_vs_phase_shifted.png',
                 #               ts=ts_plt, transparent=False,
                 #               bound_angles=plt_angles,
