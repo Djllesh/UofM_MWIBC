@@ -58,6 +58,11 @@ __N_FS = 1001
 __SCAN_FS = np.linspace(__INI_F, __FIN_F, __N_FS)
 __SAMPLING = 12
 
+# The time parameters for the ICZT
+__INI_T = 1e-9
+__FIN_T = 2e-9
+__N_TS = 1000
+
 __M_SIZE = 150  # Number of pixels along 1-dimension for reconstruction
 __ROI_RAD = 0.08  # ROI radius, in [m]
 
@@ -484,9 +489,9 @@ def get_breast_pair_s11_diffs(
                     s11_aligned_right = align_skin_on_time_diff(
                         fd_emp_ref_left=left_s11,
                         fd_emp_ref_right=right_s11,
-                        ini_t=1e-9,
-                        fin_t=2e-9,
-                        n_time_pts=1000,
+                        ini_t=__INI_T,
+                        fin_t=__FIN_T,
+                        n_time_pts=__N_TS,
                         ini_f=2e9,
                         fin_f=9e9,
                     )
@@ -501,9 +506,9 @@ def get_breast_pair_s11_diffs(
                         out_dir="",
                         ini_f=2e9,
                         fin_f=9e9,
-                        ini_t=1e-9,
-                        fin_t=2e-9,
-                        n_time_pts=1000,
+                        ini_t=__INI_T,
+                        fin_t=__FIN_T,
+                        n_time_pts=__N_TS,
                     )
 
                     # Extract right boundary
@@ -513,9 +518,9 @@ def get_breast_pair_s11_diffs(
                         out_dir="",
                         ini_f=2e9,
                         fin_f=9e9,
-                        ini_t=1e-9,
-                        fin_t=2e-9,
-                        n_time_pts=1000,
+                        ini_t=__INI_T,
+                        fin_t=__FIN_T,
+                        n_time_pts=__N_TS,
                     )
 
                     # If aligning boundaries using the geometric approach
@@ -545,9 +550,9 @@ def get_breast_pair_s11_diffs(
                             fd_emp_ref_right=right_s11,
                             ant_rad=ant_rad,
                             cs_right_shifted=cs_right_shifted,
-                            ini_t=1e-9,
-                            fin_t=2e-9,
-                            n_time_pts=1000,
+                            ini_t=__INI_T,
+                            fin_t=__FIN_T,
+                            n_time_pts=__N_TS,
                             ini_f=2e9,
                             fin_f=__FIN_F,
                             n_fs=__N_FS,
