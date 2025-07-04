@@ -63,8 +63,8 @@ def find_xy_ant_bound_circle(
         ant_pos_y = ant_ys[a_pos]
 
         # for each pixel
-        for px_x, x in zip(pix_xs, len(pix_xs)):
-            for px_y, y in zip(pix_ys, len(pix_ys)):
+        for px_x, x in zip(pix_xs, range(len(pix_xs))):
+            for px_y, y in zip(pix_ys, range(len(pix_ys))):
                 # calculating coefficients of polynomial
                 k = (ant_pos_y - px_y) / (ant_pos_x - px_x)
                 a = k**2 + 1
@@ -98,46 +98,33 @@ def find_xy_ant_bound_circle(
                     # distance from centre to pixel
                     d_centre_pix = np.sqrt((px_x - ox) ** 2 + (px_y - oy) ** 2)
 
+                    distances_root_ant = np.sqrt(
+                        (x_roots - ant_pos_x) ** 2 + (y_roots - ant_pos_y) ** 2
+                    )
                     # initializing the list of tuples for easier sorting
-                    dtype = [("x", float), ("y", float)]
+                    dtype = [("x", float), ("y", float), ("distance", float)]
                     values = [
-                        (x_roots[0], y_roots[0]),
-                        (x_roots[1], y_roots[1]),
+                        (x_roots[0], y_roots[0], distances_root_ant[0]),
+                        (x_roots[1], y_roots[1], distances_root_ant[1]),
                     ]
                     roots = np.array(values, dtype=dtype)
 
-                    # sort in ascending order wrt x_values
-                    roots = np.sort(roots, order="x")
+                    # sort in ascending order wrt distance from antenna
+                    roots = np.sort(roots, order="distance")
 
                     is_inside = d_centre_pix <= adi_rad
-                    is_left = ant_pos_x < px_x
 
                     if is_inside:  # if pixel is inside the breast
                         # store one intersection point
-                        # sort in ascending order wrt x_values
-                        roots = np.sort(roots, order="x")
 
-                        if is_left:  # if antenna is to the left of pixel
-                            # store lower x_value as front intersection
-                            int_f_xs[a_pos, y, x], int_f_ys[a_pos, y, x] = (
-                                roots[0]
-                            )
-                            # store pixel coords as back intersection
-                            int_b_xs[a_pos, y, x], int_b_ys[a_pos, y, x] = (
-                                px_x,
-                                px_y,
-                            )
-
-                        else:
-                            # store higher x_value as front intersection
-                            int_f_xs[a_pos, y, x], int_f_ys[a_pos, y, x] = (
-                                roots[1]
-                            )
-                            # store pixel coords as back intersection
-                            int_b_xs[a_pos, y, x], int_b_ys[a_pos, y, x] = (
-                                px_x,
-                                px_y,
-                            )
+                        int_f_xs[a_pos, y, x], int_f_ys[a_pos, y, x], _ = roots[
+                            0
+                        ]
+                        # store pixel coords as back intersection
+                        int_b_xs[a_pos, y, x], int_b_ys[a_pos, y, x] = (
+                            px_x,
+                            px_y,
+                        )
 
                     else:  # if pixel is outside the breast
                         # calculate distance from antenna to pixel
@@ -167,26 +154,12 @@ def find_xy_ant_bound_circle(
                             )
 
                         else:  # if pixel is past the breast
-                            roots = np.sort(roots, order="x")
-                            if is_left:  # if antenna is to the left
-                                # store lower x_value as front intersection
-                                int_f_xs[a_pos, y, x], int_f_ys[a_pos, y, x] = (
-                                    roots[0]
-                                )
-                                # store higher x_value as back intersection
-                                int_b_xs[a_pos, y, x], int_b_ys[a_pos, y, x] = (
-                                    roots[1]
-                                )
-
-                            else:  # if antenna is to the right
-                                # store higher x_value as front intersection
-                                int_f_xs[a_pos, y, x], int_f_ys[a_pos, y, x] = (
-                                    roots[1]
-                                )
-                                # store lower x_value as back intersection
-                                int_b_xs[a_pos, y, x], int_b_ys[a_pos, y, x] = (
-                                    roots[0]
-                                )
+                            int_f_xs[a_pos, y, x], int_f_ys[a_pos, y, x], _ = (
+                                roots[0]
+                            )
+                            int_b_xs[a_pos, y, x], int_b_ys[a_pos, y, x], _ = (
+                                roots[1]
+                            )
 
     return int_f_xs, int_f_ys, int_b_xs, int_b_ys
 
@@ -459,33 +432,31 @@ def _parallel_find_bound_circle_pix(
         # distance from centre to pixel
         d_centre_pix = np.sqrt((px_x - ox) ** 2 + (px_y - oy) ** 2)
 
+        distances_root_ant = np.sqrt(
+            (x_roots - ant_pos_x) ** 2 + (y_roots - ant_pos_y) ** 2
+        )
         # initializing the list of tuples for easier sorting
-        dtype = [("x", float), ("y", float)]
-        values = [(x_roots[0], y_roots[0]), (x_roots[1], y_roots[1])]
+        dtype = [("x", float), ("y", float), ("distance", float)]
+        values = [
+            (x_roots[0], y_roots[0], distances_root_ant[0]),
+            (x_roots[1], y_roots[1], distances_root_ant[1]),
+        ]
         roots = np.array(values, dtype=dtype)
 
-        # sort in ascending order wrt x_values
-        roots = np.sort(roots, order="x")
+        # sort in ascending order wrt distance from antenna
+        roots = np.sort(roots, order="distance")
 
         is_inside = d_centre_pix <= adi_rad
-        is_left = ant_pos_x < px_x
 
         if is_inside:  # if pixel is inside the breast
             # store one intersection point
-            # sort in ascending order wrt x_values
-            roots = np.sort(roots, order="x")
 
-            if is_left:  # if antenna is to the left of pixel
-                # store lower x_value as front intersection
-                int_f_xs, int_f_ys = roots[0]
-                # store pixel coords as back intersection
-                int_b_xs, int_b_ys = px_x, px_y
-
-            else:
-                # store higher x_value as front intersection
-                int_f_xs, int_f_ys = roots[1]
-                # store pixel coords as back intersection
-                int_b_xs, int_b_ys = px_x, px_y
+            int_f_xs, int_f_ys, _ = roots[0]
+            # store pixel coords as back intersection
+            int_b_xs, int_b_ys = (
+                px_x,
+                px_y,
+            )
 
         else:  # if pixel is outside the breast
             # calculate distance from antenna to pixel
@@ -497,26 +468,23 @@ def _parallel_find_bound_circle_pix(
                 (ant_pos_x - ox) ** 2 + (ant_pos_y - oy) ** 2 - adi_rad**2
             )
 
-            # flag to determine whether the pixel is in front of the breast
+            # flag to determine whether the pixel is
+            # in front of the breast
             is_front = d_ant_adj >= d_pix_ant
 
             if is_front:  # if pixel is in front
                 # store the same way as for no roots
-                int_f_xs, int_f_ys = px_x, px_y
-                int_b_xs, int_b_ys = px_x, px_y
+                int_f_xs, int_f_ys = (
+                    px_x,
+                    px_y,
+                )
+                int_b_xs, int_b_ys = (
+                    px_x,
+                    px_y,
+                )
 
             else:  # if pixel is past the breast
-                roots = np.sort(roots, order="x")
-                if is_left:  # if antenna is to the left
-                    # store lower x_value as front intersection
-                    int_f_xs, int_f_ys = roots[0]
-                    # store higher x_value as back intersection
-                    int_b_xs, int_b_ys = roots[1]
-
-                else:  # if antenna is to the right
-                    # store higher x_value as front intersection
-                    int_f_xs, int_f_ys = roots[1]
-                    # store lower x_value as back intersection
-                    int_b_xs, int_b_ys = roots[0]
+                int_f_xs, int_f_ys, _ = roots[0]
+                int_b_xs, int_b_ys, _ = roots[1]
 
     return np.array([int_f_xs, int_f_ys, int_b_xs, int_b_ys])

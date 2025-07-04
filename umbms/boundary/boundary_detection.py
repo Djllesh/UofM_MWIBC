@@ -467,14 +467,14 @@ def get_boundary_iczt(
     ini_f=2e9,
     fin_f=9e9,
     peak_threshold=10,
-    plt_slices=False,
-    plt_transparent=False,
-    plot_sino=False,
-    plot_points=False,
     sino_title="",
     save_str="",
     out_dir="",
     cs_shift=None,
+    plt_slices=False,
+    plt_transparent=False,
+    plot_sino=False,
+    plot_points=False,
 ):
     """Returns a CubicSpline interpolation
     function that approximates phantom boundary from a time-domain
@@ -485,7 +485,9 @@ def get_boundary_iczt(
     adi_emp_cropped : array_like n_freqs X n_ant_pos
         Frequency-domain data of a scan minus empty chamber reference
     ant_rad : float
-        Radius of antenna position AFTER all the corrections
+        Radius of antenna position AFTER all the corrections in [m]
+    adi_rad : float
+        Approximate radius of the breast in [m]
     n_ant_pos : int
         Number of antenna positions during one scan
     ini_ant_ang : float
@@ -1373,8 +1375,8 @@ def align_skin_window(
         # FIX: the phase shift should only touch the S11 signal, not
         # the whole thing
 
-        # S11 * sinc for the skin region * phase shift based on the
-        # delta_t value for a given antenna position
+        # S11 times phase shift based on the delta_t value * sinc for
+        # the skin region for a given antenna position
         skin_sinc_conv = np.convolve(
             original_signal_zero_padded
             * np.exp(-2j * np.pi * freqs_to_convolve * delta_t[ii]),

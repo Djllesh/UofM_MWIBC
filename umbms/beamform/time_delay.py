@@ -4,6 +4,7 @@ University of Manitoba
 November 7, 2018
 """
 
+import os
 import numpy as np
 from functools import partial
 
@@ -192,6 +193,7 @@ def calculate_time_delays(
     air_speed,
     breast_speed,
     partial_ant_idx,
+    verify=False,
 ):
     """Calculates time delays for given set of intersections
     for all antenna positions
@@ -249,14 +251,10 @@ def calculate_time_delays(
         pix_ts = np.zeros([np.count_nonzero(partial_ant_idx), m_size, m_size])
         ant_pos_idxs = np.arange(n_ant_pos)[partial_ant_idx]
 
-    # success_count = 0
+    success_count = 0
 
     # for a_pos in range(n_ant_pos):  # For each antenna position
     for a_pos, ts_ant_pos in zip(ant_pos_idxs, range(np.size(pix_ts, axis=0))):
-        # Find x/y position differences of each pixel from antenna
-        # x_diffs = pix_xs - ant_xs[a_pos]
-        # y_diffs = pix_ys - ant_ys[a_pos]
-
         pix_to_back_xs = pix_xs - int_b_xs[a_pos]
         pix_to_back_ys = pix_ys - int_b_ys[a_pos]
 
@@ -265,12 +263,6 @@ def calculate_time_delays(
 
         front_to_ant_xs = int_f_xs[a_pos] - ant_xs[a_pos]
         front_to_ant_ys = int_f_ys[a_pos] - ant_ys[a_pos]
-
-        # all_x_dists = pix_to_back_xs + back_to_front_xs + front_to_ant_xs
-        # all_y_dists = pix_to_back_ys + back_to_front_ys + front_to_ant_ys
-        #
-        # is_dist = np.allclose(x_diffs, all_x_dists, atol=1e-15, rtol=0) and \
-        #           np.allclose(y_diffs, all_y_dists, atol=1e-15, rtol=0)
 
         air_td_back = np.sqrt(pix_to_back_xs**2 + pix_to_back_ys**2) / air_speed
         breast_td = (
@@ -282,23 +274,42 @@ def calculate_time_delays(
 
         all_td = air_td_front + breast_td + air_td_back
 
-        # all_old_td = np.sqrt(x_diffs ** 2 + y_diffs ** 2) / air_speed
-        #
-        # is_td = np.allclose(all_td, all_old_td, atol=1e-11, rtol=0.)
-        # if is_dist and is_td:
-        #     success_count += 1
+        if verify:  # to verify the correct intersection points assignments
+            # Find x/y position differences of each pixel from antenna
+            x_diffs = pix_xs - ant_xs[a_pos]
+            y_diffs = pix_ys - ant_ys[a_pos]
+
+            all_x_dists = pix_to_back_xs + back_to_front_xs + front_to_ant_xs
+            all_y_dists = pix_to_back_ys + back_to_front_ys + front_to_ant_ys
+
+            is_dist = np.allclose(
+                x_diffs, all_x_dists, atol=1e-15, rtol=0
+            ) and np.allclose(y_diffs, all_y_dists, atol=1e-15, rtol=0)
+
+            all_old_td = np.sqrt(x_diffs**2 + y_diffs**2) / air_speed
+
+            all_new_td_no_breast = (
+                np.sqrt(pix_to_back_xs**2 + pix_to_back_ys**2) / air_speed
+                + np.sqrt(back_to_front_xs**2 + back_to_front_ys**2) / air_speed
+                + np.sqrt(front_to_ant_xs**2 + front_to_ant_ys**2) / air_speed
+            )
+
+            is_td = np.allclose(
+                all_new_td_no_breast, all_old_td, atol=1e-11, rtol=0.0
+            )
+            if is_dist and is_td:
+                success_count += 1
 
         # Calculate one-way time-delay of propagation from antenna to
         # each pixel
         pix_ts[ts_ant_pos, :, :] = all_td
 
-    # if success_count == n_ant_pos:
-    #     print("Thread ID: %d" % os.getpid())
-    #     print("Correct implementation!")
-    # else:
-    #     print("Thread ID: %d" % os.getpid())
-    #     print("ERROR! Something's wrong.")
-    #
+    if verify and success_count == n_ant_pos:
+        print("Thread ID: %d" % os.getpid())
+        print("Correct implementation!")
+    elif verify and success_count < n_ant_pos:
+        print("Thread ID: %d" % os.getpid())
+        print(f"ERROR! Something's wrong. {success_count =}")
 
     return pix_ts
 

@@ -532,7 +532,6 @@ def plot_fd_img(
 
 def plot_fd_img_with_intersections(
     img,
-    cs,
     ant_pos_x,
     ant_pos_y,
     pix_xs,
@@ -541,6 +540,7 @@ def plot_fd_img_with_intersections(
     int_f_ys,
     int_b_xs,
     int_b_ys,
+    cs=None,
     tum_x=0.0,
     tum_y=0.0,
     tum_rad=0.0,
@@ -686,12 +686,14 @@ def plot_fd_img_with_intersections(
     plt.ylim([-roi_rad, roi_rad])
 
     plt.plot(ant_xs, ant_ys, "k--", linewidth=2.5)
-    # plt.plot(breast_xs, breast_ys, 'w--', linewidth=2)
-    phi = np.deg2rad(np.arange(0, 360, 0.1))
-    rho = cs(phi)
-    xs = rho * np.cos(phi) * 100
-    ys = rho * np.sin(phi) * 100
-    plt.plot(xs, ys, "w-")
+    if cs is not None:
+        phi = np.deg2rad(np.arange(0, 360, 0.1))
+        rho = cs(phi)
+        xs = rho * np.cos(phi) * 100
+        ys = rho * np.sin(phi) * 100
+        plt.plot(xs, ys, "w-")
+    else:
+        plt.plot(breast_xs, breast_ys, "w--", linewidth=2)
 
     # Plot the approximate tumor boundary
     plt.plot(tum_xs, tum_ys, "g", linewidth=1.5)
@@ -711,8 +713,12 @@ def plot_fd_img_with_intersections(
     (line,) = plt.plot((ant_pos_x, pix_xs[0]), (ant_pos_y, pix_ys[0]), "g-")
     (pix_dot,) = plt.plot(pix_xs[0], pix_ys[0], "r.")
     plt.plot(ant_pos_x, ant_pos_y, "bo")
-    (int_f_pos,) = plt.plot(int_f_xs[30, 0, 0], int_f_ys[30, 0, 0], "rX")
-    (int_b_pos,) = plt.plot(int_b_xs[30, 0, 0], int_b_ys[30, 0, 0], "gX")
+    (int_f_pos,) = plt.plot(
+        int_f_xs[30, 0, 0], int_f_ys[30, 0, 0], "rX", label="Front"
+    )
+    (int_b_pos,) = plt.plot(
+        int_b_xs[30, 0, 0], int_b_ys[30, 0, 0], "gX", label="Back"
+    )
 
     class Index:
         px_x = 0
@@ -727,14 +733,14 @@ def plot_fd_img_with_intersections(
             line.set_data(
                 (ant_pos_x, pix_xs[self.px_x]), (ant_pos_y, pix_ys[self.px_y])
             )
-            pix_dot.set_data(pix_xs[self.px_x], pix_ys[self.px_y])
+            pix_dot.set_data([pix_xs[self.px_x]], [pix_ys[self.px_y]])
             int_f_pos.set_data(
-                int_f_xs[0, self.px_y, self.px_x],
-                int_f_ys[0, self.px_y, self.px_x],
+                [int_f_xs[0, self.px_y, self.px_x]],
+                [int_f_ys[0, self.px_y, self.px_x]],
             )
             int_b_pos.set_data(
-                int_b_xs[0, self.px_y, self.px_x],
-                int_b_ys[0, self.px_y, self.px_x],
+                [int_b_xs[0, self.px_y, self.px_x]],
+                [int_b_ys[0, self.px_y, self.px_x]],
             )
             plt.draw()
 
@@ -747,14 +753,14 @@ def plot_fd_img_with_intersections(
             line.set_data(
                 (ant_pos_x, pix_xs[self.px_x]), (ant_pos_y, pix_ys[self.px_y])
             )
-            pix_dot.set_data(pix_xs[self.px_x], pix_ys[self.px_y])
+            pix_dot.set_data([pix_xs[self.px_x]], [pix_ys[self.px_y]])
             int_f_pos.set_data(
-                int_f_xs[0, self.px_y, self.px_x],
-                int_f_ys[0, self.px_y, self.px_x],
+                [int_f_xs[0, self.px_y, self.px_x]],
+                [int_f_ys[0, self.px_y, self.px_x]],
             )
             int_b_pos.set_data(
-                int_b_xs[0, self.px_y, self.px_x],
-                int_b_ys[0, self.px_y, self.px_x],
+                [int_b_xs[0, self.px_y, self.px_x]],
+                [int_b_ys[0, self.px_y, self.px_x]],
             )
             plt.draw()
 
@@ -767,14 +773,14 @@ def plot_fd_img_with_intersections(
             line.set_data(
                 (ant_pos_x, pix_xs[self.px_x]), (ant_pos_y, pix_ys[self.px_y])
             )
-            pix_dot.set_data(pix_xs[self.px_x], pix_ys[self.px_y])
+            pix_dot.set_data([pix_xs[self.px_x]], [pix_ys[self.px_y]])
             int_f_pos.set_data(
-                int_f_xs[0, self.px_y, self.px_x],
-                int_f_ys[0, self.px_y, self.px_x],
+                [int_f_xs[0, self.px_y, self.px_x]],
+                [int_f_ys[0, self.px_y, self.px_x]],
             )
             int_b_pos.set_data(
-                int_b_xs[0, self.px_y, self.px_x],
-                int_b_ys[0, self.px_y, self.px_x],
+                [int_b_xs[0, self.px_y, self.px_x]],
+                [int_b_ys[0, self.px_y, self.px_x]],
             )
             plt.draw()
 
@@ -787,14 +793,14 @@ def plot_fd_img_with_intersections(
             line.set_data(
                 (ant_pos_x, pix_xs[self.px_x]), (ant_pos_y, pix_ys[self.px_y])
             )
-            pix_dot.set_data(pix_xs[self.px_x], pix_ys[self.px_y])
+            pix_dot.set_data([pix_xs[self.px_x]], [pix_ys[self.px_y]])
             int_f_pos.set_data(
-                int_f_xs[0, self.px_y, self.px_x],
-                int_f_ys[0, self.px_y, self.px_x],
+                [int_f_xs[0, self.px_y, self.px_x]],
+                [int_f_ys[0, self.px_y, self.px_x]],
             )
             int_b_pos.set_data(
-                int_b_xs[0, self.px_y, self.px_x],
-                int_b_ys[0, self.px_y, self.px_x],
+                [int_b_xs[0, self.px_y, self.px_x]],
+                [int_b_ys[0, self.px_y, self.px_x]],
             )
             plt.draw()
 
@@ -815,6 +821,7 @@ def plot_fd_img_with_intersections(
     bprev_y.on_clicked(callback.prev_y)
 
     plt.tight_layout()  # Remove excess whitespace in the figure
+    plt.legend()
     plt.show()
 
 
