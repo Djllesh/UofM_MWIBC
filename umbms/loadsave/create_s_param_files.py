@@ -10,7 +10,7 @@ from umbms.loadsave import save_pickle, load_birrs_txt
 import os
 import numpy as np
 
-date = "big_dataset_merge"
+date = "big_dataset_merge_fix"
 
 __DATA_DIR = "C:/Users/prikh/Desktop/Exp data/" + date + "/"
 
@@ -41,6 +41,10 @@ for file in fs_in_dir:
         s11_scan_data = load_birrs_txt(os.path.join(__DATA_DIR, file))
         s11_data[idx, :, :] = s11_scan_data
 
-save_pickle(s11_data, os.path.join(__DATA_DIR, "s11_big_dataset.pickle"))
+save_pickle(
+    s11_data, os.path.join(__DATA_DIR, "s11_big_dataset_correction.pickle")
+)
 
-save_pickle(s21_data, os.path.join(__DATA_DIR, "s21_big_dataset.pickle"))
+save_pickle(
+    s21_data, os.path.join(__DATA_DIR, "s21_big_dataset_correction.pickle")
+)

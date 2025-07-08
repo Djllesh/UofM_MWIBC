@@ -9,10 +9,12 @@ import pandas as pd
 import os
 from umbms.loadsave import save_pickle
 
-__DATA_DIR = "C:/Users/prikh/Desktop/Exp data/big_dataset_merge/"
+__DATA_DIR = "C:/Users/prikh/Desktop/Exp data/big_dataset_merge_fix/"
 
 df = pd.read_csv(
-    os.path.join(__DATA_DIR, "Speed_paper_dataset_metadata_second_attempt.csv"),
+    os.path.join(
+        __DATA_DIR, "Speed_paper_dataset_metadata_second_attempt_correction.csv"
+    ),
     delimiter=",",
 )
 size = len(df["id"].values)
@@ -53,4 +55,6 @@ for i in range(size):
             md[i][key] = df[key][i]
 
 
-save_pickle(md, os.path.join(__DATA_DIR, "big_dataset_metadata.pickle"))
+save_pickle(
+    md, os.path.join(__DATA_DIR, "big_dataset_metadata_correction.pickle")
+)

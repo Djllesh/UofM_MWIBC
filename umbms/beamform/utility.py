@@ -27,7 +27,7 @@ def rect(t, t0, a):
 
     rectangle = np.zeros_like(t)
     rectangle[np.abs((t - t0) / a) < 1 / 2] = 1
-    rectangle[np.abs((t - t0) / a) == 1 / 2] = 1 / 2
+    rectangle[np.isclose(np.abs((t - t0) / a), 0.5)] = 0.5
 
     return rectangle
 

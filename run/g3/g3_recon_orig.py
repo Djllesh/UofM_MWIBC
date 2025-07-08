@@ -167,9 +167,11 @@ if __name__ == "__main__":
 
             # Get the adipose-only reference data for this scan
             adi_fd = fd_data[expt_ids.index(tar_md["adi_ref_id"]), :, :]
+            emp_fd = fd_data[expt_ids.index(tar_md["emp_ref_id"]), :, :]
 
             # Subtract reference and retain the frequencies above 2 GHz
             adi_cal_cropped = (tar_fd - adi_fd)[tar_fs, :]
+            emp_cal_cropped = (tar_fd - emp_fd)[tar_fs, :]
 
             # If the scan does include a tumour
             if ~np.isnan(tar_md["tum_diam"]):
@@ -188,6 +190,8 @@ if __name__ == "__main__":
                     tar_md["id"],
                 )
 
+            # DAS Reconstruction below ----------------------------------------
+
             # Reconstruct a DAS image
             das_adi_recon = fd_das(
                 fd_data=adi_cal_cropped,
@@ -195,6 +199,20 @@ if __name__ == "__main__":
                 freqs=scan_fs,
                 worker_pool=worker_pool,
             )
+
+            # DAS Reconstruction above ----------------------------------------
+
+            # Empty reference reconstruction below ----------------------------
+
+            # HACK: comment below to get an actual DAS reconstruction
+            # das_adi_recon = fd_das(
+            #     fd_data=emp_cal_cropped,
+            #     phase_fac=phase_fac,
+            #     freqs=scan_fs,
+            #     worker_pool=worker_pool,
+            # )
+
+            # Empty reference reconstruction above ----------------------------
 
             # Save that DAS reconstruction to a .pickle file
             save_pickle(

@@ -436,12 +436,15 @@ def intersections_per_ray(
     inside_idxs = np.argwhere(binary_ray).flatten()
 
     if inside_idxs.size != 0:
+        # If the front intersection happens at the edge of the domain
+
         # front intersection is the algebraic average of two points -
         # one before the intersection and one after
         int_f_x = (
             pix_xs[intersected_x_idxs[inside_idxs[0]]]
             + pix_xs[intersected_x_idxs[inside_idxs[0]] - 1]
         ) / 2
+
         int_f_y = (
             pix_ys[intersected_y_idxs[inside_idxs[0]]]
             + pix_ys[intersected_y_idxs[inside_idxs[0]] - 1]
