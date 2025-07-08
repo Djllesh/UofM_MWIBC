@@ -48,7 +48,11 @@ __CPU_COUNT = mp.cpu_count()
 
 __D_DIR = os.path.join(get_proj_path(), "data/umbmid/g3/")
 
-__O_DIR = os.path.join(get_proj_path(), "output/differential-alignment/")
+dataset = "pairs_ideal_sym_mirror"
+
+__O_DIR = os.path.join(
+    get_proj_path(), "output/differential-alignment/" + dataset + "/"
+)
 verify_path(__O_DIR)
 
 # The frequency parameters from the scan
@@ -192,8 +196,8 @@ def recon_imgs(
     verify_path(orr_o_dir)
 
     # For each breast pair
-    # for ii in range(np.size(s11_pair_diffs, axis=0)):
-    for ii in range(10):
+    for ii in range(np.size(s11_pair_diffs, axis=0)):
+        # for ii in range(10):
         logger.info(
             "\tWorking on pair [%4d / %4d]..."
             % (ii + 1, np.size(s11_pair_diffs, axis=0))
@@ -226,8 +230,8 @@ def recon_imgs(
             tum_rad = 0
 
         # Get the scan metadata explicitly
-        ant_rad = md_left["ant_rad"]
-        adi_rad = __ADI_RADS[md_left["phant_id"].split("F")[0]]
+        ant_rad = md_left["ant_rad"] / 100
+        adi_rad = __ADI_RADS[md_left["phant_id"].split("F")[0]] / 100
 
         # Account for phase center of the antenna
         ant_rho = to_phase_center(meas_rho=ant_rad)
@@ -449,8 +453,8 @@ def get_breast_pair_s11_diffs(
         )
 
         # For each breast pair
-        # for ii in range(np.size(s11_pair_diffs, axis=0)):
-        for ii in range(10):
+        for ii in range(np.size(s11_pair_diffs, axis=0)):
+            # for ii in range(10):
             # Get breast data, pre-cal
             left_uncal = s11_data[idx_pairs[ii, 0], :, :]
             right_uncal = s11_data[idx_pairs[ii, 1], :, :]
@@ -481,7 +485,9 @@ def get_breast_pair_s11_diffs(
             if to_align[ii]:  # if mirroring occurred
                 # In order to obtain boundary data we ues old version of
                 # antenna radius estimation
-                ant_rad = md[ii]["ant_rad"] / 100 + 0.03618 + 0.0449
+                ant_rad = (
+                    md[idx_pairs[ii, 0]]["ant_rad"] / 100 + 0.03618 + 0.0449
+                )
 
                 # If the aligning is just a phase shift with a spatial
                 # constraint
@@ -627,7 +633,7 @@ if __name__ == "__main__":
     # Load the indices of pairs
     id_pairs = np.array(
         load_pickle(
-            os.path.join(__D_DIR, "differential/pairs_ideal_contour_sym.pickle")
+            os.path.join(__D_DIR, "differential/" + dataset + ".pickle")
         )
     )
 
@@ -636,7 +642,7 @@ if __name__ == "__main__":
     md = load_pickle(os.path.join(__D_DIR, "g3_md.pickle"))
 
     registration_modes = ["simple shift", "boundary align", "window"]
-    registration_mode = registration_modes[0]
+    registration_mode = registration_modes[2]
 
     # Get the scan IDs
     scan_ids = np.array([ii["id"] for ii in md])
