@@ -25,10 +25,13 @@ from umbms.analysis.acc_size import get_img_max_xy, get_img_CoM
 
 ###############################################################################
 
-__D_DIR = os.path.join(get_proj_path(), "data/tyson//")
-
 __OUT_DIR = os.path.join(get_proj_path(), "output/iqms-dec/pos-err/")
 verify_path(__OUT_DIR)
+verify_path(os.path.join(__OUT_DIR, "regular_das/"))
+verify_path(os.path.join(__OUT_DIR, "binary_das/"))
+verify_path(os.path.join(__OUT_DIR, "freq_dep_non_cond_das/"))
+verify_path(os.path.join(__OUT_DIR, "freq_dep_das/"))
+verify_path(os.path.join(__OUT_DIR, "rt_das_das/"))
 
 # Scan VNA parameters
 # __INI_F = 0.7e9 #700e6
@@ -54,7 +57,7 @@ def init_plt():
     """Init plot window"""
 
     fig = plt.figure(figsize=(12, 8))
-    plt.rc("font", family="Times New Roman")
+    plt.rc("font", family="Libertinus Serif")
     plt.tick_params(labelsize=16)
 
 

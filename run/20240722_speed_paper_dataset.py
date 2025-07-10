@@ -224,7 +224,7 @@ if __name__ == "__main__":
 
     ant_rad_bound = apply_ant_t_delay(scan_rad=scan_rad + 0.03618, new_ant=True)
     worker_pool.close()
-    for expt in range(76, n_expts):
+    for expt in range(n_expts):
         worker_pool = mp.Pool(__CPU_COUNT - 1)
         logger.info("Scan [%3d / %3d]..." % (expt + 1, n_expts))
 
@@ -245,6 +245,22 @@ if __name__ == "__main__":
             pickle_dir = os.path.join(out_dir, "pickles/")
             verify_path(pickle_dir)
 
+            # Path to store spline parameters
+            pickle_spline = os.path.join(pickle_dir, "spln_pars/")
+            verify_path(pickle_spline)
+
+            # Path to store the data
+            regular_pickle = os.path.join(pickle_dir, "regular-das/")
+            verify_path(regular_pickle)
+            binary_pickle = os.path.join(pickle_dir, "binary-das/")
+            verify_path(binary_pickle)
+            fdnc_pickle = os.path.join(pickle_dir, "freq_dep_non_cond-das/")
+            verify_path(fdnc_pickle)
+            fd_pickle = os.path.join(pickle_dir, "freq_dep-das/")
+            verify_path(fd_pickle)
+            rt_pickle = os.path.join(pickle_dir, "rt-das/")
+            verify_path(rt_pickle)
+
             # Get metadata for plotting
             tum_x = tar_md["tum_x"] / 100
             tum_y = tar_md["tum_y"] / 100
@@ -260,238 +276,238 @@ if __name__ == "__main__":
             # 5 DIFFERENT RECONSTRUCTIONS
             ############################################################
 
-            # # 1. Homogeneous DAS (regular)
-            #
-            # plt_str_regular_das = "Homogeneous DAS\n%s" % plt_str
-            #
-            # logger.info("\tHomogeneous DAS...")
-            # # To time the method
-            # reg_das_start = perf_counter()
-            #
-            # # Estimate the average speed for the whole imaging domain
-            # # Assume homogeneous media and straight line propagation
-            # speed = estimate_speed(
-            #     adi_rad=adi_rad, ant_rad=scan_rad, new_ant=True
-            # )
-            #
-            # logger.info("\ttime-delay calculation...")
-            #
-            # # Timing time-delay calculation
-            # time_delay_tp_start = perf_counter()
-            # pix_ts = get_pix_ts_old(
-            #     ant_rad=ant_rad, m_size=__M_SIZE, roi_rad=roi_rad, speed=speed
-            # )
-            #
-            # # Account for antenna time delay
-            # pix_ts = apply_ant_pix_delay(pix_ts=pix_ts)
-            # time_delay_tp_end = perf_counter()
-            # logger.info(
-            #     "\t\tTime: %.3f s" % (time_delay_tp_end - time_delay_tp_start)
-            # )
-            # phase_fac = get_fd_phase_factor(pix_ts=pix_ts)
-            #
-            # logger.info("\tReconstruction...")
-            #
-            # # Time the reconstruction
-            # recon_start = perf_counter()
-            # das_regular_recon = fd_das(
-            #     fd_data=adi_cal_cropped,
-            #     phase_fac=phase_fac,
-            #     freqs=recon_fs,
-            #     worker_pool=worker_pool,
-            # )
-            # recon_end = perf_counter()
-            # logger.info("\t\tTime: %.3f s" % (recon_end - recon_start))
-            #
-            # save_pickle(
-            #     das_regular_recon,
-            #     path=os.path.join(pickle_dir, "id%d_regular.pickle" % expt),
-            # )
-            #
-            # plot_fd_img(
-            #     img=np.abs(das_regular_recon),
-            #     tum_x=tum_x,
-            #     tum_y=tum_y,
-            #     tum_rad=tum_rad,
-            #     adi_rad=adi_rad,
-            #     ant_rad=ant_rad,
-            #     roi_rad=roi_rad,
-            #     img_rad=roi_rad,
-            #     title="",
-            #     save_fig=True,
-            #     save_str=os.path.join(out_dir, "id_%d_das_regular.png" % expt),
-            #     save_close=True,
-            # )
-            #
-            # reg_das_end = perf_counter()
-            #
-            # logger.info(
-            #     "\tThe whole reconstruction time: %.3f s"
-            #     % (reg_das_end - reg_das_start)
-            # )
-            #
-            # ############################################################
-            # # 2. Binary DAS (domain partitioning)
-            #
-            # plt_str_binary_das = "Binary DAS\n%s" % plt_str
-            #
-            # logger.info("\tBinary DAS...")
-            # bin_das_start = perf_counter()
-            # # Assume average propagation through the adipose layer
-            # breast_speed = np.average(velocities)
-            #
-            # logger.info("\tReconstruction...")
-            #
-            # recon_start = perf_counter()
-            # das_binary_recon = fd_das(
-            #     fd_data=adi_cal_cropped,
-            #     phase_fac=phase_fac_bin,
-            #     freqs=recon_fs,
-            #     worker_pool=worker_pool,
-            # )
-            # recon_end = perf_counter()
-            # logger.info("\t\tTime: %.3f" % (recon_end - recon_start))
-            #
-            # save_pickle(
-            #     das_binary_recon,
-            #     path=os.path.join(pickle_dir, "id%d_binary.pickle" % expt),
-            # )
-            #
-            # plot_fd_img(
-            #     img=np.abs(das_binary_recon),
-            #     tum_x=tum_x,
-            #     tum_y=tum_y,
-            #     tum_rad=tum_rad,
-            #     adi_rad=adi_rad,
-            #     ant_rad=ant_rad,
-            #     roi_rad=roi_rad,
-            #     img_rad=roi_rad,
-            #     title="",
-            #     save_fig=True,
-            #     save_str=os.path.join(out_dir, "id_%d_das_binary.png" % expt),
-            #     save_close=True,
-            # )
-            #
-            # bin_das_end = perf_counter()
-            #
-            # logger.info(
-            #     "\tThe whole reconstruction time: %.3f s"
-            #     % (bin_das_end - bin_das_start)
-            # )
-            #
-            # ############################################################
-            # # 3. Frequency-dependent DAS (zero cond, short - FDNC)
-            #
-            # plt_str_fdnc_das = (
-            #     "Frequency-dependent DAS (zero conductivity)\n%s" % plt_str
-            # )
-            #
-            # logger.info("\tFrequency-dependent DAS (zero conductivity)...")
-            #
-            # fdnc_das_start = perf_counter()
-            #
-            # recon_start = perf_counter()
-            # logger.info("\tReconstruction...")
-            # das_freq_dep_zero_cond_recon = fd_das_freq_dep(
-            #     fd_data=adi_cal_cropped,
-            #     int_f_xs=int_f_xs,
-            #     int_f_ys=int_f_ys,
-            #     int_b_xs=int_b_xs,
-            #     int_b_ys=int_b_ys,
-            #     velocities=velocities_zero_cond,
-            #     ant_rad=ant_rad,
-            #     freqs=recon_fs,
-            #     adi_rad=adi_rad,
-            #     m_size=__M_SIZE,
-            #     roi_rad=roi_rad,
-            #     air_speed=__VAC_SPEED,
-            #     worker_pool=worker_pool,
-            # )
-            # recon_end = perf_counter()
-            # logger.info("\t\tTime: %.3f s" % (recon_end - recon_start))
-            #
-            # save_pickle(
-            #     das_freq_dep_zero_cond_recon,
-            #     path=os.path.join(pickle_dir, "id%d_fdnc.pickle" % expt),
-            # )
-            #
-            # plot_fd_img(
-            #     img=np.abs(das_freq_dep_zero_cond_recon),
-            #     tum_x=tum_x,
-            #     tum_y=tum_y,
-            #     tum_rad=tum_rad,
-            #     adi_rad=adi_rad,
-            #     ant_rad=ant_rad,
-            #     roi_rad=roi_rad,
-            #     img_rad=roi_rad,
-            #     title="",
-            #     save_fig=True,
-            #     save_str=os.path.join(
-            #         out_dir, "id_%d_das_freq_dep_zero_cond.png" % expt
-            #     ),
-            #     save_close=True,
-            # )
-            #
-            # fdnc_das_end = perf_counter()
-            # logger.info(
-            #     "\tThe whole reconstruction time: %.3f s"
-            #     % (fdnc_das_end - fdnc_das_start)
-            # )
-            #
-            # ############################################################
-            # # 4. Frequency-dependent DAS (short - FD)
-            #
-            # plt_str_fd_das = "Frequency-dependent DAS\n%s" % plt_str
-            #
-            # logger.info("\tFrequency-dependent DAS...")
-            #
-            # fd_das_start = perf_counter()
-            #
-            # recon_start = perf_counter()
-            # logger.info("\tReconstruction...")
-            # das_freq_dep_zero_cond_recon = fd_das_freq_dep(
-            #     fd_data=adi_cal_cropped,
-            #     int_f_xs=int_f_xs,
-            #     int_f_ys=int_f_ys,
-            #     int_b_xs=int_b_xs,
-            #     int_b_ys=int_b_ys,
-            #     velocities=velocities,
-            #     ant_rad=ant_rad,
-            #     freqs=recon_fs,
-            #     adi_rad=adi_rad,
-            #     m_size=__M_SIZE,
-            #     roi_rad=roi_rad,
-            #     air_speed=__VAC_SPEED,
-            #     worker_pool=worker_pool,
-            # )
-            # recon_end = perf_counter()
-            # logger.info("\t\tTime: %.3f s" % (recon_end - recon_start))
-            #
-            # save_pickle(
-            #     das_freq_dep_zero_cond_recon,
-            #     path=os.path.join(pickle_dir, "id%d_fd.pickle" % expt),
-            # )
-            #
-            # plot_fd_img(
-            #     img=np.abs(das_freq_dep_zero_cond_recon),
-            #     tum_x=tum_x,
-            #     tum_y=tum_y,
-            #     tum_rad=tum_rad,
-            #     adi_rad=adi_rad,
-            #     ant_rad=ant_rad,
-            #     roi_rad=roi_rad,
-            #     img_rad=roi_rad,
-            #     title="",
-            #     save_fig=True,
-            #     save_str=os.path.join(out_dir, "id_%d_das_freq_dep.png" % expt),
-            #     save_close=True,
-            # )
-            #
-            # fd_das_end = perf_counter()
-            # logger.info(
-            #     "\tThe whole reconstruction time: %.3f s"
-            #     % (fd_das_end - fd_das_start)
-            # )
+            # 1. Homogeneous DAS (regular)
+
+            plt_str_regular_das = "Homogeneous DAS\n%s" % plt_str
+
+            logger.info("\tHomogeneous DAS...")
+            # To time the method
+            reg_das_start = perf_counter()
+
+            # Estimate the average speed for the whole imaging domain
+            # Assume homogeneous media and straight line propagation
+            speed = estimate_speed(
+                adi_rad=adi_rad, ant_rad=scan_rad, new_ant=True
+            )
+
+            logger.info("\ttime-delay calculation...")
+
+            # Timing time-delay calculation
+            time_delay_tp_start = perf_counter()
+            pix_ts = get_pix_ts_old(
+                ant_rad=ant_rad, m_size=__M_SIZE, roi_rad=roi_rad, speed=speed
+            )
+
+            # Account for antenna time delay
+            pix_ts = apply_ant_pix_delay(pix_ts=pix_ts)
+            time_delay_tp_end = perf_counter()
+            logger.info(
+                "\t\tTime: %.3f s" % (time_delay_tp_end - time_delay_tp_start)
+            )
+            phase_fac = get_fd_phase_factor(pix_ts=pix_ts)
+
+            logger.info("\tReconstruction...")
+
+            # Time the reconstruction
+            recon_start = perf_counter()
+            das_regular_recon = fd_das(
+                fd_data=adi_cal_cropped,
+                phase_fac=phase_fac,
+                freqs=recon_fs,
+                worker_pool=worker_pool,
+            )
+            recon_end = perf_counter()
+            logger.info("\t\tTime: %.3f s" % (recon_end - recon_start))
+
+            save_pickle(
+                das_regular_recon,
+                path=os.path.join(regular_pickle, "id%d_regular.pickle" % expt),
+            )
+
+            plot_fd_img(
+                img=np.abs(das_regular_recon),
+                tum_x=tum_x,
+                tum_y=tum_y,
+                tum_rad=tum_rad,
+                adi_rad=adi_rad,
+                ant_rad=ant_rad,
+                roi_rad=roi_rad,
+                img_rad=roi_rad,
+                title="",
+                save_fig=True,
+                save_str=os.path.join(out_dir, "id_%d_das_regular.png" % expt),
+                save_close=True,
+            )
+
+            reg_das_end = perf_counter()
+
+            logger.info(
+                "\tThe whole reconstruction time: %.3f s"
+                % (reg_das_end - reg_das_start)
+            )
+
+            ############################################################
+            # 2. Binary DAS (domain partitioning)
+
+            plt_str_binary_das = "Binary DAS\n%s" % plt_str
+
+            logger.info("\tBinary DAS...")
+            bin_das_start = perf_counter()
+            # Assume average propagation through the adipose layer
+            breast_speed = np.average(velocities)
+
+            logger.info("\tReconstruction...")
+
+            recon_start = perf_counter()
+            das_binary_recon = fd_das(
+                fd_data=adi_cal_cropped,
+                phase_fac=phase_fac_bin,
+                freqs=recon_fs,
+                worker_pool=worker_pool,
+            )
+            recon_end = perf_counter()
+            logger.info("\t\tTime: %.3f" % (recon_end - recon_start))
+
+            save_pickle(
+                das_binary_recon,
+                path=os.path.join(binary_pickle, "id%d_binary.pickle" % expt),
+            )
+
+            plot_fd_img(
+                img=np.abs(das_binary_recon),
+                tum_x=tum_x,
+                tum_y=tum_y,
+                tum_rad=tum_rad,
+                adi_rad=adi_rad,
+                ant_rad=ant_rad,
+                roi_rad=roi_rad,
+                img_rad=roi_rad,
+                title="",
+                save_fig=True,
+                save_str=os.path.join(out_dir, "id_%d_das_binary.png" % expt),
+                save_close=True,
+            )
+
+            bin_das_end = perf_counter()
+
+            logger.info(
+                "\tThe whole reconstruction time: %.3f s"
+                % (bin_das_end - bin_das_start)
+            )
+
+            ############################################################
+            # 3. Frequency-dependent DAS (zero cond, short - FDNC)
+
+            plt_str_fdnc_das = (
+                "Frequency-dependent DAS (zero conductivity)\n%s" % plt_str
+            )
+
+            logger.info("\tFrequency-dependent DAS (zero conductivity)...")
+
+            fdnc_das_start = perf_counter()
+
+            recon_start = perf_counter()
+            logger.info("\tReconstruction...")
+            das_freq_dep_zero_cond_recon = fd_das_freq_dep(
+                fd_data=adi_cal_cropped,
+                int_f_xs=int_f_xs,
+                int_f_ys=int_f_ys,
+                int_b_xs=int_b_xs,
+                int_b_ys=int_b_ys,
+                velocities=velocities_zero_cond,
+                ant_rad=ant_rad,
+                freqs=recon_fs,
+                adi_rad=adi_rad,
+                m_size=__M_SIZE,
+                roi_rad=roi_rad,
+                air_speed=__VAC_SPEED,
+                worker_pool=worker_pool,
+            )
+            recon_end = perf_counter()
+            logger.info("\t\tTime: %.3f s" % (recon_end - recon_start))
+
+            save_pickle(
+                das_freq_dep_zero_cond_recon,
+                path=os.path.join(fdnc_pickle, "id%d_fdnc.pickle" % expt),
+            )
+
+            plot_fd_img(
+                img=np.abs(das_freq_dep_zero_cond_recon),
+                tum_x=tum_x,
+                tum_y=tum_y,
+                tum_rad=tum_rad,
+                adi_rad=adi_rad,
+                ant_rad=ant_rad,
+                roi_rad=roi_rad,
+                img_rad=roi_rad,
+                title="",
+                save_fig=True,
+                save_str=os.path.join(
+                    out_dir, "id_%d_das_freq_dep_zero_cond.png" % expt
+                ),
+                save_close=True,
+            )
+
+            fdnc_das_end = perf_counter()
+            logger.info(
+                "\tThe whole reconstruction time: %.3f s"
+                % (fdnc_das_end - fdnc_das_start)
+            )
+
+            ############################################################
+            # 4. Frequency-dependent DAS (short - FD)
+
+            plt_str_fd_das = "Frequency-dependent DAS\n%s" % plt_str
+
+            logger.info("\tFrequency-dependent DAS...")
+
+            fd_das_start = perf_counter()
+
+            recon_start = perf_counter()
+            logger.info("\tReconstruction...")
+            das_freq_dep = fd_das_freq_dep(
+                fd_data=adi_cal_cropped,
+                int_f_xs=int_f_xs,
+                int_f_ys=int_f_ys,
+                int_b_xs=int_b_xs,
+                int_b_ys=int_b_ys,
+                velocities=velocities,
+                ant_rad=ant_rad,
+                freqs=recon_fs,
+                adi_rad=adi_rad,
+                m_size=__M_SIZE,
+                roi_rad=roi_rad,
+                air_speed=__VAC_SPEED,
+                worker_pool=worker_pool,
+            )
+            recon_end = perf_counter()
+            logger.info("\t\tTime: %.3f s" % (recon_end - recon_start))
+
+            save_pickle(
+                das_freq_dep,
+                path=os.path.join(fd_pickle, "id%d_fd.pickle" % expt),
+            )
+
+            plot_fd_img(
+                img=np.abs(das_freq_dep),
+                tum_x=tum_x,
+                tum_y=tum_y,
+                tum_rad=tum_rad,
+                adi_rad=adi_rad,
+                ant_rad=ant_rad,
+                roi_rad=roi_rad,
+                img_rad=roi_rad,
+                title="",
+                save_fig=True,
+                save_str=os.path.join(out_dir, "id_%d_das_freq_dep.png" % expt),
+                save_close=True,
+            )
+
+            fd_das_end = perf_counter()
+            logger.info(
+                "\tThe whole reconstruction time: %.3f s"
+                % (fd_das_end - fd_das_start)
+            )
 
             ############################################################
             # 5. Ray-tracing
@@ -509,7 +525,11 @@ if __name__ == "__main__":
                 adi_cal_cropped_emp, ant_rad_bound
             )
 
-            # Apply the cubic spline onto the grid
+            tup = (cs, x_cm, y_cm)
+            save_pickle(
+                tup, os.path.join(pickle_spline, "id%d_pars.pickle" % expt)
+            )
+
             mask = get_binary_mask(cs, m_size=__M_SIZE, roi_rad=roi_rad)
 
             logger.info("\tTime-delay calculation...")
@@ -545,7 +565,7 @@ if __name__ == "__main__":
 
             save_pickle(
                 das_rt_recon,
-                path=os.path.join(pickle_dir, "id%d_rt.pickle" % expt),
+                path=os.path.join(rt_pickle, "id%d_rt.pickle" % expt),
             )
 
             plot_fd_img(

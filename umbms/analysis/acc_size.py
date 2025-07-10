@@ -43,7 +43,7 @@ def init_plt():
     """Init plot window"""
 
     plt.figure(figsize=(12, 8))
-    plt.rc("font", family="Times New Roman")
+    plt.rc("font", family="Libertinus Serif")
     plt.tick_params(labelsize=16)
 
 

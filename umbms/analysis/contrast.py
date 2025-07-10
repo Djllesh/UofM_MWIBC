@@ -150,6 +150,10 @@ def get_contrast_for_cyl(img, roi_rad, adi_rad, thickness, x_cm, y_cm, method):
         rotate_img=True,
     )
 
+    if rho_width < 0 or phi_width < 0:
+        print("Image omitted")
+        return 0, 0
+
     rot_com_x, rot_com_y = get_img_CoM(img=rot_img, img_rad=roi_rad)
 
     rho_width /= 100

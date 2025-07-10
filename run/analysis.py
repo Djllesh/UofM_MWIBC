@@ -27,14 +27,15 @@ from umbms.analysis.acc_size import do_size_analysis, init_plt
 ###############################################################################
 
 # Define the directory where the reconstructions are stored
-__DATA_DIR = os.path.join(get_proj_path(), "data/umbmid/cyl_phantom/")
-# Define the directory where the results are going to be stored
+__DATA_DIR = os.path.join(
+    get_proj_path(), "data/umbmid/cyl_phantom/speed_paper/second_attempt/"
+)
 __OUT_DIR = os.path.join(get_proj_path(), "output/")
 verify_path(__OUT_DIR)
 
 # Name of the frequency domain data and metadata
-__FD_NAME = "cyl_phantom_immediate_reference_s11_rescan.pickle"
-__MD_NAME = "metadata_cyl_phantom_immediate_reference_rescan.pickle"
+__FD_NAME = "s11_big_dataset_correction.pickle"
+__MD_NAME = "big_dataset_metadata_correction.pickle"
 
 # The size of the reconstructed image along one dimension
 __M_SIZE = 150
@@ -56,6 +57,33 @@ def load_data():
     )
 
 
+def make_imgs_arr_unsorted(dir):
+    """Creates a list of reflectivity arrays obtained from a
+    reconstruction
+
+    Parameters:
+    -----------
+    dir : string
+        Directory of recon .pickle files
+
+    Returns:
+    ----------
+    imgs : array_like
+        Array of images
+
+    """
+
+    recons = os.listdir(dir)
+    recons = sorted(recons, key=lambda s: int(s.split("_")[0][2:]))
+
+    imgs = np.zeros([len(recons), __M_SIZE, __M_SIZE], dtype=complex)
+
+    for ii, recon in enumerate(recons):
+        imgs[ii, :, :] = load_pickle(os.path.join(dir, recon))
+
+    return imgs
+
+
 def make_imgs_arr(dir):
     """Creates a list of reflectivity arrays obtained from a
     reconstruction
@@ -74,7 +102,7 @@ def make_imgs_arr(dir):
 
     recons = os.listdir(dir)
     recons.sort()
-    imgs = np.zeros([16, 150, 150], dtype=complex)
+    imgs = np.zeros([len(recons), __M_SIZE, __M_SIZE], dtype=complex)
 
     for recon in recons:
         idx = int(recon.split(".")[0][2:]) - 1
@@ -98,20 +126,28 @@ if __name__ == "__main__":
     # Get the unique ID of each experiment / scan
     expt_ids = [md["id"] for md in metadata]
 
-    # The output dir, where the reconstructions will be stored
     out_dir = os.path.join(__OUT_DIR, "iqms-dec/")
     recon_dir = os.path.join(
-        __OUT_DIR, "cyl_phantom/recons/Immediate reference/Antenna time delay/"
+        __OUT_DIR,
+        "cyl_phantom/recons/Immediate reference/Speed paper/second_attempt/correction/pickles",
     )
     verify_path(out_dir)
+    verify_path(os.path.join(out_dir, "size/msc_thesis/big_dataset/"))
+    verify_path(os.path.join(out_dir, "pos-err/msc_thesis/big_dataset/"))
 
-    t_coords = np.zeros([16, 2])
-    # Get metadata for plotting
+    # The files of the splines
+    spline_files = [
+        f for f in os.listdir(os.path.join(recon_dir, "spln_pars/"))
+    ]
+
+    target_idxs = [int(s.split("_")[0][2:]) for s in spline_files]
+    target_idxs.sort()
+
+    t_coords = np.zeros([len(spline_files), 2])
     i = 0
-    for md in metadata:
-        if not np.isnan(md["tum_x"]):
-            t_coords[i, :] = [md["tum_x"], md["tum_y"]]
-            i += 1
+    for i, idx in enumerate(target_idxs):
+        if not np.isnan(metadata[idx]["tum_x"]):
+            t_coords[i, :] = [metadata[idx]["tum_x"], metadata[idx]["tum_y"]]
 
     # Apply systematic corrections to the target positions in
     # positioning devise frame of reference to obtain antenna frame of
@@ -132,8 +168,6 @@ if __name__ == "__main__":
     roi_rad = adi_rad + 0.01
     xs, _ = get_xy_arrs(__M_SIZE, roi_rad)
     dx = np.abs(xs[0, 1] - xs[0, 0])
-    # Get the area of each pixel in the image domain
-    dv = ((2 * roi_rad) ** 2) / (__M_SIZE**2)
 
     ####################################################################
     # 5 DIFFERENT RECONSTRUCTIONS
@@ -145,7 +179,7 @@ if __name__ == "__main__":
 
     # Obtain all the reconstructions as an array
     # (requires base-one indexing)
-    imgs_reg = make_imgs_arr(os.path.join(recon_dir, "pickles/regular/"))
+    imgs_reg = make_imgs_arr_unsorted(os.path.join(recon_dir, "regular-das/"))
 
     # Initialize arrays to store the SCR and SMR values
     scr_values_reg = np.zeros(
@@ -162,7 +196,9 @@ if __name__ == "__main__":
     for jj in range(np.size(imgs_reg, 0)):  # For all images
         # Download the cubic spline and CoM parameters
         cs, x_cm, y_cm = load_pickle(
-            os.path.join(recon_dir, "spln_pars/id%d_pars.pickle" % (jj + 1))
+            os.path.join(
+                recon_dir, "spln_pars/id%d_pars.pickle" % target_idxs[jj]
+            )
         )
 
         # Calculate SCR
@@ -213,7 +249,7 @@ if __name__ == "__main__":
         xs=t_coords[:, 0],
         ys=t_coords[:, 1],
         logger=logger,
-        o_dir_str="regular_das/",
+        o_dir_str="msc_thesis/big_dataset/regular_das/",
         save_str="",
         make_plts=True,
     )
@@ -246,16 +282,10 @@ if __name__ == "__main__":
     # Print out the results
     logger.info(
         "Regular DAS:"
-        "\n\t\t\t\t\t\t\t\t\t\t\t\t\t\tMean rho-extent: %.4f"
-        "\n\t\t\t\t\t\t\t\t\t\t\t\t\t\tMean phi-extent: %.4f"
-        "\n\t\t\t\t\t\t\t\t\t\t\t\t\t\tMean SCR: %.4f"
-        "\n\t\t\t\t\t\t\t\t\t\t\t\t\t\tMean SMR: %.4f"
-        % (
-            np.mean(rho_sizes),
-            np.mean(phi_sizes),
-            np.mean(scr_values_reg),
-            np.mean(smr_values_reg),
-        )
+        f"\n\t\t\t\tMean rho-extent: {np.mean(rho_sizes):.4f}"
+        f"\n\t\t\t\tMean phi-extent: {np.mean(phi_sizes):.4f}"
+        f"\n\t\t\t\tMean SCR: {np.mean(scr_values_reg[scr_values_reg != 0]):.4f}"
+        f"\n\t\t\t\tMean SMR: {np.mean(smr_values_reg[smr_values_reg != 0]):.4f}"
     )
 
     # //////////////////////////////////////////////////////////////// #
@@ -283,7 +313,7 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.savefig(
         os.path.join(
-            out_dir, "size/20230808symposium/reg_das_rho_extent_vs_rho.png"
+            out_dir, "size/msc_thesis/big_dataset/reg_das_rho_extent_vs_rho.png"
         ),
         dpi=150,
         transparent=False,
@@ -303,7 +333,7 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.savefig(
         os.path.join(
-            out_dir, "size/20230808symposium/reg_das_phi_extent_vs_rho.png"
+            out_dir, "size/msc_thesis/big_dataset/reg_das_phi_extent_vs_rho.png"
         ),
         dpi=150,
         transparent=False,
@@ -320,7 +350,7 @@ if __name__ == "__main__":
     # 2. Binary DAS
     # **************************************************************** #
 
-    imgs_b = make_imgs_arr(os.path.join(recon_dir, "pickles/binary/"))
+    imgs_b = make_imgs_arr_unsorted(os.path.join(recon_dir, "binary-das/"))
 
     scr_values_b = np.zeros(
         [
@@ -335,7 +365,9 @@ if __name__ == "__main__":
 
     for jj in range(np.size(imgs_b, 0)):
         cs, x_cm, y_cm = load_pickle(
-            os.path.join(recon_dir, "spln_pars/id%d_pars.pickle" % (jj + 1))
+            os.path.join(
+                recon_dir, "spln_pars/id%d_pars.pickle" % target_idxs[jj]
+            )
         )
 
         scr, _ = get_contrast_for_cyl(
@@ -382,7 +414,7 @@ if __name__ == "__main__":
         xs=t_coords[:, 0],
         ys=t_coords[:, 1],
         logger=logger,
-        o_dir_str="binary_das/",
+        o_dir_str="msc_thesis/big_dataset/binary_das/",
         save_str="",
         make_plts=True,
     )
@@ -410,16 +442,10 @@ if __name__ == "__main__":
 
     logger.info(
         "Binary DAS:"
-        "\n\t\t\t\t\t\t\t\t\t\t\t\t\t\tMean rho-extent: %.4f"
-        "\n\t\t\t\t\t\t\t\t\t\t\t\t\t\tMean phi-extent: %.4f"
-        "\n\t\t\t\t\t\t\t\t\t\t\t\t\t\tMean SCR: %.4f"
-        "\n\t\t\t\t\t\t\t\t\t\t\t\t\t\tMean SMR: %.4f"
-        % (
-            np.mean(rho_sizes),
-            np.mean(phi_sizes),
-            np.mean(scr_values_b),
-            np.mean(smr_values_b),
-        )
+        f"\n\t\t\t\tMean rho-extent: {np.mean(rho_sizes):.4f}"
+        f"\n\t\t\t\tMean phi-extent: {np.mean(phi_sizes):.4f}"
+        f"\n\t\t\t\tMean SCR: {np.mean(scr_values_b[scr_values_b != 0]):.4f}"
+        f"\n\t\t\t\tMean SMR: {np.mean(smr_values_b[smr_values_b != 0]):.4f}"
     )
 
     tar_rhos = np.sqrt(t_coords[:, 0] ** 2 + t_coords[:, 1] ** 2)
@@ -443,7 +469,8 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.savefig(
         os.path.join(
-            out_dir, "size/20230808symposium/binary_das_rho_extent_vs_rho.png"
+            out_dir,
+            "size/msc_thesis/big_dataset/binary_das_rho_extent_vs_rho.png",
         ),
         dpi=150,
         transparent=False,
@@ -463,7 +490,8 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.savefig(
         os.path.join(
-            out_dir, "size/20230808symposium/binary_das_phi_extent_vs_rho.png"
+            out_dir,
+            "size/msc_thesis/big_dataset/binary_das_phi_extent_vs_rho.png",
         ),
         dpi=150,
         transparent=False,
@@ -474,7 +502,9 @@ if __name__ == "__main__":
     # 3. Frequency dependent DAS (zero conductivity)
     # **************************************************************** #
 
-    imgs_fdnc = make_imgs_arr(os.path.join(recon_dir, "pickles/fdnc/"))
+    imgs_fdnc = make_imgs_arr_unsorted(
+        os.path.join(recon_dir, "freq_dep_non_cond-das/")
+    )
 
     scr_values_fdnc = np.zeros(
         [
@@ -489,8 +519,12 @@ if __name__ == "__main__":
 
     for jj in range(np.size(imgs_fdnc, 0)):
         cs, x_cm, y_cm = load_pickle(
-            os.path.join(recon_dir, "spln_pars/id%d_pars.pickle" % (jj + 1))
+            os.path.join(
+                recon_dir, "spln_pars/id%d_pars.pickle" % target_idxs[jj]
+            )
         )
+
+        print("The index of the image " + str(target_idxs[jj]))
 
         scr, _ = get_contrast_for_cyl(
             imgs_fdnc[jj],
@@ -538,7 +572,7 @@ if __name__ == "__main__":
         xs=t_coords[:, 0],
         ys=t_coords[:, 1],
         logger=logger,
-        o_dir_str="freq_dep_non_cond_das/",
+        o_dir_str="msc_thesis/big_dataset/freq_dep_non_cond_das/",
         save_str="",
         make_plts=True,
     )
@@ -566,16 +600,10 @@ if __name__ == "__main__":
 
     logger.info(
         "FDNC DAS:"
-        "\n\t\t\t\t\t\t\t\t\t\t\t\t\t\tMean rho-extent: %.4f"
-        "\n\t\t\t\t\t\t\t\t\t\t\t\t\t\tMean phi-extent: %.4f"
-        "\n\t\t\t\t\t\t\t\t\t\t\t\t\t\tMean SCR: %.4f"
-        "\n\t\t\t\t\t\t\t\t\t\t\t\t\t\tMean SMR: %.4f"
-        % (
-            np.mean(rho_sizes),
-            np.mean(phi_sizes),
-            np.mean(scr_values_fdnc),
-            np.mean(smr_values_fdnc),
-        )
+        f"\n\t\t\t\tMean rho-extent: {np.mean(rho_sizes):.4f}"
+        f"\n\t\t\t\tMean phi-extent: {np.mean(phi_sizes):.4f}"
+        f"\n\t\t\t\tMean SCR: {np.mean(scr_values_fdnc[scr_values_fdnc != 0]):.4f}"
+        f"\n\t\t\t\tMean SMR: {np.mean(smr_values_fdnc[smr_values_fdnc != 0]):.4f}"
     )
 
     tar_rhos = np.sqrt(t_coords[:, 0] ** 2 + t_coords[:, 1] ** 2)
@@ -599,7 +627,8 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.savefig(
         os.path.join(
-            out_dir, "size/20230808symposium/fdnc_das_rho_extent_vs_rho.png"
+            out_dir,
+            "size/msc_thesis/big_dataset/fdnc_das_rho_extent_vs_rho.png",
         ),
         dpi=150,
         transparent=False,
@@ -619,7 +648,8 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.savefig(
         os.path.join(
-            out_dir, "size/20230808symposium/fdnc_das_phi_extent_vs_rho.png"
+            out_dir,
+            "size/msc_thesis/big_dataset/fdnc_das_phi_extent_vs_rho.png",
         ),
         dpi=150,
         transparent=False,
@@ -630,7 +660,7 @@ if __name__ == "__main__":
     # 4. Frequency dependent DAS
     # **************************************************************** #
 
-    imgs_fd = make_imgs_arr(os.path.join(recon_dir, "pickles/fd/"))
+    imgs_fd = make_imgs_arr_unsorted(os.path.join(recon_dir, "freq_dep-das/"))
 
     scr_values_fd = np.zeros(
         [
@@ -645,8 +675,12 @@ if __name__ == "__main__":
 
     for jj in range(np.size(imgs_fd, 0)):
         cs, x_cm, y_cm = load_pickle(
-            os.path.join(recon_dir, "spln_pars/id%d_pars.pickle" % (jj + 1))
+            os.path.join(
+                recon_dir, "spln_pars/id%d_pars.pickle" % target_idxs[jj]
+            )
         )
+
+        print("The index of the image " + str(target_idxs[jj]))
 
         scr, _ = get_contrast_for_cyl(
             imgs_fd[jj],
@@ -692,7 +726,7 @@ if __name__ == "__main__":
         xs=t_coords[:, 0],
         ys=t_coords[:, 1],
         logger=logger,
-        o_dir_str="freq_dep_das/",
+        o_dir_str="msc_thesis/big_dataset/freq_dep_das/",
         save_str="",
         make_plts=True,
     )
@@ -720,16 +754,10 @@ if __name__ == "__main__":
 
     logger.info(
         "FD DAS:"
-        "\n\t\t\t\t\t\t\t\t\t\t\t\t\t\tMean rho-extent: %.4f"
-        "\n\t\t\t\t\t\t\t\t\t\t\t\t\t\tMean phi-extent: %.4f"
-        "\n\t\t\t\t\t\t\t\t\t\t\t\t\t\tMean SCR: %.4f"
-        "\n\t\t\t\t\t\t\t\t\t\t\t\t\t\tMean SMR: %.4f"
-        % (
-            np.mean(rho_sizes),
-            np.mean(phi_sizes),
-            np.mean(scr_values_fd),
-            np.mean(smr_values_fd),
-        )
+        f"\n\t\t\t\tMean rho-extent: {np.mean(rho_sizes):.4f}"
+        f"\n\t\t\t\tMean phi-extent: {np.mean(phi_sizes):.4f}"
+        f"\n\t\t\t\tMean SCR: {np.mean(scr_values_fd[scr_values_fd != 0]):.4f}"
+        f"\n\t\t\t\tMean SMR: {np.mean(smr_values_fd[smr_values_fd != 0]):.4f}"
     )
 
     tar_rhos = np.sqrt(t_coords[:, 0] ** 2 + t_coords[:, 1] ** 2)
@@ -753,7 +781,7 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.savefig(
         os.path.join(
-            out_dir, "size/20230808symposium/fd_das_rho_extent_vs_rho.png"
+            out_dir, "size/msc_thesis/big_dataset/fd_das_rho_extent_vs_rho.png"
         ),
         dpi=150,
         transparent=False,
@@ -773,7 +801,7 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.savefig(
         os.path.join(
-            out_dir, "size/20230808symposium/fd_das_phi_extent_vs_rho.png"
+            out_dir, "size/msc_thesis/big_dataset/fd_das_phi_extent_vs_rho.png"
         ),
         dpi=150,
         transparent=False,
@@ -784,7 +812,7 @@ if __name__ == "__main__":
     # 5. DAS with ray-tracing
     # **************************************************************** #
 
-    imgs_rt = make_imgs_arr(os.path.join(recon_dir, "pickles/rt/"))
+    imgs_rt = make_imgs_arr_unsorted(os.path.join(recon_dir, "rt-das/"))
 
     scr_values_rt = np.zeros(
         [
@@ -799,8 +827,12 @@ if __name__ == "__main__":
 
     for jj in range(np.size(imgs_rt, 0)):
         cs, x_cm, y_cm = load_pickle(
-            os.path.join(recon_dir, "spln_pars/id%d_pars.pickle" % (jj + 1))
+            os.path.join(
+                recon_dir, "spln_pars/id%d_pars.pickle" % target_idxs[jj]
+            )
         )
+
+        print("The index of the image " + str(target_idxs[jj]))
 
         scr, _ = get_contrast_for_cyl(
             imgs_rt[jj],
@@ -846,7 +878,7 @@ if __name__ == "__main__":
         xs=t_coords[:, 0],
         ys=t_coords[:, 1],
         logger=logger,
-        o_dir_str="rt_das/",
+        o_dir_str="msc_thesis/big_dataset/rt_das/",
         save_str="",
         make_plts=True,
     )
@@ -874,16 +906,10 @@ if __name__ == "__main__":
 
     logger.info(
         "RT DAS:"
-        "\n\t\t\t\t\t\t\t\t\t\t\t\t\t\tMean rho-extent: %.4f "
-        "\n\t\t\t\t\t\t\t\t\t\t\t\t\t\tMean phi-extent: %.4f "
-        "\n\t\t\t\t\t\t\t\t\t\t\t\t\t\tMean SCR: %.4f"
-        "\n\t\t\t\t\t\t\t\t\t\t\t\t\t\tMean SMR: %.4f"
-        % (
-            np.mean(rho_sizes),
-            np.mean(phi_sizes),
-            np.mean(scr_values_rt),
-            np.mean(smr_values_rt),
-        )
+        f"\n\t\t\t\tMean rho-extent: {np.mean(rho_sizes):.4f}"
+        f"\n\t\t\t\tMean phi-extent: {np.mean(phi_sizes):.4f}"
+        f"\n\t\t\t\tMean SCR: {np.mean(scr_values_rt[scr_values_rt != 0]):.4f}"
+        f"\n\t\t\t\tMean SMR: {np.mean(smr_values_rt[smr_values_rt != 0]):.4f}"
     )
 
     # **************************************************************** #
@@ -910,7 +936,7 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.savefig(
         os.path.join(
-            out_dir, "size/20230808symposium/rt_das_rho_extent_vs_rho.png"
+            out_dir, "size/msc_thesis/big_dataset/rt_das_rho_extent_vs_rho.png"
         ),
         dpi=150,
         transparent=False,
@@ -930,7 +956,7 @@ if __name__ == "__main__":
     plt.tight_layout()
     plt.savefig(
         os.path.join(
-            out_dir, "size/20230808symposium/rt_das_phi_extent_vs_rho.png"
+            out_dir, "size/msc_thesis/big_dataset/rt_das_phi_extent_vs_rho.png"
         ),
         dpi=150,
         transparent=False,
@@ -992,7 +1018,7 @@ if __name__ == "__main__":
         compare_xs=c_xs_CoM_r,
         compare_ys=c_ys_CoM_r,
         save_str="regular_das",
-        o_dir_str="20230808symposium/",
+        o_dir_str="msc_thesis/big_dataset/",
         x_lim_lhs=x_lim_lhs,
         x_lim_rhs=x_lim_rhs,
         y_lim_bot=y_lim_bot,
@@ -1005,7 +1031,7 @@ if __name__ == "__main__":
         compare_xs=c_xs_CoM_b,
         compare_ys=c_ys_CoM_b,
         save_str="binary_das",
-        o_dir_str="20230808symposium/",
+        o_dir_str="msc_thesis/big_dataset/",
         x_lim_lhs=x_lim_lhs,
         x_lim_rhs=x_lim_rhs,
         y_lim_bot=y_lim_bot,
@@ -1018,7 +1044,7 @@ if __name__ == "__main__":
         compare_xs=c_xs_CoM_fdnc,
         compare_ys=c_ys_CoM_fdnc,
         save_str="fdnc_das",
-        o_dir_str="20230808symposium/",
+        o_dir_str="msc_thesis/big_dataset/",
         x_lim_lhs=x_lim_lhs,
         x_lim_rhs=x_lim_rhs,
         y_lim_bot=y_lim_bot,
@@ -1031,7 +1057,7 @@ if __name__ == "__main__":
         compare_xs=c_xs_CoM_fd,
         compare_ys=c_ys_CoM_fd,
         save_str="fd_das",
-        o_dir_str="20230808symposium/",
+        o_dir_str="msc_thesis/big_dataset/",
         x_lim_lhs=x_lim_lhs,
         x_lim_rhs=x_lim_rhs,
         y_lim_bot=y_lim_bot,
@@ -1044,7 +1070,7 @@ if __name__ == "__main__":
         compare_xs=c_xs_CoM_rt,
         compare_ys=c_ys_CoM_rt,
         save_str="rt_das",
-        o_dir_str="20230808symposium/",
+        o_dir_str="msc_thesis/big_dataset/",
         x_lim_lhs=x_lim_lhs,
         x_lim_rhs=x_lim_rhs,
         y_lim_bot=y_lim_bot,

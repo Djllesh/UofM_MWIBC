@@ -51,7 +51,8 @@ __D_DIR = os.path.join(get_proj_path(), "data/umbmid/g3/")
 dataset = "pairs_ideal_sym_mirror"
 
 __O_DIR = os.path.join(
-    get_proj_path(), "output/differential-alignment/" + dataset + "/"
+    get_proj_path(),
+    "output/differential-alignment/" + dataset + "_no_alignment/",
 )
 verify_path(__O_DIR)
 
@@ -482,7 +483,9 @@ def get_breast_pair_s11_diffs(
             left_s11 = left_s11[retain_frequencies, :]
             right_s11 = right_s11[retain_frequencies, :]
 
-            if to_align[ii]:  # if mirroring occurred
+            if (
+                to_align[ii] and registration_mode != "no alignment"
+            ):  # if mirroring occurred
                 # In order to obtain boundary data we ues old version of
                 # antenna radius estimation
                 ant_rad = (
@@ -641,8 +644,13 @@ if __name__ == "__main__":
     s11 = load_pickle(os.path.join(__D_DIR, "g3_s11.pickle"))
     md = load_pickle(os.path.join(__D_DIR, "g3_md.pickle"))
 
-    registration_modes = ["simple shift", "boundary align", "window"]
-    registration_mode = registration_modes[2]
+    registration_modes = [
+        "simple shift",
+        "boundary align",
+        "window",
+        "no alignment",
+    ]
+    registration_mode = registration_modes[3]
 
     # Get the scan IDs
     scan_ids = np.array([ii["id"] for ii in md])
