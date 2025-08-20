@@ -211,7 +211,7 @@ def calculate_avg_speed(
 
 
 if __name__ == "__main__":
-    n_ant_pos = 72
+    n_ant_pos = 200
     ant_rad = 0.21
     adi_rad = 0.055
     roi = adi_rad + 0.01
@@ -236,10 +236,10 @@ if __name__ == "__main__":
 
     # ant_speed[2:, :] = 0
 
-    sino = plt.imshow(ant_speed.T, extent=(0, 360, 0, 24), aspect="auto")
-    plt.xlabel(r"Detector angle ($^\circ$)")
-    plt.ylabel("Receiving antenna")
-    plt.colorbar(sino, label="Propagation speed (m/s)")
+    # sino = plt.imshow(ant_speed.T, extent=(0, 360, 0, 24), aspect="auto")
+    # plt.xlabel(r"Detector angle ($^\circ$)")
+    # plt.ylabel("Receiving antenna")
+    # plt.colorbar(sino, label="Propagation speed (m/s)")
 
     # plt.plot(ant_speed[0, :])
     # plt.xlabel('Antenna position')
@@ -271,8 +271,15 @@ if __name__ == "__main__":
     b = -a * np.min(image)
     image = a * image + b
 
-    # img = plt.imshow(image)
-    # plt.colorbar(img)
+    plt.rcParams["mathtext.fontset"] = "dejavuserif"
+    plt.rc("font", family="Libertinus Serif")
+    img = plt.imshow(image, extent=[-roi, roi, -roi, roi])
+    cbar = plt.colorbar(img)
+    cbar.ax.tick_params(labelsize=14)
+    cbar.set_label(r"Propagation speed ($10^8$m/s)", fontsize=16)
+    plt.tick_params(labelsize=14)
+    plt.xlabel("x-axis (m)", fontsize=16)
+    plt.ylabel("y-axis (m)", fontsize=16)
 
     # plt.plot(
     #     np.linspace(-1, 1, len(image[0])), image[np.size(image, axis=0) // 2, :]
@@ -293,8 +300,16 @@ if __name__ == "__main__":
     #     point_x, point_y = to_ant_xs[ant_pos], to_ant_ys[ant_pos]
     #     plt.plot([x_ants[8], point_x], [y_ants[8], point_y], 'b-')
     # plt.gca().set_aspect('equal')
+
     plt.tight_layout()
     # plt.show()
+
+    plt.savefig(
+        os.path.join(
+            os.path.expanduser("~"), f"Desktop/{n_ant_pos}_ant_fan_recon.png"
+        ),
+        dpi=300,
+    )
 
     # plt.savefig(
     #     os.path.join(
@@ -303,10 +318,10 @@ if __name__ == "__main__":
     #     )
     # )
 
-    plt.savefig(
-        os.path.join(
-            os.path.expanduser("~"), "Desktop/backprojection_sinogram.png"
-        )
-    )
+    # plt.savefig(
+    #     os.path.join(
+    #         os.path.expanduser("~"), "Desktop/backprojection_sinogram.png"
+    #     )
+    # )
 
     eng.exit()

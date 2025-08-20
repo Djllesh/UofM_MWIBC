@@ -260,10 +260,12 @@ def plot_fd_img(
     phantom_id="",
     plot_stl=False,
     stl_z=0.0,
+    stl_thickness=1.0,
     transparent=False,
     dpi=300,
     save_close=True,
     partial_ant_idx=None,
+    legend=False,
 ):
     """Displays a reconstruction, making a publication-ready figure
 
@@ -453,7 +455,9 @@ def plot_fd_img(
         #                            slice_thickness=1.0)
 
         phantom_xs, phantom_ys = get_shell_xy_for_z(
-            phantom_id.split("F")[0].swapcase(), stl_z * 10, slice_thickness=1.0
+            phantom_id.split("F")[0].swapcase(),
+            stl_z * 10,
+            slice_thickness=stl_thickness,
         )
         phantom_xs /= 10
         phantom_ys /= 10
@@ -461,7 +465,7 @@ def plot_fd_img(
         plt.scatter(
             phantom_xs + ox * 100,
             phantom_ys + oy * 100,
-            c="y",
+            c="b",
             s=0.05,
             label="Ground truth",
         )
@@ -520,6 +524,9 @@ def plot_fd_img(
             # plt.plot(pix_xs[~mask], pix_ys[~mask], 'y.',
             #          label=r'$\rho_i > \rho_f(\phi_i)$')
             # plt.legend(loc='upper left')
+
+        if legend:
+            plt.legend(fontsize=15)
 
         # plt.legend(loc='upper left')
         plt.savefig(
