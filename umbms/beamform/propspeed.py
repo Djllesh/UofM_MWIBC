@@ -241,6 +241,34 @@ def phase_shape(freq, length, epsilon, shift):
     return -2 * np.pi * freq * length * b - shift
 
 
+def phase_shape_average(freq, length, epsilon, shift, d_air, d):
+    """Returns the unwrapped shape of the phase based on the complex
+    permittivity
+
+    Parameters:
+    ------------------
+    freq : array_like
+        Frequencies
+    length : float (m)
+        Separation between the antennas
+    epsilon : array_like
+        Complex permittivity
+    shift : float (rad)
+        Vertical shift of the phase
+
+    Returns:
+    phase : array_like
+        The unwrapped phase
+    """
+
+    a = np.sqrt(1 + (np.imag(epsilon) / np.real(epsilon)) ** 2) + 1
+    b = np.sqrt(
+        __VAC_PERMEABILITY * __VAC_PERMITTIVITY / 2 * np.real(epsilon) * a
+    )
+    v_avg = length / (2 * d_air / __VAC_SPEED + d * b)
+    return -2 * np.pi * freq * length / v_avg - shift
+
+
 def phase_shape_explicit(freq, length, e_h, e_s, tau, alpha, shift):
     """Returns the unwrapped shape of the phase based on the complex
     permittivity
@@ -301,7 +329,7 @@ def phase_shape_wrapped(freq, length, epsilon, shift):
     return shape
 
 
-def phase_diff_MSE(x, exp_phase, freq, length, wrapped=False):
+def phase_diff_MSE(x, exp_phase, freq, length, wrapped=False, d_air=0, d=0):
     """Returns the MSE between the experimental phase
     and the derived shape
 
@@ -327,6 +355,8 @@ def phase_diff_MSE(x, exp_phase, freq, length, wrapped=False):
     # Introducing the shift to not change the shape
     if wrapped:
         shape = phase_shape_wrapped(freq, length, epsilon, shift)
+    elif d_air != 0 and d != 0:
+        shape = phase_shape_average(freq, length, epsilon, shift, d_air, d)
     else:
         shape = phase_shape(freq, length, epsilon, shift)
 
