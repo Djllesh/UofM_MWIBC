@@ -428,6 +428,7 @@ def prepare_fd_data(
     fin_f,
     ant_rad=0,
     adi_rad=0,
+    time_algned=True,
 ):
     """Prepares unorganized data for boundary detection"""
 
@@ -449,8 +450,12 @@ def prepare_fd_data(
         td = td[td_mask]
         ts = ts[td_mask]
 
-    # find the kernel
-    kernel = time_aligned_kernel(td)
+    if time_algned:
+        # find the kernel
+        kernel = time_aligned_kernel(td)
+    else:
+        kernel = np.mean(np.abs(td), axis=1)
+
     return td, ts, kernel
 
 
@@ -475,6 +480,7 @@ def get_boundary_iczt(
     plt_transparent=False,
     plot_sino=False,
     plot_points=False,
+    time_aligned=True,
 ):
     """Returns a CubicSpline interpolation
     function that approximates phantom boundary from a time-domain
@@ -527,6 +533,7 @@ def get_boundary_iczt(
         fin_f=fin_f,
         ant_rad=ant_rad,
         adi_rad=adi_rad,
+        time_algned=time_aligned,
     )
     # find all rho and ToR (time-of-response) values
     # on each antenna position
