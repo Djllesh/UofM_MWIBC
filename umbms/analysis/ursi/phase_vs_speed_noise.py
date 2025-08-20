@@ -155,6 +155,5 @@ if __name__ == "__main__":
     plt.ylabel(r"Propagation speed (m/s)", fontsize=16, labelpad=12)
 
     plt.tight_layout()
-    # plt.show()
-    plt.savefig("C:/Users/prikh/Desktop/speed_noise.png", dpi=__MY_DPI)
-
+    plt.show()
+    # plt.savefig("C:/Users/prikh/Desktop/speed_noise.png", dpi=__MY_DPI)

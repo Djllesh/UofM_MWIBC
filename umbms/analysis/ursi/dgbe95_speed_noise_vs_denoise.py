@@ -1,7 +1,7 @@
 """
 Illia Prykhodko
 University of Manitoba
-January 17th, 2024
+July 11th, 2025
 """
 
 import csv
@@ -86,62 +86,35 @@ if __name__ == "__main__":
         length / phase_speed_4pi - (length - phantom_width) / 3e8
     )
 
-    experimental_speed = get_breast_speed_freq(
-        freqs=freqs, permittivities=perms, conductivities=conds
+    phase_speed_exp = -2 * np.pi * freqs * length / (phase_unwrapped)
+    phase_speed_exp_in = phantom_width / (
+        length / phase_speed_exp - (length - phantom_width) / 3e8
     )
 
     plt.rcParams["font.family"] = "Libertinus Serif"
     __MY_DPI = 300
-    fig, ax = plt.subplots(
-        **dict(figsize=(1800 / __MY_DPI, 1800 / __MY_DPI), dpi=__MY_DPI)
-    )
+    fig, ax = plt.subplots(**dict(figsize=(1800 / __MY_DPI, 1800 / __MY_DPI)))
 
     plot_freqs = np.linspace(2, 9, 1001)
+
     ax.plot(
         plot_freqs,
-        experimental_speed,
-        "k-",
-        label="Experimental speed",
-        linewidth=1.3,
+        phase_speed_exp_in,
+        "r--",
+        label="Speed based on the experimental data",
+        linewidth=0.9,
     )
-    ax.plot(
-        plot_freqs,
-        phase_speed_4pi_in,
-        "r-",
-        label=r"Estimated speed inside, shift = $-2 \cdot 4\pi$",
-        linewidth=1.3,
-    )
+    # ax.plot(
+    #     plot_freqs,
+    #     phase_speed_4pi_in,
+    #     "r-",
+    #     label="Speed based on the denoised data",
+    #     linewidth=1.3,
+    # )
 
-    ax.set_title("DGBE 95%", fontsize=16)
-    post_tail = freqs > 4e9
-    cor = pearsonr(
-        phase_speed_4pi_in[post_tail], experimental_speed[post_tail]
-    )[0]
-    print(ccc(phase_speed_4pi_in[post_tail], experimental_speed[post_tail]))
-    print(cor)
-
-    # --- Exporting the data
-    export_phase_speed = phase_speed_4pi_in[:]
-    export_exp_speed = experimental_speed[:]
-    export_data = np.concatenate(
-        (
-            freqs[:][:, None],
-            export_exp_speed[:, None],
-            export_phase_speed[:, None],
-        ),
-        axis=-1,
-    )
-    fields = ["f", "exp", "phase"]
-    filename = "data/dgbe95_full.csv"
-    with open(filename, "w", newline="") as csvfile:
-        csvwriter = csv.writer(csvfile)
-
-        csvwriter.writerow(fields)
-        csvwriter.writerows(export_data)
-
-    # --- ADDED: turn off default offset/scientific notation
+    ax.set_title("DGBE 95%", fontsize=18)
     ax.ticklabel_format(style="plain", axis="y")
-    # ax.yaxis.set_useOffset(False)
+    ax.tick_params(labelsize=14)
 
     # --- ADDED: define a custom formatter, e.g., "2.30 × 10^7"
     def speed_formatter(value, pos):
@@ -154,10 +127,13 @@ if __name__ == "__main__":
     ax.yaxis.set_major_formatter(ticker.FuncFormatter(speed_formatter))
 
     ax.grid(linewidth=0.5)
-    # ax.legend(prop={'size': 8})
-    ax.set_xlabel("Frequency (GHz)", fontsize=14)
-    ax.set_ylabel("Propagation speed (m/s)", fontsize=14)
+    # ax.legend(fontsize=15)
+    ax.set_xlabel("Frequency (GHz)", fontsize=16)
+    ax.set_ylabel("Propagation speed (m/s)", fontsize=16)
     plt.tight_layout()
-    plt.show()
+    # plt.show()
 
-    # plt.savefig('C:/Users/prikh/Desktop/dgbe95.png', dpi=__MY_DPI)
+    plt.savefig(
+        "C:/Users/prikh/Desktop/Illia_thesis_main/images/propspeed/dgbe95_speed_no_shift.png",
+        dpi=__MY_DPI,
+    )

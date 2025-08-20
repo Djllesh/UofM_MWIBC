@@ -10,6 +10,7 @@ from umbms.loadsave import load_pickle
 from umbms.beamform.propspeed import (
     cole_cole,
     phase_shape,
+    phase_shape_average,
     phase_diff_MSE,
     phase_shape_wrapped,
     get_breast_speed_freq,
@@ -36,6 +37,7 @@ target_phase = phase[1, :, 0]
 target_phase_unwrapped = np.unwrap(phase[1, :, 0])
 length = 0.42
 phantom_width = 0.11
+d_air = (length - phantom_width) / 2
 
 if __name__ == "__main__":
     # Read .csv file of permittivity and conductivity values
@@ -54,7 +56,14 @@ if __name__ == "__main__":
         fun=phase_diff_MSE,
         x0=np.array([3.40, 17.93, 101.75, 0.18, -target_phase[0]]),
         bounds=((1, 7), (8, 80), (7, 103), (0.0, 0.25), (None, None)),
-        args=(target_phase_unwrapped, freqs, length, False),
+        args=(
+            target_phase_unwrapped,
+            freqs,
+            length,
+            False,
+            d_air,
+            phantom_width,
+        ),
         method="trust-constr",
         options={"maxiter": 2000},
     )
@@ -62,14 +71,23 @@ if __name__ == "__main__":
     results_unwrapped = minimize(
         fun=phase_diff_MSE,
         x0=np.array(results.x),
-        args=(target_phase_unwrapped, freqs, length, False),
+        args=(
+            target_phase_unwrapped,
+            freqs,
+            length,
+            False,
+            d_air,
+            phantom_width,
+        ),
         method="trust-constr",
         tol=1e-15,
     )
 
     e_h, e_s, tau, alpha, shift = results_unwrapped.x
     epsilon = cole_cole(freqs, e_h, e_s, tau, alpha)
-    shape_unwrapped = phase_shape(freqs, length, epsilon, shift)
+    shape_unwrapped = phase_shape_average(
+        freqs, length, epsilon, shift, d_air, phantom_width
+    )
 
     phase_speed_4pi = (
         -2 * np.pi * freqs * length / (shape_unwrapped - 2 * np.pi * 6)
@@ -147,5 +165,5 @@ if __name__ == "__main__":
     ax.set_xlabel("Frequency (GHz)", fontsize=14)
     ax.set_ylabel("Propagation speed (m/s)", fontsize=14)
     plt.tight_layout()
-    # plt.show()
+    plt.show()
     # plt.savefig('C:/Users/prikh/Desktop/dgbe70.png', dpi=__MY_DPI)

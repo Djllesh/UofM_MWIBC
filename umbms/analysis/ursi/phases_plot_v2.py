@@ -116,8 +116,8 @@ if __name__ == "__main__":
     plt.ylabel(r"Phase shift (radians)", fontsize=16, labelpad=12)
 
     plt.tight_layout()
-    # plt.show()
-    plt.savefig(
-        "C:/Users/prikh/Desktop/phases.png",
-        dpi=__MY_DPI,
-    )
+    plt.show()
+    # plt.savefig(
+    #     "C:/Users/prikh/Desktop/phases.png",
+    #     dpi=__MY_DPI,
+    # )

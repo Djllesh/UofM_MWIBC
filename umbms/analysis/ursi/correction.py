@@ -65,7 +65,7 @@ if __name__ == "__main__":
     phase_glycerin = data_glycerin[:, 2]
 
     # Pick 4 colors uniformly from the inferno colormap
-    cmap = plt.get_cmap("plasma")
+    cmap = plt.get_cmap("viridis")
     colors = [cmap(i) for i in np.linspace(0, 1, 4)]
 
     y_exp = [exp_glycerin, exp_dgbe95, exp_dgbe90, exp_dgbe70]
@@ -93,11 +93,12 @@ if __name__ == "__main__":
         print(f"CCC = {ccc_:.6f}, PCC = {cor:.6f}")
         print(f"Mean ratio = {np.mean(y_exp[i]) / np.mean(y_phase[i])}")
 
-    plt.rcParams["font.family"] = "Garamond"
-    plt.rcParams["text.color"] = "white"
-    plt.rcParams["axes.labelcolor"] = "white"
-    plt.rcParams["xtick.color"] = "white"
-    plt.rcParams["ytick.color"] = "white"
+    plt.rcParams["font.family"] = "Libertinus Serif"
+    plt.rcParams["mathtext.fontset"] = "dejavuserif"
+    # plt.rcParams["text.color"] = "white"
+    # plt.rcParams["axes.labelcolor"] = "white"
+    # plt.rcParams["xtick.color"] = "white"
+    # plt.rcParams["ytick.color"] = "white"
 
     # N = np.size(freqs)
     # delta = N * np.sum(phase_dgbe70**2) - np.sum(phase_dgbe70)**2
@@ -107,10 +108,9 @@ if __name__ == "__main__":
     # print(sigma_a2)
     # print(sigma_b2)
 
-    __MY_DPI = 120
+    __MY_DPI = 300
     fig, ax = plt.subplots(
-        **dict(figsize=(800 / __MY_DPI, 800 / __MY_DPI), dpi=__MY_DPI),
-        facecolor="#0e2841",
+        **dict(figsize=(1800 / __MY_DPI, 1800 / __MY_DPI)),
     )
 
     plotfreqs = np.linspace(2, 9, 1001)
@@ -171,9 +171,9 @@ if __name__ == "__main__":
     ax.set_xlim(3.9, 9.1)
     ax.set_ylim(7.2e7, 14.0e7)
     ax.grid(linewidth=0.5)
-    plt.legend(loc="center right", fontsize=14, labelcolor="linecolor")
+    plt.legend(loc="center right", fontsize=15)
     plt.xlabel("Frequency (GHz)", fontsize=16)
     plt.ylabel("Propagation speed (m/s)", fontsize=16)
     plt.tight_layout()
-    plt.show()
-    # plt.savefig("C:/Users/prikh/Desktop/correction.png", dpi=__MY_DPI)
+    # plt.show()
+    plt.savefig("C:/Users/prikh/Desktop/correction.png", dpi=__MY_DPI)

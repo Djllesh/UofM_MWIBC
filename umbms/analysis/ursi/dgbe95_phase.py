@@ -91,21 +91,30 @@ if __name__ == "__main__":
         csvwriter = csv.writer(csvfile)
         csvwriter.writerow(fields)
         csvwriter.writerows(export_data)
-    __MY_DPI = 120
+    __MY_DPI = 300
 
-    plt.rcParams["font.family"] = "Times New Roman"
-    fig, ax = plt.subplots(
-        **dict(figsize=(500 / __MY_DPI, 500 / __MY_DPI), dpi=__MY_DPI)
-    )
+    plt.rcParams["font.family"] = "Libertinus Serif"
+    fig, ax = plt.subplots(**dict(figsize=(1800 / __MY_DPI, 1800 / __MY_DPI)))
     plot_freqs = np.linspace(2, 9, 1001)
-    ax.plot(plot_freqs, phase_unwrapped, "r--", linewidth=0.9)
-    ax.plot(plot_freqs, shape_unwrapped, "r-", linewidth=1.0)
+    ax.plot(
+        plot_freqs,
+        phase_unwrapped,
+        "r--",
+        linewidth=0.9,
+        label="Experimental phase",
+    )
+    ax.plot(
+        plot_freqs, shape_unwrapped, "r-", linewidth=1.0, label="Denoised phase"
+    )
 
     ax.set_title("DGBE 95%", fontsize=16)
     ax.grid(linewidth=0.5)
-    # ax.legend(prop={'size': 8})
-    ax.set_xlabel("Frequency (GHz)", fontsize=14)
-    ax.set_ylabel("Phase shift (radians)", fontsize=14)
+    ax.legend(fontsize=15)
+    ax.set_xlabel("Frequency (GHz)", fontsize=16)
+    ax.set_ylabel("Phase shift (radians)", fontsize=16)
     plt.tight_layout()
     # plt.show()
-    # plt.savefig('C:/Users/prikh/Desktop/dgbe95_phase.png', dpi=__MY_DPI)
+    plt.savefig(
+        "C:/Users/prikh/Desktop/Illia_thesis_main/images/propspeed/dgbe95_phase.png",
+        dpi=__MY_DPI,
+    )
