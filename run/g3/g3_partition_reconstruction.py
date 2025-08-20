@@ -127,10 +127,7 @@ if __name__ == "__main__":
     conductivities = np.array(df["Conductivity"].values)
     velocities = get_breast_speed_freq(freqs, permittivities, conductivities)
 
-    # The output dir, where the reconstructions will be stored
-    out_dir = os.path.join(
-        __OUT_DIR, "recons/boundary_test/Sino/Correlation step-by-step/"
-    )
+    out_dir = os.path.join(__OUT_DIR, "msc_thesis/stl_comparison/")
     verify_path(out_dir)
 
     mse_stats_dict = {
@@ -146,9 +143,9 @@ if __name__ == "__main__":
 
     # Determine fibroglandular percentage
     # fibr_perc = 2
-    # for ii in range(n_expts):  # For each scan / experiment
-    # for ii in [0, 51, 99, 131]:
-    for ii in [131]:
+    for ii in range(n_expts):  # For each scan / experiment
+        # for ii in [0, 51, 99, 131]:
+        # for ii in [131]:
         logger.info("Scan [%3d / %3d]..." % (ii + 1, n_expts))
 
         # Get the frequency domain data and metadata of this experiment
@@ -196,12 +193,12 @@ if __name__ == "__main__":
             ant_rad = apply_ant_t_delay(scan_rad=scan_rad, new_ant=True)
 
             # Estimate the propagation speed in the imaging domain
-            speed = estimate_speed(
-                adi_rad=adi_rad, ant_rad=scan_rad, new_ant=True
-            )
-            pix_ts = get_pix_ts_old(
-                ant_rad=ant_rad, m_size=__M_SIZE, roi_rad=roi_rad, speed=speed
-            )
+            # speed = estimate_speed(
+            #     adi_rad=adi_rad, ant_rad=scan_rad, new_ant=True
+            # )
+            # pix_ts = get_pix_ts_old(
+            #     ant_rad=ant_rad, m_size=__M_SIZE, roi_rad=roi_rad, speed=speed
+            # )
 
             # breast_speed = get_breast_speed(2)
             #
@@ -215,7 +212,7 @@ if __name__ == "__main__":
             #                mid_breast_min=mid_breast_min)
 
             # Get the phase factor for efficient computation
-            phase_fac = get_fd_phase_factor(pix_ts=pix_ts)
+            # phase_fac = get_fd_phase_factor(pix_ts=pix_ts)
 
             # Get the adipose-only reference data for this scan
             adi_fd = fd_data[expt_ids.index(tar_md["adi_ref_id"]), :, :]
@@ -251,55 +248,55 @@ if __name__ == "__main__":
                 )
 
             # Reconstruct a DAS image
-            das_adi_recon = fd_das(
-                fd_data=adi_cal_cropped_non_emp,
-                phase_fac=phase_fac,
-                freqs=scan_fs[tar_fs],
-                worker_pool=worker_pool,
-            )
+            # das_adi_recon = fd_das(
+            #     fd_data=adi_cal_cropped_non_emp,
+            #     phase_fac=phase_fac,
+            #     freqs=scan_fs[tar_fs],
+            #     worker_pool=worker_pool,
+            # )
 
             # Save that DAS reconstruction to a .pickle file
-            save_pickle(
-                das_adi_recon, os.path.join(expt_adi_out_dir, "das_adi.pickle")
-            )
+            # save_pickle(
+            #     das_adi_recon, os.path.join(expt_adi_out_dir, "das_adi.pickle")
+            # )
 
             # Plot the DAS reconstruction
-            plot_fd_img(
-                img=np.abs(das_adi_recon),
-                cs=cs,
-                tum_x=tum_x,
-                tum_y=tum_y,
-                tum_rad=tum_rad,
-                mid_breast_max=mid_breast_max,
-                mid_breast_min=mid_breast_min,
-                ox=x_cm,
-                oy=y_cm,
-                ant_rad=ant_rad,
-                roi_rad=roi_rad,
-                img_rad=roi_rad,
-                phantom_id=tar_md["phant_id"],
-                title="%s" % plt_str,
-                save_fig=True,
-                save_str=os.path.join(
-                    expt_adi_out_dir, "id_%d_adi_cal_das.png" % tar_md["id"]
-                ),
-                save_close=True,
-            )
-
-            bound_x, bound_y = find_boundary(
-                np.abs(das_adi_recon), roi_rad, n_slices=110
-            )
-            rho, phi = cart_to_polar(bound_x, bound_y)
-            cs = polar_fit_cs(rho, phi)
-            plt.plot(phi, rho, "bx", label="Slice data")
-            plt.plot(phi, cs(phi), "r-", label="Cubic spline")
-            plt.xlabel(r"$\phi$")
-            plt.ylabel(r"$\rho$")
-            plt.legend()
-            plt.show()
-
-            mask = get_binary_mask(cs, m_size=__M_SIZE, roi_rad=roi_rad)
-
+            # plot_fd_img(
+            #     img=np.abs(das_adi_recon),
+            #     cs=cs,
+            #     tum_x=tum_x,
+            #     tum_y=tum_y,
+            #     tum_rad=tum_rad,
+            #     mid_breast_max=mid_breast_max,
+            #     mid_breast_min=mid_breast_min,
+            #     ox=x_cm,
+            #     oy=y_cm,
+            #     ant_rad=ant_rad,
+            #     roi_rad=roi_rad,
+            #     img_rad=roi_rad,
+            #     phantom_id=tar_md["phant_id"],
+            #     title="%s" % plt_str,
+            #     save_fig=True,
+            #     save_str=os.path.join(
+            #         expt_adi_out_dir, "id_%d_adi_cal_das.png" % tar_md["id"]
+            #     ),
+            #     save_close=True,
+            # )
+            #
+            # bound_x, bound_y = find_boundary(
+            #     np.abs(das_adi_recon), roi_rad, n_slices=110
+            # )
+            # rho, phi = cart_to_polar(bound_x, bound_y)
+            # cs = polar_fit_cs(rho, phi)
+            # plt.plot(phi, rho, "bx", label="Slice data")
+            # plt.plot(phi, cs(phi), "r-", label="Cubic spline")
+            # plt.xlabel(r"$\phi$")
+            # plt.ylabel(r"$\rho$")
+            # plt.legend()
+            # plt.show()
+            #
+            # mask = get_binary_mask(cs, m_size=__M_SIZE, roi_rad=roi_rad)
+            #
             print("ID: %d" % (ii + 1))
             mse_array = np.array([])
             for stl_z in np.arange(2, 7, 0.05):
@@ -322,45 +319,45 @@ if __name__ == "__main__":
 
                 print("\tz_slice = %.2f\n\tMSE = %f" % (stl_z, mse))
 
-                plt.plot(phi_stl, rho_stl, "b--", label="STL file data")
-                plt.plot(phi_cs, cs(phi_cs) * 100, "r-", label="Cubic spline")
-                plt.legend()
-                plt.savefig(
-                    os.path.join(
-                        expt_adi_out_dir,
-                        "id_%d_rho-phi_diagram_%.2f_z_slice"
-                        ".png " % (tar_md["id"], stl_z),
-                    ),
-                    dpi=300,
-                )
-                plt.close()
-
-                # Plot the DAS reconstruction
-                plot_fd_img(
-                    img=np.abs(das_adi_recon),
-                    cs=cs,
-                    tum_x=tum_x,
-                    tum_y=tum_y,
-                    tum_rad=tum_rad,
-                    mid_breast_max=mid_breast_max,
-                    mid_breast_min=mid_breast_min,
-                    ox=x_cm,
-                    oy=y_cm,
-                    ant_rad=ant_rad,
-                    roi_rad=roi_rad,
-                    img_rad=roi_rad,
-                    phantom_id=tar_md["phant_id"],
-                    plot_stl=True,
-                    stl_z=stl_z,
-                    title="%s" % plt_str,
-                    save_fig=True,
-                    save_str=os.path.join(
-                        expt_adi_out_dir,
-                        "id_%d_adi_cal_das_"
-                        "%.2f_z_slice.png " % (tar_md["id"], stl_z),
-                    ),
-                    save_close=True,
-                )
+                # plt.plot(phi_stl, rho_stl, "b--", label="STL file data")
+                # plt.plot(phi_cs, cs(phi_cs) * 100, "r-", label="Cubic spline")
+                # plt.legend()
+                # plt.savefig(
+                #     os.path.join(
+                #         expt_adi_out_dir,
+                #         "id_%d_rho-phi_diagram_%.2f_z_slice"
+                #         ".png " % (tar_md["id"], stl_z),
+                #     ),
+                #     dpi=300,
+                # )
+                # plt.close()
+                #
+                # # Plot the DAS reconstruction
+                # plot_fd_img(
+                #     img=np.abs(das_adi_recon),
+                #     cs=cs,
+                #     tum_x=tum_x,
+                #     tum_y=tum_y,
+                #     tum_rad=tum_rad,
+                #     mid_breast_max=mid_breast_max,
+                #     mid_breast_min=mid_breast_min,
+                #     ox=x_cm,
+                #     oy=y_cm,
+                #     ant_rad=ant_rad,
+                #     roi_rad=roi_rad,
+                #     img_rad=roi_rad,
+                #     phantom_id=tar_md["phant_id"],
+                #     plot_stl=True,
+                #     stl_z=stl_z,
+                #     title="%s" % plt_str,
+                #     save_fig=True,
+                #     save_str=os.path.join(
+                #         expt_adi_out_dir,
+                #         "id_%d_adi_cal_das_"
+                #         "%.2f_z_slice.png " % (tar_md["id"], stl_z),
+                #     ),
+                #     save_close=True,
+                # )
 
             mse_stats_dict[tar_md["phant_id"].split("F")[0]]["mse"] = np.append(
                 mse_stats_dict[tar_md["phant_id"].split("F")[0]]["mse"],
@@ -388,6 +385,5 @@ if __name__ == "__main__":
             % (shell, np.average(mse_stats_dict[shell]["mse"]))
         )
         print(
-            "Average z_slice = %.2f"
-            % np.average(mse_stats_dict[shell]["z_slice"])
+            f"Average z_slice ({np.mean(mse_stats_dict[shell]['z_slice'])} +/- {np.std(mse_stats_dict[shell]['z_slice'])})"
         )

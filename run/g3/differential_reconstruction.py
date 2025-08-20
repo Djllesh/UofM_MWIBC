@@ -48,7 +48,7 @@ __CPU_COUNT = mp.cpu_count()
 
 __D_DIR = os.path.join(get_proj_path(), "data/umbmid/g3/")
 
-dataset = "pairs_ideal_sym_mirror"
+dataset = "pairs_ideal_contour_sym"
 
 __O_DIR = os.path.join(
     get_proj_path(),
@@ -455,6 +455,9 @@ def get_breast_pair_s11_diffs(
 
         # For each breast pair
         for ii in range(np.size(s11_pair_diffs, axis=0)):
+            logger.info(
+                f"Aligning pair [{ii}/{np.size(s11_pair_diffs, axis=0)}]"
+            )
             # for ii in range(10):
             # Get breast data, pre-cal
             left_uncal = s11_data[idx_pairs[ii, 0], :, :]
