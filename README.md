@@ -58,4 +58,4 @@ https://github.com/TysonReimer/ORR-Algorithm
 
 ## Author
 
-- Illia Prykhodko, Department of Physics & Astronomy, **National University of Kyiv-Mohyla Academy** & **University of Manitoba**
+- Illia Prykhodko, Department of Physics & Astronomy, **University of Manitoba** & **National University of Kyiv-Mohyla Academy**
