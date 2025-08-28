@@ -36,6 +36,7 @@ from umbms.boundary.boundary_detection import (
     get_boundary_iczt,
     align_skin_on_time_diff,
     align_skin_on_spatial_shift,
+    align_skin_on_spatial_plot,
     shift_rot_cs,
     align_skin_window,
 )
@@ -48,11 +49,11 @@ __CPU_COUNT = mp.cpu_count()
 
 __D_DIR = os.path.join(get_proj_path(), "data/umbmid/g3/")
 
-dataset = "pairs_ideal_contour_sym"
+dataset = "pairs_ideal_sym_mirror"
 
 __O_DIR = os.path.join(
     get_proj_path(),
-    "output/differential-alignment/" + dataset + "_no_alignment/",
+    "output/differential-alignment/" + dataset + "_amplitude_test",
 )
 verify_path(__O_DIR)
 
@@ -396,6 +397,8 @@ def get_breast_pair_s11_diffs(
     md,
     registration_mode,
     retain_frequencies=__SCAN_FS >= 2e9,
+    make_plots=False,
+    out_dir="",
 ):
     """
 
@@ -454,7 +457,8 @@ def get_breast_pair_s11_diffs(
         )
 
         # For each breast pair
-        for ii in range(np.size(s11_pair_diffs, axis=0)):
+        # for ii in range(np.size(s11_pair_diffs, axis=0)):
+        for ii in range(50):
             logger.info(
                 f"Aligning pair [{ii}/{np.size(s11_pair_diffs, axis=0)}]"
             )
@@ -498,6 +502,11 @@ def get_breast_pair_s11_diffs(
                 # If the aligning is just a phase shift with a spatial
                 # constraint
                 if registration_mode == "simple shift":
+                    plt_name = ""
+
+                    if make_plots and out_dir:
+                        plt_name = f"align_on_time_diff_id{ii}.png"
+
                     s11_aligned_right = align_skin_on_time_diff(
                         fd_emp_ref_left=left_s11,
                         fd_emp_ref_right=right_s11,
@@ -506,6 +515,8 @@ def get_breast_pair_s11_diffs(
                         n_time_pts=__N_TS,
                         ini_f=2e9,
                         fin_f=9e9,
+                        out_dir=out_dir,
+                        plt_name=plt_name,
                     )
                 else:
                     # For every other registration mode we need a
@@ -557,6 +568,16 @@ def get_breast_pair_s11_diffs(
                             delta_phi=shift[2],
                         )
 
+                        if make_plots and out_dir:
+                            plt_name = f"align_on_spatial_shift_id{ii}.png"
+                            align_skin_on_spatial_plot(
+                                cs_left,
+                                cs_right,
+                                cs_right_shifted,
+                                out_dir,
+                                plt_name,
+                            )
+
                         # Obtain the FD data of the aligned right breast
                         s11_aligned_right = align_skin_on_spatial_shift(
                             fd_emp_ref_right=right_s11,
@@ -575,6 +596,9 @@ def get_breast_pair_s11_diffs(
                     # If want to further suppress the skin using a
                     # window approach
                     if registration_mode == "window":
+                        if make_plots and out_dir:
+                            plt_name = f"align_skin_window_id{ii}.png"
+
                         s11_aligned_right = align_skin_window(
                             s11_aligned_right,
                             left_s11,
@@ -653,7 +677,7 @@ if __name__ == "__main__":
         "window",
         "no alignment",
     ]
-    registration_mode = registration_modes[3]
+    registration_mode = registration_modes[2]
 
     # Get the scan IDs
     scan_ids = np.array([ii["id"] for ii in md])
@@ -668,6 +692,8 @@ if __name__ == "__main__":
         id_pairs=id_pairs,
         md=md,
         registration_mode=registration_mode,
+        make_plots=False,
+        out_dir=__O_DIR,
     )
 
     # Retain only frequencies from 2-9 GHz

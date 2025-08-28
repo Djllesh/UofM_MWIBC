@@ -14,6 +14,7 @@ from umbms.beamform.iczt import iczt
 from umbms.beamform.utility import get_xy_arrs, rect
 from umbms.boundary.differential_minimization import shift_and_rotate
 from umbms.plot.sinogramplot import show_sinogram
+from umbms.plot import init_plt
 import matplotlib.pyplot as plt
 
 __VAC_SPEED = speed_of_light
@@ -952,6 +953,8 @@ def align_skin_on_time_diff(
     scan_ini_f=1e9,
     scan_fin_f=9e9,
     n_fs=1001,
+    out_dir="",
+    plt_name="",
 ):
     """Converts aligned time-responses into frequency domain
 
@@ -1051,8 +1054,16 @@ def align_skin_on_time_diff(
         plt_slices=False,
         out_dir="",
     )
+
     # time shifts
     delta_t = ToR_left - ToR_right
+    if out_dir and plt_name:
+        align_on_time_plot(
+            left_tor=ToR_left,
+            right_tor=ToR_right,
+            out_dir=out_dir,
+            plt_name=plt_name,
+        )
 
     # delta1 = delta_t[:36]
     # delta2 = delta_t[36:]
@@ -1064,6 +1075,32 @@ def align_skin_on_time_diff(
     )
 
     return s11_aligned_right
+
+
+def align_on_time_plot(left_tor, right_tor, out_dir, plt_name):
+    init_plt()
+
+    left_tor *= 1e9
+    right_tor *= 1e9
+    angles = np.linspace(0, 360, len(left_tor))
+    plt.plot(angles, left_tor, "rX", label="Left breast")
+    plt.plot(angles, right_tor, "bX", label="Right breast")
+    plt.grid(linewidth=0.7)
+
+    for angle, left, right in zip(angles, left_tor, right_tor):
+        plt.annotate(
+            "",
+            xy=(angle, right),
+            xytext=(angle, left),
+            arrowprops=dict(arrowstyle="<-"),
+        )
+
+    plt.xlabel(r"Angle of the antenna position ($^\circ$)", fontsize=16)
+    plt.ylabel(r"Time of response (ns)", fontsize=16)
+    plt.legend()
+    plt.tight_layout()
+
+    plt.savefig(os.path.join(out_dir, plt_name), dpi=300)
 
 
 def extract_delta_t_from_boundary(
@@ -1218,6 +1255,40 @@ def align_skin_on_spatial_shift(
     return s11_aligned_right
 
 
+def align_skin_on_spatial_plot(
+    cs_left, cs_right, cs_right_aligned, out_dir, plt_name
+):
+    angles = np.linspace(0, 2 * np.pi, 150)
+
+    left_xs = cs_left(angles) * np.cos(angles)
+    left_ys = cs_left(angles) * np.sin(angles)
+
+    ini_right_xs = cs_right(angles) * np.cos(angles)
+    ini_right_ys = cs_right(angles) * np.sin(angles)
+
+    align_right_xs = cs_right_aligned(angles) * np.cos(angles)
+    align_right_ys = cs_right_aligned(angles) * np.sin(angles)
+
+    plt.rc("font", family="Libertinus Serif")
+    plt.rcParams["mathtext.fontset"] = "dejavuserif"
+    plt.tick_params(labelsize=18)
+    fig, (ax_ini, ax_align) = plt.subplots(1, 2, figsize=(12, 9), dpi=300)
+    ax_ini.plot(left_xs, left_ys, label="Left breast")
+    ax_ini.plot(ini_right_xs, ini_right_ys, label="Right breast")
+
+    ax_align.plot(left_xs, left_ys, label="Left breast")
+    ax_align.plot(align_right_xs, align_right_ys, label="Right breast aligned")
+
+    ax_ini.legend(fontsize=15)
+    ax_align.legend(fontsize=15)
+
+    ax_ini.grid(linewidth=0.7)
+    ax_align.grid(linewidth=0.7)
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(out_dir, plt_name), dpi=300)
+
+
 def align_skin_window(
     fd_emp_ref_right,
     fd_emp_ref_left,
@@ -1350,6 +1421,13 @@ def align_skin_window(
         t_start = ts[max_peak + peaks_to_decide[peaks_to_decide < 0][-1]]
         t_end = ts[max_peak + peaks_to_decide[peaks_to_decide > 0][0]]
 
+        # ================ EXTRACTING THE INTENSITIES ================ #
+
+        # NOTE: Uncomment this to implement the intensity matching
+        # max_peak_left = np.argwhere(ts == ToR_left[ii])[0]
+        # right_intensity = td_right[max_peak, ii]
+        # left_intensity = td_left[max_peak_left, ii]
+
         # ============= PREPARE DATA FOR THE CONVOLUTION ============= #
         # Zero-pad the signal, so it can be easily extracted from the
         # result of the convolution
@@ -1379,12 +1457,11 @@ def align_skin_window(
             mode="same",
         )
 
-        # FIX: the phase shift should only touch the S11 signal, not
-        # the whole thing
-
         # S11 times phase shift based on the delta_t value * sinc for
         # the skin region for a given antenna position
         skin_sinc_conv = np.convolve(
+            # NOTE: Uncomment this to enable the intensity matching
+            # (left_intensity / right_intensity) *
             original_signal_zero_padded
             * np.exp(-2j * np.pi * freqs_to_convolve * delta_t[ii]),
             (t_end - t_start)

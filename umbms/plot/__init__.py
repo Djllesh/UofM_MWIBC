@@ -27,10 +27,10 @@ def init_plt(figsize=(12, 6), labelsize=18):
     # plt.rcParams["font.family"] = "serif"
     # plt.rcParams["font.serif"] = ["Libertinus Serif"]
     # For mathtext to match Libertinus Serif:
-    # plt.rcParams["mathtext.fontset"] = "dejavuserif"
 
     plt.figure(figsize=figsize)
     plt.rc("font", family="Libertinus Serif")
+    plt.rcParams["mathtext.fontset"] = "dejavuserif"
     plt.tick_params(labelsize=labelsize)
 
 
