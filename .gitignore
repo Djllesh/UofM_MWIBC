@@ -26,3 +26,4 @@ run/temp/
 .pydevproject
 .settings/
 .stversions/
+*egg-info/
